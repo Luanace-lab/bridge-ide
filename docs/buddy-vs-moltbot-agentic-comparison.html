@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buddy (BRIDGE) vs Moltbot/OpenClaw - Agentic Comparison</title>
+  <style>
+    :root{
+      --bg:#f4efe6;
+      --panel:#fffaf2;
+      --panel-strong:#f0e5d4;
+      --ink:#1f2430;
+      --muted:#5b6372;
+      --line:#d4c7b2;
+      --accent:#0f766e;
+      --accent-soft:#d6efe8;
+      --warm:#9a3412;
+      --warm-soft:#f7dfd1;
+      --shadow:0 18px 60px rgba(31,36,48,.10);
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:"IBM Plex Sans","Aptos","Segoe UI",sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(15,118,110,.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(154,52,18,.08), transparent 24%),
+        linear-gradient(180deg, #f9f4eb 0%, var(--bg) 100%);
+      line-height:1.55;
+    }
+
+    .page{
+      width:min(1180px, calc(100vw - 32px));
+      margin:32px auto 64px;
+    }
+
+    .hero{
+      background:linear-gradient(135deg, rgba(255,250,242,.95), rgba(240,229,212,.90));
+      border:1px solid rgba(212,199,178,.95);
+      border-radius:28px;
+      padding:32px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -80px -120px auto;
+      width:260px;
+      height:260px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(15,118,110,.20), transparent 68%);
+      pointer-events:none;
+    }
+
+    .eyebrow{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent);
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:14px 0 10px;
+      font-family:"Aptos Display","Trebuchet MS","Segoe UI",sans-serif;
+      font-size:clamp(32px, 5vw, 56px);
+      line-height:1.02;
+      letter-spacing:-.03em;
+      max-width:900px;
+    }
+
+    .subtitle{
+      max-width:860px;
+      font-size:18px;
+      color:var(--muted);
+      margin:0;
+    }
+
+    .meta{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:14px;
+      margin-top:26px;
+    }
+
+    .meta-card{
+      background:rgba(255,255,255,.62);
+      border:1px solid rgba(212,199,178,.82);
+      border-radius:18px;
+      padding:16px 18px;
+      backdrop-filter:blur(6px);
+    }
+
+    .meta-card h2{
+      margin:0 0 8px;
+      font-size:13px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+    }
+
+    .meta-card p{
+      margin:0;
+      font-size:15px;
+    }
+
+    .section{
+      margin-top:28px;
+      background:rgba(255,250,242,.88);
+      border:1px solid rgba(212,199,178,.90);
+      border-radius:24px;
+      padding:24px;
+      box-shadow:var(--shadow);
+    }
+
+    .section h2{
+      margin:0 0 14px;
+      font-size:24px;
+      letter-spacing:-.02em;
+    }
+
+    .section p{
+      margin:0;
+      color:var(--muted);
+    }
+
+    .verdict-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+      gap:14px;
+      margin-top:18px;
+    }
+
+    .verdict{
+      border-radius:20px;
+      padding:18px;
+      border:1px solid var(--line);
+      background:var(--panel);
+    }
+
+    .verdict.good{
+      background:linear-gradient(180deg, #f8fcfb, #edf8f5);
+      border-color:#b9ddd8;
+    }
+
+    .verdict.warn{
+      background:linear-gradient(180deg, #fff9f5, #fbefe6);
+      border-color:#e6c8b4;
+    }
+
+    .verdict h3{
+      margin:0 0 8px;
+      font-size:18px;
+    }
+
+    .verdict p{
+      margin:0;
+      color:var(--muted);
+    }
+
+    .table-wrap{
+      margin-top:18px;
+      overflow:auto;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:var(--panel);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:900px;
+    }
+
+    thead th{
+      position:sticky;
+      top:0;
+      background:linear-gradient(180deg, #efe3d2, #eadbc7);
+      color:var(--ink);
+      text-align:left;
+      padding:16px 18px;
+      font-size:13px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    tbody td{
+      vertical-align:top;
+      padding:18px;
+      border-top:1px solid var(--line);
+      font-size:15px;
+    }
+
+    tbody tr:nth-child(even) td{
+      background:rgba(244,239,230,.48);
+    }
+
+    .cell-title{
+      font-weight:700;
+      color:var(--ink);
+      margin-bottom:6px;
+      display:block;
+    }
+
+    .tag-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:16px;
+    }
+
+    .tag{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.03em;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+    }
+
+    .tag.accent{
+      background:var(--accent-soft);
+      color:var(--accent);
+      border-color:#b9ddd8;
+    }
+
+    .tag.warm{
+      background:var(--warm-soft);
+      color:var(--warm);
+      border-color:#e5c0aa;
+    }
+
+    ul{
+      margin:14px 0 0 18px;
+      padding:0;
+      color:var(--muted);
+    }
+
+    li + li{
+      margin-top:8px;
+    }
+
+    a{
+      color:#0b5cab;
+      text-decoration:none;
+    }
+
+    a:hover{
+      text-decoration:underline;
+    }
+
+    code{
+      font-family:"IBM Plex Mono","Cascadia Code","Consolas",monospace;
+      font-size:.95em;
+      background:rgba(31,36,48,.06);
+      padding:2px 5px;
+      border-radius:6px;
+    }
+
+    .sources{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+      gap:14px;
+      margin-top:18px;
+    }
+
+    .source-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+      background:var(--panel);
+    }
+
+    .source-card h3{
+      margin:0 0 10px;
+      font-size:16px;
+    }
+
+    .source-card ul{
+      margin-top:0;
+    }
+
+    .footer-note{
+      margin-top:18px;
+      padding:14px 16px;
+      border-radius:16px;
+      background:rgba(15,118,110,.06);
+      border:1px solid rgba(15,118,110,.16);
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    @media (max-width: 760px){
+      .page{width:min(100vw - 20px, 1180px); margin:18px auto 40px}
+      .hero,.section{padding:20px}
+      .subtitle{font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Agentic Scope Only</span>
+      <h1>Buddy (BRIDGE) vs Moltbot/OpenClaw</h1>
+      <p class="subtitle">
+        Dieser Vergleich bewertet nur die agentischen Faehigkeiten. Er vergleicht nicht allgemeine Codegroesse,
+        UI-Flaechen oder Repo-Volumen, sondern: Identitaet, Memory, Tool-Nutzung, Delegation, Browser-Handlung
+        und operative Reife als echter Agent.
+      </p>
+
+      <div class="meta">
+        <div class="meta-card">
+          <h2>Kurzurteil</h2>
+          <p><strong>OpenClaw</strong> ist heute der koharentere Personal-Agent. <strong>Buddy</strong> hat auf BRIDGE das hoehere agentische Ceiling.</p>
+        </div>
+        <div class="meta-card">
+          <h2>Namenspunkt</h2>
+          <p><strong>Moltbot</strong> war die Zwischenform. Laut offizieller Lore wurde daraus am <strong>30. Januar 2026</strong> <strong>OpenClaw</strong>.</p>
+        </div>
+        <div class="meta-card">
+          <h2>Wichtiger Rahmen</h2>
+          <p>Buddy ist kein standalone Produkt-Agent, sondern ein Concierge-Agent, der seine Staerke aus der darunterliegenden BRIDGE-Orchestrierung bezieht.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Executive Verdict</h2>
+      <div class="verdict-grid">
+        <article class="verdict good">
+          <h3>OpenClaw gewinnt heute als fertiger Personal-Agent</h3>
+          <p>
+            OpenClaw dokumentiert und verkauft einen in sich geschlossenen Agenten mit sauberer Workspace-,
+            Session-, Browser-, Memory- und Multi-Agent-Story. Das wirkt derzeit koharenter als Buddy im geprueften Live-Zustand.
+          </p>
+        </article>
+        <article class="verdict warn">
+          <h3>Buddy gewinnt beim agentischen Potenzial</h3>
+          <p>
+            Buddy sitzt auf einer deutlich maechtigeren Orchestrierungsschicht. Sobald Buddy voll sauber verdrahtet ist,
+            kann er mehr koordinieren, mehr delegieren und haertere reale Aktionen ausfuehren als OpenClaw im Standardbild.
+          </p>
+        </article>
+      </div>
+
+      <div class="tag-row">
+        <span class="tag accent">BRIDGE staerker bei Orchestrierung</span>
+        <span class="tag warm">OpenClaw staerker bei Koharenz heute</span>
+        <span class="tag">Buddy aktuell offline im geprueften Zustand</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Direkter Vergleich</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Faehigkeit</th>
+              <th>Buddy auf BRIDGE</th>
+              <th>Moltbot / OpenClaw</th>
+              <th>Direktes Urteil</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="cell-title">Agentenidentitaet</span>Hat der Agent eine klar getrennte Arbeitsidentitaet?</td>
+              <td>
+                Buddy hat real ein eigenes Home, eigene Guidance-Dateien und eigene Persistenzartefakte:
+                <code>SOUL.md</code>, <code>CLAUDE.md</code>, <code>CONTEXT_BRIDGE.md</code>, Memory-Pfad.
+                Das ist im BRIDGE-Repo und im Buddy-Home sichtbar.
+              </td>
+              <td>
+                OpenClaw dokumentiert pro Agent eine voll isolierte Identitaet mit eigener
+                <code>workspace</code>, eigenem <code>agentDir</code>, eigenem Session-Store
+                und eigenen Auth-Profilen.
+              </td>
+              <td><strong>Leichtes Plus OpenClaw.</strong> Buddy hat die Bausteine, OpenClaw beschreibt die Trennung sauberer und konsistenter.</td>
+            </tr>
+            <tr>
+              <td><span class="cell-title">Memory</span>Wie klar und belastbar ist das Gedaechtnismodell?</td>
+              <td>
+                Buddy nutzt mehrere Ebenen: User-Scope im Knowledge Vault, Context Bridge, klassisches Memory,
+                plus Legacy-Fallback <code>memory/user_model.json</code>. Das ist maechtig, aber verteilt.
+              </td>
+              <td>
+                OpenClaw ist enger und klarer: Markdown im Workspace ist die SoT. Kern sind
+                <code>memory/YYYY-MM-DD.md</code> und optional <code>MEMORY.md</code>.
+              </td>
+              <td><strong>Plus OpenClaw.</strong> Buddy hat mehr Schichten, OpenClaw hat die klarere Memory-Disziplin.</td>
+            </tr>
+            <tr>
+              <td><span class="cell-title">Tool-Nutzung</span>Wie breit kann der Agent real handeln?</td>
+              <td>
+                Buddy kann auf die gesamte BRIDGE-Tooloberflaeche aufsetzen: Messaging, Tasks, Team-Erstellung,
+                Browser, Desktop, Git, Approval-Gates, Phone, Email, WhatsApp, Workflows, Knowledge, Memory.
+              </td>
+              <td>
+                OpenClaw ist stark bei Personal-Agent-Tools: Browser, Memory, Skills, Plugins, Sessions,
+                Channel-Integrationen und Sub-Agents.
+              </td>
+              <td><strong>Klares Plus Buddy.</strong> Buddys agentischer Aktionsraum ist durch BRIDGE deutlich breiter.</td>
+            </tr>
+            <tr>
+              <td><span class="cell-title">Delegation</span>Kann der Agent andere Agents erzeugen, steuern oder nutzen?</td>
+              <td>
+                Ja. Buddy ist als Concierge/Lead-Agent angelegt, kann laut eigener Guidance Teams erzeugen,
+                Agents starten und Spezialisten koordinieren. In <code>team.json</code> existieren reale Buddy-geführte
+                Teams fuer Trading, Marketing und Legal.
+              </td>
+              <td>
+                Ja. OpenClaw hat dokumentierte Multi-Agent-Routing-Mechanik und dokumentierte Sub-Agents
+                als Hintergrundlaeufe mit eigener Session.
+              </td>
+              <td><strong>Plus Buddy.</strong> Beide koennen delegieren, Buddy sitzt aber auf der schwereren Orchestrierungsmaschine.</td>
+            </tr>
+            <tr>
+              <td><span class="cell-title">Browser-Agentik</span>Kann der Agent das Web praktisch bedienen?</td>
+              <td>
+                Ja, ueber BRIDGE sogar sehr tief: Unified Browser, Stealth, CDP, semantische Ref-Suche,
+                Verify-Schritte und zusaetzlich Desktop-Automation.
+              </td>
+              <td>
+                Ja. OpenClaw dokumentiert den Browser als echte Agentenfaehigkeit und fuehrt
+                einen dedizierten Browser-Kontext samt Login-Workflow.
+              </td>
+              <td><strong>Plus Buddy/BRIDGE.</strong> OpenClaw ist sauber produktisiert, BRIDGE ist operativ tiefer.</td>
+            </tr>
+            <tr>
+              <td><span class="cell-title">Governance</span>Wie hart ist der Agent in eine operative Ordnung eingebunden?</td>
+              <td>
+                Sehr hart. Buddy lebt in einer Plattform mit Task-Claim/Ack/Done, Scope-Locks,
+                Whiteboard, Escalation und Approval-Gates.
+              </td>
+              <td>
+                OpenClaw hat Agent-Isolation, Tool-Allow/Deny, Sandbox-Profile und Routing-Policies,
+                aber nicht dieselbe Tiefe bei Aufgaben- und Ownership-Governance.
+              </td>
+              <td><strong>Klares Plus Buddy.</strong> BRIDGE ist als Agenten-Operations-Layer haerter.</td>
+            </tr>
+            <tr>
+              <td><span class="cell-title">Operative Reife jetzt</span>Wie stark ist der Agent im geprueften Ist-Zustand sofort nutzbar?</td>
+              <td>
+                Buddy war im geprueften Zustand <strong>offline</strong>. Die dedizierte Landing-Page wirkt agentisch weniger sauber
+                verdrahtet als das Buddy-Widget; Teile der UX koennen Buddy simulieren, auch wenn Buddy selbst nicht laeuft.
+              </td>
+              <td>
+                OpenClaw wirkt in der offiziellen Doku als zusammenhaengender, direkt benutzbarer Personal-Agent
+                mit klarer Start-, Workspace-, Memory- und Browser-Story.
+              </td>
+              <td><strong>Klares Plus OpenClaw.</strong> Buddys Live-Potenzial ist hoch, seine aktuelle operative Geschlossenheit niedriger.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Bottom Line</h2>
+      <ul>
+        <li><strong>Wenn du einen koharenten Endnutzer-Agenten heute willst, gewinnt OpenClaw.</strong></li>
+        <li><strong>Wenn du maximale agentische Hebelwirkung willst, gewinnt Buddy auf einer sauber laufenden BRIDGE.</strong></li>
+        <li><strong>OpenClaw ist das rundere Produkt-Agent-Paket.</strong> Buddy ist die potentiell maechtigere Agentenfigur, aber nur, weil BRIDGE unter ihm deutlich mehr Orchestrierung und Werkzeugtiefe bereitstellt.</li>
+        <li><strong>Deshalb ist die faire Kurzform:</strong> OpenClaw > Buddy bei Produktreife heute. Buddy/BRIDGE > OpenClaw beim agentischen Ceiling.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Quellenbasis</h2>
+      <div class="sources">
+        <article class="source-card">
+          <h3>BRIDGE / Buddy Evidenz</h3>
+          <ul>
+            <li><a href="../Backend/team.json">Backend/team.json</a> - Buddy-Definition und Buddy-gefuehrte Teams</li>
+            <li><a href="../Backend/server.py">Backend/server.py</a> - Frontdoor, Buddy-Autostart, Onboarding, Auth, Agent-Start</li>
+            <li><a href="../Backend/bridge_mcp.py">Backend/bridge_mcp.py</a> - reale Tool-Flaeche der BRIDGE-Agenten</li>
+            <li><a href="../Frontend/buddy_landing.html">Frontend/buddy_landing.html</a> - dedizierte Buddy-Einstiegsseite</li>
+            <li><a href="../Frontend/buddy_widget.js">Frontend/buddy_widget.js</a> - laufender Buddy-Kanal in Chat/Control Center</li>
+            <li><a href="../../Buddy/CLAUDE.md">Buddy/CLAUDE.md</a> - Buddys Rolle, Delegation und Team-Setup-Anspruch</li>
+          </ul>
+        </article>
+
+        <article class="source-card">
+          <h3>OpenClaw Evidenz</h3>
+          <ul>
+            <li><a href="https://docs.openclaw.ai/start/lore">OpenClaw Lore</a> - Moltbot zu OpenClaw</li>
+            <li><a href="https://docs.openclaw.ai/concepts/agent">Agent Runtime</a> - Workspace und Bootstrap-Dateien</li>
+            <li><a href="https://docs.openclaw.ai/concepts/memory">Memory</a> - Memory als Markdown-SoT</li>
+            <li><a href="https://docs.openclaw.ai/concepts/multi-agent">Multi-Agent Routing</a> - isolierte Agents, Bindings, Per-Agent-Sandbox</li>
+            <li><a href="https://docs.openclaw.ai/tools/subagents">Sub-Agents</a> - Hintergrundlaeufe mit eigener Session</li>
+            <li><a href="https://docs.openclaw.ai/tools/browser-login">Browser Login</a> - Browser-Agentik und dedizierter Browser-Kontext</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="footer-note">
+        Hinweis: Diese Seite vergleicht nur agentische Faehigkeiten. Sie bewertet nicht allgemeine
+        Architekturqualitaet, Code-Sauberkeit oder Release-Reife des gesamten BRIDGE-Repos.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,69 @@
+{
+  "version": 3,
+  "owner": {
+    "id": "user",
+    "name": "Your Name",
+    "role": "owner",
+    "level": 0
+  },
+  "projects": [
+    {
+      "id": "my-project",
+      "name": "My Project",
+      "path": "/path/to/your/project",
+      "description": "Your project description",
+      "team_ids": ["dev-team"],
+      "scope_labels": {
+        "src/backend/": "Backend code",
+        "src/frontend/": "Frontend code"
+      }
+    }
+  ],
+  "teams": [
+    {
+      "id": "dev-team",
+      "name": "Development",
+      "lead": "architect",
+      "members": ["developer", "tester"],
+      "scope": "All development work"
+    }
+  ],
+  "agents": [
+    {
+      "id": "architect",
+      "name": "Architect",
+      "role": "System Architect — reviews code, makes design decisions, ensures quality",
+      "engine": "claude",
+      "model": "claude-sonnet-4-6",
+      "level": 1,
+      "team": "dev-team",
+      "reports_to": "user",
+      "active": true,
+      "skills": ["bridge-agent-core"]
+    },
+    {
+      "id": "developer",
+      "name": "Developer",
+      "role": "Backend Developer — implements features, writes tests, fixes bugs",
+      "engine": "claude",
+      "model": "claude-sonnet-4-6",
+      "level": 2,
+      "team": "dev-team",
+      "reports_to": "architect",
+      "active": true,
+      "skills": ["bridge-agent-core"]
+    },
+    {
+      "id": "tester",
+      "name": "Tester",
+      "role": "QA Engineer — writes and runs tests, reports bugs, verifies fixes",
+      "engine": "claude",
+      "model": "claude-haiku-4-5-20251001",
+      "level": 3,
+      "team": "dev-team",
+      "reports_to": "developer",
+      "active": true,
+      "skills": ["bridge-agent-core"]
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Browser Lab Permissions/Media Probe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: monospace; margin: 16px; background: #fff; color: #111; }
+    pre { white-space: pre-wrap; word-break: break-word; border: 1px solid #ccc; padding: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Permissions/Media Probe</h1>
+  <pre id="result">loading...</pre>
+  <script>
+    (function () {
+      var permissionNames = [
+        "notifications",
+        "geolocation",
+        "camera",
+        "microphone",
+        "persistent-storage",
+        "clipboard-read",
+        "clipboard-write",
+        "push"
+      ];
+
+      function render(result) {
+        window.__browserLabResult = result;
+        document.getElementById("result").textContent = JSON.stringify(result, null, 2);
+        document.body.setAttribute("data-ready", "1");
+      }
+
+      function safeCall(fn) {
+        try {
+          return Promise.resolve(fn());
+        } catch (err) {
+          return Promise.resolve({ available: false, error: String(err) });
+        }
+      }
+
+      function queryPermission(name) {
+        if (!navigator.permissions || typeof navigator.permissions.query !== "function") {
+          return Promise.resolve({ available: false, state: null, error: "permissions.query unavailable" });
+        }
+        return navigator.permissions.query({ name: name }).then(function (status) {
+          return {
+            available: true,
+            state: status && typeof status.state !== "undefined" ? status.state : null
+          };
+        }).catch(function (err) {
+          return {
+            available: false,
+            state: null,
+            error: String(err)
+          };
+        });
+      }
+
+      Promise.all([
+        Promise.all(permissionNames.map(function (name) {
+          return queryPermission(name).then(function (value) {
+            return [name, value];
+          });
+        })),
+        safeCall(function () {
+          return {
+            available: typeof Notification !== "undefined",
+            permission: typeof Notification === "undefined" ? null : Notification.permission
+          };
+        }),
+        safeCall(function () {
+          return {
+            available: !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices),
+            getUserMediaAvailable: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+          };
+        }),
+        safeCall(function () {
+          if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== "function") {
+            return { available: false, devices: null };
+          }
+          return navigator.mediaDevices.enumerateDevices().then(function (devices) {
+            return {
+              available: true,
+              devices: devices.map(function (device) {
+                return {
+                  kind: device.kind || null,
+                  label: device.label || "",
+                  deviceIdPresent: !!device.deviceId,
+                  groupIdPresent: !!device.groupId
+                };
+              })
+            };
+          }).catch(function (err) {
+            return { available: false, devices: null, error: String(err) };
+          });
+        }),
+        safeCall(function () {
+          if (!navigator.storage) {
+            return { available: false };
+          }
+          return Promise.all([
+            typeof navigator.storage.persisted === "function"
+              ? navigator.storage.persisted().catch(function (err) { return { __error: String(err) }; })
+              : null,
+            typeof navigator.storage.estimate === "function"
+              ? navigator.storage.estimate().catch(function (err) { return { __error: String(err) }; })
+              : null
+          ]).then(function (values) {
+            return {
+              available: true,
+              persisted: values[0],
+              estimate: values[1]
+            };
+          });
+        })
+      ]).then(function (parts) {
+        var permissions = {};
+        parts[0].forEach(function (entry) {
+          permissions[entry[0]] = entry[1];
+        });
+
+        render({
+          probe: "permissions_media",
+          location: {
+            href: window.location.href,
+            origin: window.location.origin
+          },
+          notification: parts[1],
+          permissions: permissions,
+          mediaDevices: parts[2],
+          enumerateDevices: parts[3],
+          storageManager: parts[4]
+        });
+      });
+    }());
+  </script>
+</body>
+</html>

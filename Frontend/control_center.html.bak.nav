@@ -1,0 +1,2019 @@
+<!doctype html>
+<html lang="de" data-theme="warm">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bridge – Control Center</title>
+  <style>
+    /* ─── Themes (shared, single source) ─── */
+    html[data-theme="warm"]{
+      --bg:#fbf8f1; --bgFlat:#fbf8f1;
+      --sidebar:#c8bfa8; --sbThumb:#b8af98; --sbDark:#8a7f6a;
+    }
+    html[data-theme="light"]{
+      --bg:#ffffff; --bgFlat:#ffffff;
+      --sidebar:#d6e8f7; --sbThumb:#b8d4ed; --sbDark:#5a9ac7;
+    }
+    html[data-theme="rose"]{
+      --bg:#fdf2f4; --bgFlat:#fdf2f4;
+      --sidebar:#e8c4cc; --sbThumb:#d9adb7; --sbDark:#a3707e;
+    }
+    html[data-theme="dark"]{
+      --bg:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);
+      --bgFlat:#161e3a;
+      --sidebar:#1e2a42; --sbThumb:#2d3f5e; --sbDark:#8aa4c8;
+    }
+
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    html,body{ height:100%; overflow:hidden; }
+    body{
+      background:var(--bg);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      color:#3d3d3a;
+      display:flex; flex-direction:column;
+    }
+    html[data-theme="dark"] body{ color:#e7edf5; }
+
+    /* ─── Top Bar ─── */
+    .topBar{
+      flex-shrink:0;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 24px;
+      background:color-mix(in srgb, var(--sidebar) 18%, var(--bgFlat));
+      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 25%, transparent);
+      backdrop-filter:blur(12px);
+      z-index:10;
+    }
+    .topBar__left{ display:flex; align-items:center; gap:10px; }
+    .topBar__logo{ height:28px; width:auto; }
+    .topBar__title{
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.6px; color:var(--sbDark);
+    }
+    .topBar__liveDot{
+      width:7px; height:7px; border-radius:50%; background:#22c55e;
+      animation:livePulse 2s ease-in-out infinite;
+    }
+    @keyframes livePulse{
+      0%,100%{ opacity:1; transform:scale(1); }
+      50%{ opacity:.5; transform:scale(1.3); }
+    }
+    .topBar__stats{
+      display:flex; align-items:center; gap:14px;
+      font-size:10px; font-weight:500; color:#8f8f8f;
+      font-variant-numeric:tabular-nums;
+    }
+    html[data-theme="dark"] .topBar__stats{ color:#6b7a8f; }
+    .topBar__stats b{ color:#3d3d3a; font-weight:700; }
+    html[data-theme="dark"] .topBar__stats b{ color:#e7edf5; }
+    .topBar__right{ display:flex; align-items:center; gap:12px; }
+    .statusDots{ display:flex; align-items:center; gap:6px; }
+    .statusDot{ width:8px; height:8px; border-radius:50%; }
+    .statusDot--live{ background:#22c55e; }
+    .statusDot--connecting{ background:#f59e0b; }
+    .statusDot--disconnected{ background:#ef4444; }
+    .statusLabel{ font-size:10px; font-weight:500; color:#8f8f8f; }
+    html[data-theme="dark"] .statusLabel{ color:#6b7a8f; }
+    .themeSwitcher{ display:flex; gap:4px; }
+    .themeBtn{
+      width:16px; height:16px; border-radius:50%;
+      border:2px solid transparent; cursor:pointer;
+      transition:border-color .15s ease, transform .15s ease;
+    }
+    .themeBtn:hover{ transform:scale(1.15); }
+    .themeBtn.active{ border-color:var(--sbDark); }
+    .themeBtn[data-theme="warm"]{ background:#c8bfa8; }
+    .themeBtn[data-theme="light"]{ background:#d6e8f7; }
+    .themeBtn[data-theme="rose"]{ background:#e8c4cc; }
+    .themeBtn[data-theme="dark"]{ background:#1e2a42; }
+
+    /* ─── Combined Layout ─── */
+    .combined{
+      flex:1; display:flex; flex-direction:column;
+      overflow:hidden; min-height:0;
+    }
+
+    /* ─── Section Label Bars ─── */
+    .sectionLabel{
+      flex-shrink:0;
+      display:flex; align-items:center; gap:6px;
+      padding:5px 16px;
+      font-size:9px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:#8f8f8f;
+      background:color-mix(in srgb, var(--sidebar) 10%, var(--bgFlat));
+      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 15%, transparent);
+    }
+    html[data-theme="dark"] .sectionLabel{
+      color:#6b7a8f;
+      background:rgba(255,255,255,.02);
+      border-color:rgba(255,255,255,.04);
+    }
+    .sectionLabel__dot{
+      width:5px; height:5px; border-radius:50%; background:#22c55e;
+      animation:livePulse 2s ease-in-out infinite;
+    }
+
+    /* ─── Shared: Scrollbar ─── */
+    .scrollable{
+      scrollbar-width:thin;
+      scrollbar-color:color-mix(in srgb, var(--sbDark) 20%, var(--bgFlat)) transparent;
+    }
+    .scrollable::-webkit-scrollbar{ width:5px; }
+    .scrollable::-webkit-scrollbar-track{ background:transparent; }
+    .scrollable::-webkit-scrollbar-thumb{
+      background:color-mix(in srgb, var(--sbDark) 22%, var(--bgFlat));
+      border-radius:999px;
+    }
+
+    /* ─── Shared: Animations ─── */
+    @keyframes sectionIn{
+      from{ opacity:0; transform:translateY(12px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    @keyframes feedIn{
+      from{ opacity:0; transform:translateX(-8px); }
+      to{ opacity:1; transform:translateX(0); }
+    }
+
+    /* ═══════════════════════════════════════════
+       DASHBOARD SECTION (top)
+    ═══════════════════════════════════════════ */
+    .dashSection{
+      flex:4; display:flex; flex-direction:column;
+      overflow:hidden; min-height:0;
+      animation:sectionIn .5s ease both;
+    }
+    .dashContent{
+      flex:1; display:flex; flex-direction:column;
+      padding:8px 16px 4px; gap:6px;
+      overflow:hidden; min-height:0;
+    }
+
+    /* Network Graph (compact) */
+    .networkGraph{
+      background:color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat));
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      border-radius:10px;
+      padding:4px 8px;
+      flex-shrink:0;
+      height:120px;
+    }
+    html[data-theme="dark"] .networkGraph{
+      background:rgba(255,255,255,.03);
+      border-color:rgba(255,255,255,.06);
+    }
+    .networkGraph svg{ width:100%; height:100%; display:block; }
+    .nodeLabel{
+      font-size:9px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .nodeInitial{ font-size:11px; font-weight:700; }
+    .nodeStatus{ font-size:7px; }
+
+    /* Status Cards Row (compact) */
+    .cardsRow{
+      display:flex; gap:6px; flex-shrink:0;
+    }
+    .statusCard{
+      flex:1;
+      background:color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat));
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      border-radius:8px;
+      padding:6px 10px;
+      position:relative;
+      overflow:hidden;
+    }
+    html[data-theme="dark"] .statusCard{
+      background:rgba(255,255,255,.03);
+      border-color:rgba(255,255,255,.06);
+    }
+    .statusCard__accent{
+      position:absolute; left:0; top:0; bottom:0; width:3px;
+    }
+    .statusCard__header{
+      display:flex; align-items:center; gap:5px; margin-bottom:2px;
+    }
+    .statusCard__dot{
+      width:6px; height:6px; border-radius:50%; flex-shrink:0;
+    }
+    .statusCard__name{ font-size:10px; font-weight:700; }
+    .statusCard__badge{
+      font-size:7px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.3px; padding:1px 4px; border-radius:3px;
+      background:color-mix(in srgb, var(--sidebar) 20%, transparent);
+      color:var(--sbDark); margin-left:auto;
+    }
+    .statusCard__task{
+      font-size:9px; color:#8f8f8f; margin-bottom:3px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    html[data-theme="dark"] .statusCard__task{ color:#6b7a8f; }
+    .statusCard__sparkline{
+      width:100%; height:18px; display:block;
+    }
+    .statusCard__stats{
+      display:flex; gap:10px; margin-top:2px;
+    }
+    .statusCard__stat{
+      font-size:8px; color:#8f8f8f;
+      font-variant-numeric:tabular-nums;
+    }
+    html[data-theme="dark"] .statusCard__stat{ color:#6b7a8f; }
+    .statusCard__stat b{ color:#3d3d3a; font-weight:600; }
+    html[data-theme="dark"] .statusCard__stat b{ color:#e7edf5; }
+
+    /* Activity Feed (compact) */
+    .feedSection{
+      flex:1; display:flex; flex-direction:column;
+      min-height:0; position:relative;
+    }
+    .feedSection__header{
+      display:flex; align-items:center; gap:5px;
+      font-size:8px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.4px; color:#8f8f8f; margin-bottom:3px;
+    }
+    html[data-theme="dark"] .feedSection__header{ color:#6b7a8f; }
+    .feedSection__headerDot{
+      width:5px; height:5px; border-radius:50%; background:#22c55e;
+      animation:livePulse 2s ease-in-out infinite;
+    }
+    .activityFeed{
+      flex:1; overflow-y:auto; display:flex; flex-direction:column;
+      gap:2px; padding-right:4px;
+      scrollbar-width:thin;
+      scrollbar-color:color-mix(in srgb, var(--sbDark) 20%, var(--bgFlat)) transparent;
+    }
+    .activityFeed::-webkit-scrollbar{ width:5px; }
+    .activityFeed::-webkit-scrollbar-track{ background:transparent; }
+    .activityFeed::-webkit-scrollbar-thumb{
+      background:color-mix(in srgb, var(--sbDark) 22%, var(--bgFlat));
+      border-radius:999px;
+    }
+    .feedEntry{
+      display:flex; align-items:flex-start; gap:6px;
+      padding:3px 8px; border-radius:6px;
+      animation:feedIn .3s ease both;
+      font-size:10px; line-height:1.3;
+      transition:background .12s ease;
+    }
+    .feedEntry:hover{
+      background:color-mix(in srgb, var(--sidebar) 10%, transparent);
+    }
+    html[data-theme="dark"] .feedEntry:hover{
+      background:rgba(255,255,255,.03);
+    }
+    .feedEntry__time{
+      font-size:8px; color:#8f8f8f; flex-shrink:0; width:38px;
+      font-variant-numeric:tabular-nums; padding-top:1px;
+    }
+    html[data-theme="dark"] .feedEntry__time{ color:#6b7a8f; }
+    .feedEntry__icon{
+      width:14px; height:14px; flex-shrink:0; border-radius:3px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .feedEntry__icon svg{
+      width:9px; height:9px; fill:none; stroke:#fff;
+      stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;
+    }
+    .feedEntry__icon--message{ background:#6366f1; }
+    .feedEntry__icon--tool{ background:#06b6d4; }
+    .feedEntry__icon--status{ background:#22c55e; }
+    .feedEntry__icon--task{ background:#f59e0b; }
+    .feedEntry__icon--error{ background:#ef4444; }
+    .feedEntry__content{ flex:1; }
+    .feedEntry__agent{ font-weight:700; margin-right:3px; }
+    .feedEntry__detail{
+      color:#8f8f8f; font-size:9px; margin-top:1px;
+    }
+    html[data-theme="dark"] .feedEntry__detail{ color:#6b7a8f; }
+
+    /* Typing Indicator */
+    .typingIndicator{
+      display:none; align-items:center; gap:6px;
+      padding:3px 8px; font-size:10px; color:#8f8f8f;
+    }
+    .typingIndicator.visible{ display:flex; }
+    html[data-theme="dark"] .typingIndicator{ color:#6b7a8f; }
+    .typingDots{ display:flex; gap:3px; }
+    .typingDot{
+      width:3px; height:3px; border-radius:50%;
+      background:#8f8f8f; animation:bounce .6s ease-in-out infinite;
+    }
+    html[data-theme="dark"] .typingDot{ background:#6b7a8f; }
+    .typingDot:nth-child(2){ animation-delay:.1s; }
+    .typingDot:nth-child(3){ animation-delay:.2s; }
+    @keyframes bounce{
+      0%,100%{ transform:translateY(0); }
+      50%{ transform:translateY(-3px); }
+    }
+
+    /* New Activity Pill */
+    .newActivityPill{
+      position:absolute; bottom:4px; left:50%; transform:translateX(-50%);
+      background:var(--sbDark); color:#fff; font-size:9px; font-weight:600;
+      padding:3px 10px; border-radius:10px; cursor:pointer;
+      display:none; z-index:5;
+      box-shadow:0 2px 8px rgba(0,0,0,.15);
+      transition:opacity .2s ease;
+    }
+    html[data-theme="dark"] .newActivityPill{ color:#0f172a; }
+    .newActivityPill.visible{ display:block; }
+
+    /* SVG Path Animations */
+    @keyframes flowIdle{
+      to{ stroke-dashoffset:-14; }
+    }
+    @keyframes flowActive{
+      to{ stroke-dashoffset:-14; }
+    }
+    .pathIdle{
+      stroke-dasharray:4 3;
+      animation:flowIdle 4s linear infinite;
+    }
+    .pathActive{
+      stroke-dasharray:6 2;
+      animation:flowActive 1.5s linear infinite;
+    }
+
+    /* ═══════════════════════════════════════════
+       TASK SECTION (bottom)
+    ═══════════════════════════════════════════ */
+    .taskSection{
+      flex:6; display:flex;
+      overflow:hidden; min-height:0;
+      animation:sectionIn .5s ease both;
+      animation-delay:.15s;
+    }
+
+    /* ─── Team Panel (left, 220px) ─── */
+    .teamPanel{
+      width:220px; flex-shrink:0;
+      display:flex; flex-direction:column;
+      border-right:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      background:color-mix(in srgb, var(--sidebar) 6%, var(--bgFlat));
+      overflow:hidden;
+    }
+    html[data-theme="dark"] .teamPanel{
+      background:rgba(255,255,255,.02);
+      border-color:rgba(255,255,255,.06);
+    }
+    .teamPanel__header{ padding:8px 10px 0; }
+    .teamPanel__headerLabel{
+      display:flex; align-items:center; gap:5px;
+      font-size:8px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.4px; color:#8f8f8f; margin-bottom:4px;
+    }
+    html[data-theme="dark"] .teamPanel__headerLabel{ color:#6b7a8f; }
+    .teamPanel__headerDot{
+      width:5px; height:5px; border-radius:50%; background:#22c55e;
+      animation:livePulse 2s ease-in-out infinite;
+    }
+    .teamPanel__list{
+      flex:1; overflow-y:auto; padding:4px 8px;
+    }
+
+    /* Team Card */
+    .teamCard{
+      border-radius:7px;
+      margin-bottom:4px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 15%, transparent);
+      background:color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat));
+      transition:all .15s ease;
+      overflow:hidden;
+    }
+    html[data-theme="dark"] .teamCard{
+      background:rgba(255,255,255,.03);
+      border-color:rgba(255,255,255,.06);
+    }
+    .teamCard.selected{
+      border-left:3px solid var(--sbDark);
+      background:color-mix(in srgb, var(--sidebar) 16%, var(--bgFlat));
+    }
+    html[data-theme="dark"] .teamCard.selected{
+      background:rgba(255,255,255,.06);
+    }
+    .teamCard__toggle{
+      display:flex; align-items:center; gap:6px;
+      width:100%; background:none; border:none; cursor:pointer;
+      font-family:inherit; padding:6px 8px;
+      transition:background .12s ease;
+    }
+    .teamCard__toggle:hover{ background:rgba(0,0,0,.03); }
+    html[data-theme="dark"] .teamCard__toggle:hover{ background:rgba(255,255,255,.03); }
+    .teamCard__arrow{
+      width:11px; height:11px; flex-shrink:0;
+      fill:none; stroke:#8f8f8f; stroke-width:2.5;
+      stroke-linecap:round; stroke-linejoin:round;
+      transition:transform .2s ease;
+    }
+    html[data-theme="dark"] .teamCard__arrow{ stroke:#6b7a8f; }
+    .teamCard__toggle.open .teamCard__arrow{ transform:rotate(90deg); }
+    .teamCard__colorDot{
+      width:7px; height:7px; border-radius:50%; flex-shrink:0;
+    }
+    .teamCard__name{
+      font-size:10px; font-weight:700; color:#3d3d3a; flex:1; text-align:left;
+    }
+    html[data-theme="dark"] .teamCard__name{ color:#e7edf5; }
+    .teamCard__count{
+      font-size:8px; font-weight:600; color:#8f8f8f;
+      font-variant-numeric:tabular-nums;
+    }
+    html[data-theme="dark"] .teamCard__count{ color:#6b7a8f; }
+    .teamCard__info{
+      padding:0 8px 6px 25px;
+      font-size:9px; color:#8f8f8f;
+      display:flex; flex-direction:column; gap:3px;
+    }
+    html[data-theme="dark"] .teamCard__info{ color:#6b7a8f; }
+    .teamCard__info span{ font-variant-numeric:tabular-nums; }
+    .teamCard__progress{
+      height:3px; border-radius:2px;
+      background:color-mix(in srgb, var(--sidebar) 20%, transparent);
+      overflow:hidden; margin-top:2px;
+    }
+    .teamCard__progressFill{
+      height:100%; border-radius:2px;
+      transition:width .5s ease;
+    }
+    .teamCard__body{
+      display:none; padding:2px 8px 6px 25px;
+    }
+    .teamCard__body.open{ display:block; }
+    .teamAgent{
+      display:flex; align-items:center; gap:5px;
+      padding:2px 0; font-size:9px;
+    }
+    .teamAgent__dot{
+      width:5px; height:5px; border-radius:50%; flex-shrink:0;
+    }
+    .teamAgent__name{ font-weight:600; color:#3d3d3a; }
+    html[data-theme="dark"] .teamAgent__name{ color:#e7edf5; }
+    .teamAgent__task{
+      color:#8f8f8f; flex:1; white-space:nowrap;
+      overflow:hidden; text-overflow:ellipsis;
+    }
+    html[data-theme="dark"] .teamAgent__task{ color:#6b7a8f; }
+    .teamAgent__status{
+      width:4px; height:4px; border-radius:50%; flex-shrink:0;
+    }
+    .addTeam{
+      display:flex; align-items:center; justify-content:center; gap:4px;
+      padding:6px; border-radius:7px;
+      border:1px dashed color-mix(in srgb, var(--sidebar) 35%, transparent);
+      background:transparent; color:var(--sbDark);
+      font-size:9px; font-weight:600; font-family:inherit;
+      cursor:pointer; width:100%;
+      transition:all .15s ease;
+      margin-top:3px;
+    }
+    .addTeam:hover{
+      background:color-mix(in srgb, var(--sidebar) 8%, transparent);
+      border-color:color-mix(in srgb, var(--sidebar) 55%, transparent);
+    }
+    .addTeam svg{
+      width:11px; height:11px;
+      stroke:var(--sbDark); fill:none; stroke-width:2; stroke-linecap:round;
+    }
+
+    /* ─── Task Board (right) ─── */
+    .taskBoard{
+      flex:1; display:flex; flex-direction:column;
+      min-width:0; overflow:hidden;
+    }
+    .boardHeader{
+      flex-shrink:0;
+      display:flex; align-items:center; gap:8px;
+      padding:8px 14px 4px;
+    }
+    .boardHeader__teamName{
+      font-size:12px; font-weight:700; color:#3d3d3a;
+    }
+    html[data-theme="dark"] .boardHeader__teamName{ color:#e7edf5; }
+    .boardHeader__badge{
+      font-size:7px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.3px; padding:2px 6px; border-radius:3px;
+      background:color-mix(in srgb, var(--sidebar) 20%, transparent);
+      color:var(--sbDark);
+    }
+    .boardHeader__spacer{ flex:1; }
+    .filterChips{ display:flex; gap:3px; }
+    .filterChip{
+      padding:2px 8px; border-radius:10px;
+      font-size:8px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.3px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 25%, transparent);
+      background:transparent; color:#8f8f8f;
+      cursor:pointer; font-family:inherit;
+      transition:all .12s ease;
+    }
+    html[data-theme="dark"] .filterChip{ color:#6b7a8f; }
+    .filterChip:hover{
+      background:color-mix(in srgb, var(--sidebar) 10%, transparent);
+    }
+    .filterChip.active{
+      background:color-mix(in srgb, var(--sidebar) 25%, transparent);
+      color:var(--sbDark); border-color:color-mix(in srgb, var(--sidebar) 45%, transparent);
+    }
+    .taskList{
+      flex:1; overflow-y:auto; padding:4px 12px 8px;
+      display:flex; flex-direction:column; gap:4px;
+    }
+
+    /* Task Row Card */
+    .taskRow{
+      background:color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat));
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      border-radius:8px;
+      overflow:hidden;
+      animation:feedIn .3s ease both;
+      transition:border-color .15s ease;
+    }
+    html[data-theme="dark"] .taskRow{
+      background:rgba(255,255,255,.03);
+      border-color:rgba(255,255,255,.06);
+    }
+    .taskRow:hover{
+      border-color:color-mix(in srgb, var(--sidebar) 40%, transparent);
+    }
+    html[data-theme="dark"] .taskRow:hover{
+      border-color:rgba(255,255,255,.12);
+    }
+    .taskRow.completed{ opacity:.5; }
+    .taskRow.completed .taskRow__subject{ text-decoration:line-through; }
+    .taskRow__main{
+      display:flex; align-items:center; gap:6px;
+      padding:7px 10px; cursor:pointer;
+      transition:background .12s ease;
+    }
+    .taskRow__main:hover{
+      background:color-mix(in srgb, var(--sidebar) 6%, transparent);
+    }
+    html[data-theme="dark"] .taskRow__main:hover{
+      background:rgba(255,255,255,.02);
+    }
+    .taskRow__priorityDot{
+      width:7px; height:7px; border-radius:50%; flex-shrink:0;
+    }
+    .taskRow__id{
+      font-size:9px; font-weight:700; color:#8f8f8f;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      flex-shrink:0; min-width:22px;
+      font-variant-numeric:tabular-nums;
+    }
+    html[data-theme="dark"] .taskRow__id{ color:#6b7a8f; }
+    .taskRow__subject{
+      font-size:10px; font-weight:700; color:#3d3d3a;
+      flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    html[data-theme="dark"] .taskRow__subject{ color:#e7edf5; }
+    .typeBadge{
+      font-size:7px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.4px; padding:1px 5px; border-radius:3px;
+      flex-shrink:0;
+    }
+    .typeBadge--oneshot{
+      background:rgba(99,102,241,.12); color:#6366f1;
+      border:1px solid rgba(99,102,241,.2);
+    }
+    .typeBadge--continuous{
+      background:rgba(6,182,212,.12); color:#06b6d4;
+      border:1px solid rgba(6,182,212,.2);
+    }
+    .statusBadge{
+      font-size:7px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.3px; padding:1px 6px; border-radius:3px;
+      flex-shrink:0; display:flex; align-items:center; gap:3px;
+    }
+    .statusBadge--pending{
+      background:rgba(143,143,143,.12); color:#8f8f8f;
+    }
+    .statusBadge--in_progress{
+      background:rgba(99,102,241,.12); color:#6366f1;
+    }
+    .statusBadge--completed{
+      background:rgba(34,197,94,.12); color:#22c55e;
+    }
+    .statusBadge--active{
+      background:rgba(34,197,94,.12); color:#22c55e;
+    }
+    .statusBadge--paused{
+      background:rgba(245,158,11,.12); color:#f59e0b;
+    }
+    .statusBadge--stopped{
+      background:rgba(239,68,68,.12); color:#ef4444;
+    }
+    .statusBadge__pulse{
+      width:4px; height:4px; border-radius:50%; background:currentColor;
+      animation:livePulse 2s ease-in-out infinite;
+    }
+    .ownerChip{
+      display:flex; align-items:center; gap:3px;
+      font-size:8px; font-weight:600; color:#8f8f8f;
+      flex-shrink:0;
+    }
+    html[data-theme="dark"] .ownerChip{ color:#6b7a8f; }
+    .ownerChip__dot{
+      width:5px; height:5px; border-radius:50%;
+    }
+    .depInfo{
+      font-size:8px; color:#8f8f8f; flex-shrink:0;
+      font-variant-numeric:tabular-nums;
+    }
+    html[data-theme="dark"] .depInfo{ color:#6b7a8f; }
+    .uptimeCounter{
+      font-size:8px; font-weight:600; color:#06b6d4;
+      font-variant-numeric:tabular-nums; flex-shrink:0;
+    }
+
+    /* Task Detail (accordion) */
+    .taskRow__detail{
+      display:none; padding:0 10px 10px 32px;
+      font-size:9px; color:#8f8f8f;
+      border-top:1px solid color-mix(in srgb, var(--sidebar) 12%, transparent);
+    }
+    html[data-theme="dark"] .taskRow__detail{
+      color:#6b7a8f;
+      border-color:rgba(255,255,255,.04);
+    }
+    .taskRow__detail.open{ display:block; }
+    .detailSection{ margin-top:6px; }
+    .detailSection__label{
+      font-size:7px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.4px; color:#8f8f8f; margin-bottom:2px;
+    }
+    html[data-theme="dark"] .detailSection__label{ color:#6b7a8f; }
+    .detailSection__text{
+      font-size:10px; color:#3d3d3a; line-height:1.4;
+    }
+    html[data-theme="dark"] .detailSection__text{ color:#e7edf5; }
+    .tagChips{ display:flex; gap:3px; flex-wrap:wrap; }
+    .tagChip{
+      font-size:7px; font-weight:600; padding:1px 5px; border-radius:3px;
+      background:color-mix(in srgb, var(--sidebar) 18%, transparent);
+      color:var(--sbDark);
+    }
+    .depGraph{
+      display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+      font-size:8px;
+    }
+    .depGraph__item{
+      display:flex; align-items:center; gap:2px;
+    }
+    .depGraph__arrow{ color:#8f8f8f; font-weight:700; }
+    .depGraph__id{
+      font-weight:700;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    }
+    .depGraph__id--blocker{ color:#ef4444; }
+    .depGraph__id--dependent{ color:#6366f1; }
+    .timestamps{
+      display:flex; gap:10px; font-variant-numeric:tabular-nums;
+    }
+    .timestamps span b{ color:#3d3d3a; font-weight:600; }
+    html[data-theme="dark"] .timestamps span b{ color:#e7edf5; }
+    .continuousControls{
+      display:flex; gap:4px; margin-top:4px;
+    }
+    .ctrlBtn{
+      padding:2px 8px; border-radius:4px;
+      font-size:8px; font-weight:600; font-family:inherit;
+      cursor:pointer; border:1px solid; transition:all .12s ease;
+    }
+    .ctrlBtn--pause{
+      background:rgba(245,158,11,.1); color:#f59e0b;
+      border-color:rgba(245,158,11,.25);
+    }
+    .ctrlBtn--pause:hover{ background:rgba(245,158,11,.2); }
+    .ctrlBtn--stop{
+      background:rgba(239,68,68,.1); color:#ef4444;
+      border-color:rgba(239,68,68,.25);
+    }
+    .ctrlBtn--stop:hover{ background:rgba(239,68,68,.2); }
+    .ctrlBtn--resume{
+      background:rgba(34,197,94,.1); color:#22c55e;
+      border-color:rgba(34,197,94,.25);
+    }
+    .ctrlBtn--resume:hover{ background:rgba(34,197,94,.2); }
+
+    /* ─── Metrics Bar (combined) ─── */
+    .metricsBar{
+      flex-shrink:0;
+      display:flex; align-items:center; justify-content:space-around;
+      padding:7px 24px;
+      background:color-mix(in srgb, var(--sidebar) 12%, var(--bgFlat));
+      border-top:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      font-variant-numeric:tabular-nums;
+    }
+    html[data-theme="dark"] .metricsBar{
+      background:rgba(0,0,0,.2);
+      border-color:rgba(255,255,255,.06);
+    }
+    .metric{
+      display:flex; flex-direction:column; align-items:center; gap:1px;
+    }
+    .metric__value{
+      font-size:15px; font-weight:700; color:#3d3d3a;
+      font-variant-numeric:tabular-nums;
+      display:flex; align-items:center; gap:3px;
+    }
+    html[data-theme="dark"] .metric__value{ color:#e7edf5; }
+    .metric__label{
+      font-size:8px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.4px; color:#8f8f8f;
+    }
+    html[data-theme="dark"] .metric__label{ color:#6b7a8f; }
+    .metric__progress{
+      width:50px; height:3px; border-radius:2px;
+      background:color-mix(in srgb, var(--sidebar) 20%, transparent);
+      overflow:hidden;
+    }
+    .metric__progressFill{
+      height:100%; border-radius:2px;
+      background:var(--sbDark);
+      transition:width .5s ease;
+    }
+    .metric__pulse{
+      width:5px; height:5px; border-radius:50%; background:#22c55e;
+      animation:livePulse 2s ease-in-out infinite;
+    }
+
+    /* ─── Accessibility: Focus + Skip-Link ─── */
+    *:focus-visible{
+      outline:2px solid #3b82f6;
+      outline-offset:2px;
+    }
+    .skipLink{
+      position:fixed;
+      top:-100%;
+      left:16px;
+      z-index:10000;
+      padding:8px 16px;
+      background:var(--bgFlat);
+      color:var(--sbDark);
+      border:2px solid #3b82f6;
+      border-radius:8px;
+      font-size:14px;
+      text-decoration:none;
+      transition:top .2s;
+    }
+    .skipLink:focus{
+      top:8px;
+    }
+
+    /* ─── Responsive: Mobile (<768px) ─── */
+    @media (max-width:767px){
+      /* Top Bar: compact */
+      .topBar{
+        padding:6px 12px;
+        flex-wrap:wrap;
+        gap:4px;
+      }
+      .topBar__stats{
+        display:none;
+      }
+
+      /* Allow body scroll on mobile */
+      html,body{
+        overflow:auto;
+      }
+      body{
+        min-height:100vh;
+        height:auto;
+      }
+
+      /* Stack dashboard + task vertically, allow scroll */
+      .combined{
+        flex:none;
+        overflow:visible;
+      }
+      .dashSection{
+        flex:none;
+        overflow:visible;
+        min-height:auto;
+      }
+      .dashContent{
+        overflow:visible;
+      }
+
+      /* Network graph smaller */
+      .networkGraph{
+        height:90px;
+      }
+
+      /* Cards: stack vertically */
+      .cardsRow{
+        flex-direction:column;
+      }
+
+      /* Activity feed: fixed height with scroll */
+      .feedSection{
+        min-height:150px;
+        max-height:200px;
+      }
+
+      /* Task section: stack vertically */
+      .taskSection{
+        flex:none;
+        flex-direction:column;
+        overflow:visible;
+        min-height:auto;
+      }
+
+      /* Team panel: horizontal strip */
+      .teamPanel{
+        width:100%;
+        max-height:140px;
+        border-right:none;
+        border-bottom:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      }
+      .teamPanel__list{
+        display:flex;
+        flex-direction:row;
+        gap:4px;
+        overflow-x:auto;
+        overflow-y:hidden;
+        flex-wrap:nowrap;
+      }
+      .teamCard{
+        min-width:140px;
+        flex-shrink:0;
+      }
+
+      /* Task board: full width, scrollable */
+      .taskBoard{
+        overflow:visible;
+        min-height:300px;
+      }
+      .taskList{
+        overflow:visible;
+        max-height:none;
+      }
+
+      /* Metrics bar: wrap */
+      .metricsBar{
+        flex-wrap:wrap;
+        gap:8px 16px;
+        padding:8px 12px;
+      }
+    }
+
+    /* ─── Responsive: Tablet (768–1024px) ─── */
+    @media (min-width:768px) and (max-width:1024px){
+      .topBar{
+        padding:6px 16px;
+      }
+      .networkGraph{
+        height:100px;
+      }
+      .teamPanel{
+        width:160px;
+      }
+      /* Reset mobile stacking for tablet */
+      .cardsRow{
+        flex-direction:row;
+      }
+      .feedSection{
+        min-height:auto;
+        max-height:none;
+      }
+      html,body{
+        overflow:hidden;
+      }
+      body{
+        height:100vh;
+        min-height:auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skipLink" href="#activityFeed">Skip to content</a>
+
+  <!-- ─── Top Bar ─── -->
+  <header class="topBar" role="banner">
+    <div class="topBar__left">
+      <img class="topBar__logo" src="ace_logo.svg" alt="ACE Logo">
+      <div class="topBar__liveDot" role="status" aria-label="Live indicator"></div>
+      <div class="topBar__title">Control Center</div>
+    </div>
+    <div class="topBar__stats" id="topStats" aria-label="Task statistics">
+      <span><b id="topTotal">0</b> tasks</span>
+      <span><b id="topActive">0</b> active</span>
+      <span><b id="topCompleted">0</b> done</span>
+    </div>
+    <div class="topBar__right">
+      <div class="statusDots" aria-label="System status">
+        <span class="statusDot statusDot--live"></span>
+        <span class="statusDot statusDot--connecting"></span>
+        <span class="statusDot statusDot--disconnected"></span>
+        <span class="statusLabel">System</span>
+      </div>
+      <div class="themeSwitcher" role="group" aria-label="Theme selection">
+        <button class="themeBtn" data-theme="warm" title="Warm" aria-label="Theme: Warm"></button>
+        <button class="themeBtn" data-theme="light" title="Light" aria-label="Theme: Light"></button>
+        <button class="themeBtn" data-theme="rose" title="Rose" aria-label="Theme: Rose"></button>
+        <button class="themeBtn" data-theme="dark" title="Dark" aria-label="Theme: Dark"></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Combined Content ─── -->
+  <main class="combined">
+
+    <!-- ═══ LIVE DASHBOARD (top) ═══ -->
+    <div class="sectionLabel">
+      <span class="sectionLabel__dot"></span>
+      Live Dashboard
+    </div>
+    <section class="dashSection" aria-label="Live Dashboard">
+      <div class="dashContent">
+        <!-- Network Graph -->
+        <div class="networkGraph" role="img" aria-label="Agent network topology">
+          <svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg">
+            <path id="pathLA" d="M200,45 C160,90 100,100 70,135" fill="none" stroke="#6366f1" stroke-width="1.5" opacity=".3" class="pathIdle"/>
+            <path id="pathLB" d="M200,45 C240,90 300,100 330,135" fill="none" stroke="#6366f1" stroke-width="1.5" opacity=".3" class="pathIdle"/>
+            <path id="pathAB" d="M70,135 C130,155 270,155 330,135" fill="none" stroke="#06b6d4" stroke-width="1.5" opacity=".2" class="pathIdle"/>
+            <!-- Leader Node -->
+            <circle cx="200" cy="45" r="22" fill="none" stroke="#6366f1" stroke-width="1" opacity=".15">
+              <animate attributeName="r" values="22;28;22" dur="3s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".15;.05;.15" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="200" cy="45" r="18" fill="none" stroke="#6366f1" stroke-width="1.5" opacity=".4"/>
+            <circle cx="200" cy="45" r="16" fill="#6366f1" opacity=".12"/>
+            <text x="200" y="49" text-anchor="middle" fill="#6366f1" class="nodeInitial">L</text>
+            <circle id="dashStatusL" cx="214" cy="33" r="3.5" fill="#22c55e"/>
+            <text x="200" y="72" text-anchor="middle" fill="#8f8f8f" class="nodeLabel">Leader</text>
+            <!-- Agent A Node -->
+            <circle cx="70" cy="135" r="22" fill="none" stroke="#06b6d4" stroke-width="1" opacity=".15">
+              <animate attributeName="r" values="22;28;22" dur="3.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".15;.05;.15" dur="3.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="70" cy="135" r="18" fill="none" stroke="#06b6d4" stroke-width="1.5" opacity=".4"/>
+            <circle cx="70" cy="135" r="16" fill="#06b6d4" opacity=".12"/>
+            <text x="70" y="139" text-anchor="middle" fill="#06b6d4" class="nodeInitial">A</text>
+            <circle id="dashStatusA" cx="84" cy="123" r="3.5" fill="#22c55e"/>
+            <text x="70" y="162" text-anchor="middle" fill="#8f8f8f" class="nodeLabel">Agent A</text>
+            <!-- Agent B Node -->
+            <circle cx="330" cy="135" r="22" fill="none" stroke="#f59e0b" stroke-width="1" opacity=".15">
+              <animate attributeName="r" values="22;28;22" dur="2.8s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".15;.05;.15" dur="2.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="330" cy="135" r="18" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity=".4"/>
+            <circle cx="330" cy="135" r="16" fill="#f59e0b" opacity=".12"/>
+            <text x="330" y="139" text-anchor="middle" fill="#f59e0b" class="nodeInitial">B</text>
+            <circle id="dashStatusB" cx="344" cy="123" r="3.5" fill="#f59e0b"/>
+            <text x="330" y="162" text-anchor="middle" fill="#8f8f8f" class="nodeLabel">Agent B</text>
+            <g id="packetLayer"></g>
+          </svg>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="cardsRow">
+          <div class="statusCard" id="cardLeader">
+            <div class="statusCard__accent" style="background:#6366f1"></div>
+            <div class="statusCard__header">
+              <div class="statusCard__dot" style="background:#6366f1"></div>
+              <span class="statusCard__name">Leader</span>
+              <span class="statusCard__badge">Opus 4.6</span>
+            </div>
+            <div class="statusCard__task" id="dashTaskLeader">Coordinating team...</div>
+            <svg class="statusCard__sparkline" id="sparkLeader" viewBox="0 0 120 18" preserveAspectRatio="none">
+              <polyline id="sparkLineLeader" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points=""/>
+            </svg>
+            <div class="statusCard__stats">
+              <span class="statusCard__stat">Msgs: <b id="statLeaderMsgs">0</b></span>
+              <span class="statusCard__stat">Tasks: <b id="statLeaderTasks">0</b></span>
+            </div>
+          </div>
+          <div class="statusCard" id="cardAgentA">
+            <div class="statusCard__accent" style="background:#06b6d4"></div>
+            <div class="statusCard__header">
+              <div class="statusCard__dot" style="background:#06b6d4"></div>
+              <span class="statusCard__name">Agent A</span>
+              <span class="statusCard__badge">Sonnet 4.6</span>
+            </div>
+            <div class="statusCard__task" id="dashTaskAgentA">Awaiting assignment...</div>
+            <svg class="statusCard__sparkline" id="sparkAgentA" viewBox="0 0 120 18" preserveAspectRatio="none">
+              <polyline id="sparkLineAgentA" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points=""/>
+            </svg>
+            <div class="statusCard__stats">
+              <span class="statusCard__stat">Msgs: <b id="statAgentAMsgs">0</b></span>
+              <span class="statusCard__stat">Tools: <b id="statAgentATools">0</b></span>
+            </div>
+          </div>
+          <div class="statusCard" id="cardAgentB">
+            <div class="statusCard__accent" style="background:#f59e0b"></div>
+            <div class="statusCard__header">
+              <div class="statusCard__dot" style="background:#f59e0b"></div>
+              <span class="statusCard__name">Agent B</span>
+              <span class="statusCard__badge">Sonnet 4.6</span>
+            </div>
+            <div class="statusCard__task" id="dashTaskAgentB">Awaiting assignment...</div>
+            <svg class="statusCard__sparkline" id="sparkAgentB" viewBox="0 0 120 18" preserveAspectRatio="none">
+              <polyline id="sparkLineAgentB" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points=""/>
+            </svg>
+            <div class="statusCard__stats">
+              <span class="statusCard__stat">Msgs: <b id="statAgentBMsgs">0</b></span>
+              <span class="statusCard__stat">Tools: <b id="statAgentBTools">0</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="feedSection">
+          <div class="feedSection__header">
+            <span class="feedSection__headerDot"></span>
+            Activity
+          </div>
+          <div class="activityFeed scrollable" id="activityFeed" role="log" aria-label="Activity feed" aria-live="polite"></div>
+          <div class="typingIndicator" id="typingIndicator">
+            <div class="typingDots">
+              <div class="typingDot"></div>
+              <div class="typingDot"></div>
+              <div class="typingDot"></div>
+            </div>
+            <span id="typingAgent">Leader is typing...</span>
+          </div>
+          <button class="newActivityPill" id="newActivityPill" aria-label="Scroll to new activity">New Activity</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TASK BOARD (bottom) ═══ -->
+    <div class="sectionLabel">
+      <span class="sectionLabel__dot"></span>
+      Task Board
+    </div>
+    <section class="taskSection" aria-label="Task Board">
+      <aside class="teamPanel" aria-label="Teams navigation">
+        <div class="teamPanel__header">
+          <div class="teamPanel__headerLabel">
+            <span class="teamPanel__headerDot"></span>
+            Teams
+          </div>
+        </div>
+        <div class="teamPanel__list scrollable" id="teamList" role="list" aria-label="Team list"></div>
+      </aside>
+      <div class="taskBoard">
+        <div class="boardHeader">
+          <span class="boardHeader__teamName" id="boardTeamName">perf-opt</span>
+          <span class="boardHeader__badge" id="boardAgentCount">3 agents</span>
+          <span class="boardHeader__spacer"></span>
+          <div class="filterChips" id="filterChips" role="group" aria-label="Task filter">
+            <button class="filterChip active" data-filter="all" aria-pressed="true">All</button>
+            <button class="filterChip" data-filter="pending" aria-pressed="false">Pending</button>
+            <button class="filterChip" data-filter="active" aria-pressed="false">Active</button>
+            <button class="filterChip" data-filter="completed" aria-pressed="false">Done</button>
+          </div>
+        </div>
+        <div class="taskList scrollable" id="taskList" role="list" aria-label="Tasks"></div>
+      </div>
+    </section>
+
+  </main><!-- /combined -->
+
+  <!-- ─── Metrics Bar (combined) ─── -->
+  <footer class="metricsBar" role="contentinfo" aria-label="System metrics">
+    <div class="metric">
+      <span class="metric__value" id="metricMessages">0</span>
+      <span class="metric__label">Messages</span>
+    </div>
+    <div class="metric">
+      <div style="display:flex;align-items:baseline;gap:3px">
+        <span class="metric__value" id="metricTasksCompleted">0</span>
+        <span class="metric__label" style="font-size:11px" id="metricTasksOf">/0</span>
+      </div>
+      <span class="metric__label">Tasks</span>
+      <div class="metric__progress">
+        <div class="metric__progressFill" id="metricTasksProgress" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="metric">
+      <span class="metric__value">
+        <span id="metricContinuous">0</span>
+        <span class="metric__pulse"></span>
+      </span>
+      <span class="metric__label">Continuous</span>
+    </div>
+    <div class="metric">
+      <span class="metric__value" id="metricAgents">3</span>
+      <span class="metric__label">Agents</span>
+    </div>
+    <div class="metric">
+      <span class="metric__value" id="metricUptime">00:00:00</span>
+      <span class="metric__label">Uptime</span>
+    </div>
+  </footer>
+
+  <script>
+    /* ═══════════════════════════════════════════
+       Theme System (single, shared)
+    ═══════════════════════════════════════════ */
+    const root = document.documentElement;
+    const themeBtns = document.querySelectorAll('.themeBtn');
+
+    function setTheme(theme){
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem('bridge_theme', theme);
+      themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+    }
+
+    const stored = localStorage.getItem('bridge_theme');
+    if(stored) setTheme(stored);
+    else setTheme('warm');
+    themeBtns.forEach(b => b.addEventListener('click', () => setTheme(b.dataset.theme)));
+
+    /* ═══════════════════════════════════════════
+       BACKEND CONNECTION
+    ═══════════════════════════════════════════ */
+    const API_BASE = 'http://127.0.0.1:9111';
+    const WS_URL = 'ws://127.0.0.1:9112';
+    let liveMode = false;
+    let ws = null;
+    let wsRetry = 1000;
+
+    function agentDisplayName(id){
+      if(!id) return 'Unknown';
+      if(id === 'user') return 'Leo';
+      if(id === 'teamlead' || id === 'lead') return 'Leader';
+      const m = id.match(/^(?:claude_|agent_)([a-z])$/);
+      if(m) return 'Agent ' + m[1].toUpperCase();
+      return id.charAt(0).toUpperCase() + id.slice(1);
+    }
+
+    /* ═══════════════════════════════════════════
+       DASHBOARD ENGINE
+    ═══════════════════════════════════════════ */
+
+    /* DOM References (dashboard) */
+    const dashFeed = document.getElementById('activityFeed');
+    const dashTypingEl = document.getElementById('typingIndicator');
+    const dashTypingAgent = document.getElementById('typingAgent');
+    const dashNewPill = document.getElementById('newActivityPill');
+    const dashPacketLayer = document.getElementById('packetLayer');
+
+    const dashEls = {
+      taskLeader: document.getElementById('dashTaskLeader'),
+      taskAgentA: document.getElementById('dashTaskAgentA'),
+      taskAgentB: document.getElementById('dashTaskAgentB'),
+      statusL: document.getElementById('dashStatusL'),
+      statusA: document.getElementById('dashStatusA'),
+      statusB: document.getElementById('dashStatusB'),
+      statLeaderMsgs: document.getElementById('statLeaderMsgs'),
+      statLeaderTasks: document.getElementById('statLeaderTasks'),
+      statAgentAMsgs: document.getElementById('statAgentAMsgs'),
+      statAgentATools: document.getElementById('statAgentATools'),
+      statAgentBMsgs: document.getElementById('statAgentBMsgs'),
+      statAgentBTools: document.getElementById('statAgentBTools'),
+    };
+
+    /* Dashboard State */
+    let dashTotalMessages = 0;
+    let dashTotalTasks = 0;
+    let dashAgentStats = {
+      Leader: { msgs:0, tasks:0 },
+      'Agent A': { msgs:0, tools:0 },
+      'Agent B': { msgs:0, tools:0 },
+    };
+    let dashSparkData = { Leader:[], 'Agent A':[], 'Agent B':[] };
+    let dashStartTime = Date.now();
+
+    /* Uptime Counter */
+    setInterval(() => {
+      const diff = Math.floor((Date.now() - dashStartTime) / 1000);
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const s = String(diff % 60).padStart(2, '0');
+      document.getElementById('metricUptime').textContent = h + ':' + m + ':' + s;
+    }, 1000);
+
+    /* Sparklines */
+    const dashSparkEls = {
+      Leader: document.getElementById('sparkLineLeader'),
+      'Agent A': document.getElementById('sparkLineAgentA'),
+      'Agent B': document.getElementById('sparkLineAgentB'),
+    };
+
+    function dashUpdateSparkline(agent){
+      const data = dashSparkData[agent];
+      if(data.length < 2) return;
+      const max = Math.max(...data, 1);
+      const step = 120 / (20 - 1);
+      const pts = data.map((v, i) => {
+        const x = i * step;
+        const y = 16 - (v / max) * 14;
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+      dashSparkEls[agent].setAttribute('points', pts);
+    }
+
+    setInterval(() => {
+      ['Leader', 'Agent A', 'Agent B'].forEach(agent => {
+        const data = dashSparkData[agent];
+        const last = data.length > 0 ? data[data.length - 1] : 0;
+        const next = Math.max(0, last + (Math.random() - 0.45) * 3);
+        data.push(Math.round(next * 10) / 10);
+        if(data.length > 20) data.shift();
+        dashUpdateSparkline(agent);
+      });
+    }, 3000);
+
+    /* Feed Helpers */
+    const dashIcons = {
+      message: '<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+      tool: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+      status: '<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+      task: '<svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+      error: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    };
+
+    function dashTimeNow(){
+      const d = new Date();
+      return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+    }
+
+    function dashEscHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function dashAgentColor(agent){
+      if(agent === 'Leader') return '#6366f1';
+      if(agent === 'Agent A') return '#06b6d4';
+      if(agent === 'Agent B') return '#f59e0b';
+      return '#8f8f8f';
+    }
+
+    function dashAddFeedEntry(type, agent, text, detail){
+      const el = document.createElement('div');
+      el.className = 'feedEntry';
+      const iconClass = 'feedEntry__icon feedEntry__icon--' + type;
+      el.innerHTML =
+        '<span class="feedEntry__time">' + dashTimeNow() + '</span>' +
+        '<span class="' + iconClass + '">' + (dashIcons[type] || dashIcons.message) + '</span>' +
+        '<span class="feedEntry__content">' +
+          '<span class="feedEntry__agent" style="color:' + dashAgentColor(agent) + '">' + agent + '</span> ' + dashEscHtml(text) +
+          (detail ? '<div class="feedEntry__detail">' + dashEscHtml(detail) + '</div>' : '') +
+        '</span>';
+
+      dashFeed.appendChild(el);
+      dashTotalMessages++;
+      document.getElementById('metricMessages').textContent = dashTotalMessages;
+
+      const atBottom = dashFeed.scrollHeight - dashFeed.scrollTop - dashFeed.clientHeight < 60;
+      if(atBottom){
+        dashFeed.scrollTop = dashFeed.scrollHeight;
+        dashNewPill.classList.remove('visible');
+      } else {
+        dashNewPill.classList.add('visible');
+      }
+    }
+
+    dashNewPill.addEventListener('click', () => {
+      dashFeed.scrollTop = dashFeed.scrollHeight;
+      dashNewPill.classList.remove('visible');
+    });
+
+    /* Packet Animation */
+    function dashSendPacket(pathId, color){
+      const ns = 'http://www.w3.org/2000/svg';
+      const circle = document.createElementNS(ns, 'circle');
+      circle.setAttribute('r', '4');
+      circle.setAttribute('fill', color);
+      circle.setAttribute('opacity', '0.9');
+
+      const anim = document.createElementNS(ns, 'animateMotion');
+      anim.setAttribute('dur', '1.2s');
+      anim.setAttribute('fill', 'freeze');
+      anim.setAttribute('repeatCount', '1');
+
+      const mpath = document.createElementNS(ns, 'mpath');
+      mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#' + pathId);
+      mpath.setAttribute('href', '#' + pathId);
+      anim.appendChild(mpath);
+      circle.appendChild(anim);
+      dashPacketLayer.appendChild(circle);
+
+      const path = document.getElementById(pathId);
+      path.classList.remove('pathIdle');
+      path.classList.add('pathActive');
+      path.setAttribute('opacity', '.6');
+
+      setTimeout(() => {
+        path.classList.remove('pathActive');
+        path.classList.add('pathIdle');
+        path.setAttribute('opacity', '.3');
+        if(circle.parentNode) circle.remove();
+      }, 1300);
+    }
+
+    /* Dashboard Event Handlers */
+    function dashHandleStatus(agent, status){
+      const dotId = agent === 'Leader' ? 'dashStatusL' : agent === 'Agent A' ? 'dashStatusA' : 'dashStatusB';
+      const color = status === 'active' ? '#22c55e' : status === 'idle' ? '#f59e0b' : '#ef4444';
+      document.getElementById(dotId).setAttribute('fill', color);
+      dashAddFeedEntry('status', agent, 'Status changed to ' + status);
+    }
+
+    function dashHandleTyping(agent, duration){
+      dashTypingAgent.textContent = agent + ' is typing...';
+      dashTypingEl.classList.add('visible');
+      setTimeout(() => dashTypingEl.classList.remove('visible'), duration || 1500);
+    }
+
+    function dashHandleMessage(from, to, text, detail){
+      dashAddFeedEntry('message', from, text, detail);
+      dashAgentStats[from].msgs++;
+      dashUpdateAgentStats(from);
+
+      let pathId = null;
+      if(from === 'Leader' && to === 'Agent A') pathId = 'pathLA';
+      else if(from === 'Leader' && to === 'Agent B') pathId = 'pathLB';
+      else if(from === 'Agent A' && to === 'Leader') pathId = 'pathLA';
+      else if(from === 'Agent B' && to === 'Leader') pathId = 'pathLB';
+      else if(from === 'Agent A' && to === 'Agent B') pathId = 'pathAB';
+      else if(from === 'Agent B' && to === 'Agent A') pathId = 'pathAB';
+      if(pathId) dashSendPacket(pathId, dashAgentColor(from));
+
+      const data = dashSparkData[from];
+      if(data.length > 0) data[data.length - 1] += 2;
+    }
+
+    function dashHandleTool(agent, tool, target){
+      dashAddFeedEntry('tool', agent, 'Used ' + tool, target);
+      if(agent !== 'Leader') dashAgentStats[agent].tools++;
+      dashUpdateAgentStats(agent);
+
+      const data = dashSparkData[agent];
+      if(data.length > 0) data[data.length - 1] += 1.5;
+    }
+
+    function dashHandleTask(agent, task, completed){
+      if(completed){
+        dashTotalTasks++;
+        dashAgentStats.Leader.tasks++;
+        dashUpdateAgentStats('Leader');
+        dashAddFeedEntry('task', agent, 'Completed: ' + task);
+      } else {
+        dashAddFeedEntry('task', agent, 'Started: ' + task);
+      }
+      if(agent === 'Leader') dashEls.taskLeader.textContent = task;
+      else if(agent === 'Agent A') dashEls.taskAgentA.textContent = task;
+      else if(agent === 'Agent B') dashEls.taskAgentB.textContent = task;
+    }
+
+    function dashUpdateAgentStats(agent){
+      if(agent === 'Leader'){
+        dashEls.statLeaderMsgs.textContent = dashAgentStats.Leader.msgs;
+        dashEls.statLeaderTasks.textContent = dashAgentStats.Leader.tasks;
+      } else if(agent === 'Agent A'){
+        dashEls.statAgentAMsgs.textContent = dashAgentStats['Agent A'].msgs;
+        dashEls.statAgentATools.textContent = dashAgentStats['Agent A'].tools;
+      } else if(agent === 'Agent B'){
+        dashEls.statAgentBMsgs.textContent = dashAgentStats['Agent B'].msgs;
+        dashEls.statAgentBTools.textContent = dashAgentStats['Agent B'].tools;
+      }
+    }
+
+    /* Dashboard Demo Scenarios */
+    const dashScenarios = [
+      [
+        { type:'status', agent:'Leader', data:'active' },
+        { type:'status', agent:'Agent A', data:'active' },
+        { type:'status', agent:'Agent B', data:'active' },
+        { type:'task', agent:'Leader', data:['Coordinating Auth Module', false] },
+        { type:'message', agent:'Leader', to:'Agent A', text:'Implement JWT auth middleware', detail:'Use RS256 signing, 15min expiry' },
+        { type:'typing', agent:'Agent A', dur:2000 },
+        { type:'message', agent:'Agent A', to:'Leader', text:'Starting JWT middleware implementation', detail:'Will use jsonwebtoken + express middleware pattern' },
+        { type:'task', agent:'Agent A', data:['JWT auth middleware', false] },
+        { type:'tool', agent:'Agent A', data:['Read', 'src/middleware/auth.ts'] },
+        { type:'tool', agent:'Agent A', data:['Edit', 'src/middleware/auth.ts — added verifyToken()'] },
+        { type:'message', agent:'Leader', to:'Agent B', text:'Set up rate limiter per-user', detail:'100 req/min default, sliding window' },
+        { type:'typing', agent:'Agent B', dur:1800 },
+        { type:'message', agent:'Agent B', to:'Leader', text:'Implementing sliding window rate limiter', detail:'Using Redis sorted sets for distributed tracking' },
+        { type:'task', agent:'Agent B', data:['Rate limiter setup', false] },
+        { type:'tool', agent:'Agent B', data:['Read', 'src/middleware/rateLimiter.ts'] },
+        { type:'tool', agent:'Agent B', data:['Write', 'src/middleware/rateLimiter.ts — 87 lines'] },
+        { type:'tool', agent:'Agent A', data:['Bash', 'npm test -- --grep "auth"'] },
+        { type:'task', agent:'Agent A', data:['JWT auth middleware', true] },
+        { type:'message', agent:'Agent A', to:'Agent B', text:'Auth middleware ready — exported authMiddleware()', detail:'You can import from @/middleware/auth' },
+        { type:'tool', agent:'Agent B', data:['Bash', 'npm test -- --grep "rate"'] },
+        { type:'task', agent:'Agent B', data:['Rate limiter setup', true] },
+        { type:'message', agent:'Agent B', to:'Leader', text:'Rate limiter done, all tests passing', detail:'3/3 tests green' },
+        { type:'message', agent:'Leader', to:'Agent A', text:'Good. Integrate both middlewares into route chain', detail:'authMiddleware() → rateLimiter() → handler' },
+      ],
+      [
+        { type:'task', agent:'Leader', data:['API endpoint refactor', false] },
+        { type:'message', agent:'Leader', to:'Agent A', text:'Refactor /v1/users to controller pattern', detail:'Extract handler logic from routes into UserController' },
+        { type:'typing', agent:'Agent A', dur:1500 },
+        { type:'message', agent:'Agent A', to:'Leader', text:'Analyzing current route structure', detail:'Found 4 inline handlers to extract' },
+        { type:'tool', agent:'Agent A', data:['Glob', 'src/routes/v1/*.ts — 6 files'] },
+        { type:'tool', agent:'Agent A', data:['Read', 'src/routes/v1/users.ts'] },
+        { type:'message', agent:'Leader', to:'Agent B', text:'Review UserController after Agent A finishes', detail:'Check error handling + response format consistency' },
+        { type:'typing', agent:'Agent B', dur:1200 },
+        { type:'message', agent:'Agent B', to:'Leader', text:'Will review once ready', detail:'Focusing on OWASP top 10 checks' },
+        { type:'tool', agent:'Agent A', data:['Write', 'src/controllers/UserController.ts — 124 lines'] },
+        { type:'tool', agent:'Agent A', data:['Edit', 'src/routes/v1/users.ts — replaced inline handlers'] },
+        { type:'tool', agent:'Agent A', data:['Bash', 'npm run lint && npm test'] },
+        { type:'task', agent:'Agent A', data:['Refactor /v1/users', true] },
+        { type:'message', agent:'Agent A', to:'Agent B', text:'UserController ready for review', detail:'src/controllers/UserController.ts' },
+        { type:'tool', agent:'Agent B', data:['Read', 'src/controllers/UserController.ts'] },
+        { type:'tool', agent:'Agent B', data:['Grep', 'sanitize|escape|validate — checking input handling'] },
+        { type:'typing', agent:'Agent B', dur:2200 },
+        { type:'message', agent:'Agent B', to:'Agent A', text:'Missing input validation on updateUser', detail:'req.body.email not sanitized — add zod schema' },
+        { type:'tool', agent:'Agent A', data:['Edit', 'src/controllers/UserController.ts — added zod validation'] },
+        { type:'tool', agent:'Agent A', data:['Bash', 'npm test'] },
+        { type:'message', agent:'Agent A', to:'Agent B', text:'Fixed — zod schema added for all mutations', detail:'Revalidated with npm test: 12/12 passing' },
+        { type:'task', agent:'Agent B', data:['Code review: UserController', true] },
+        { type:'message', agent:'Leader', to:'Agent A', text:'Approved. Move on to /v1/projects next', detail:'Same pattern — extract to ProjectController' },
+      ],
+      [
+        { type:'task', agent:'Leader', data:['Database migration plan', false] },
+        { type:'message', agent:'Leader', to:'Agent A', text:'Create migration for sessions table', detail:'Add columns: refresh_token, device_fingerprint, last_active' },
+        { type:'message', agent:'Leader', to:'Agent B', text:'Update ORM models after migration runs', detail:'Sync Session model with new schema' },
+        { type:'typing', agent:'Agent A', dur:1800 },
+        { type:'message', agent:'Agent A', to:'Leader', text:'Creating migration file', detail:'Using knex migrate:make add_session_fields' },
+        { type:'tool', agent:'Agent A', data:['Bash', 'npx knex migrate:make add_session_fields'] },
+        { type:'tool', agent:'Agent A', data:['Write', 'migrations/20260222_add_session_fields.ts'] },
+        { type:'tool', agent:'Agent A', data:['Bash', 'npx knex migrate:latest --env test'] },
+        { type:'task', agent:'Agent A', data:['Sessions table migration', true] },
+        { type:'message', agent:'Agent A', to:'Agent B', text:'Migration applied successfully', detail:'3 columns added, index on refresh_token created' },
+        { type:'typing', agent:'Agent B', dur:1500 },
+        { type:'tool', agent:'Agent B', data:['Read', 'src/models/Session.ts'] },
+        { type:'tool', agent:'Agent B', data:['Edit', 'src/models/Session.ts — added new fields + types'] },
+        { type:'tool', agent:'Agent B', data:['Bash', 'npm run typecheck'] },
+        { type:'message', agent:'Agent B', to:'Leader', text:'Session model updated, types clean', detail:'Added refresh_token: string, device_fingerprint: string, last_active: Date' },
+        { type:'task', agent:'Agent B', data:['Update Session ORM model', true] },
+        { type:'message', agent:'Leader', to:'Agent A', text:'Write seed data for testing sessions', detail:'10 mock sessions with varied devices' },
+        { type:'tool', agent:'Agent A', data:['Write', 'seeds/sessions.ts — 10 mock records'] },
+        { type:'tool', agent:'Agent A', data:['Bash', 'npx knex seed:run --specific=sessions.ts'] },
+        { type:'task', agent:'Agent A', data:['Seed test session data', true] },
+        { type:'message', agent:'Agent A', to:'Leader', text:'Seeds planted, test DB ready', detail:'10 sessions across 4 devices' },
+        { type:'message', agent:'Leader', to:'Agent A', text:'Excellent. Migration phase complete.', detail:'Moving to integration tests next' },
+        { type:'task', agent:'Leader', data:['Database migration complete', true] },
+      ],
+    ];
+
+    let dashScenarioIdx = 0;
+    let dashEventIdx = 0;
+
+    function dashProcessEvent(evt){
+      switch(evt.type){
+        case 'status': dashHandleStatus(evt.agent, evt.data); break;
+        case 'typing': dashHandleTyping(evt.agent, evt.dur); break;
+        case 'message': dashHandleMessage(evt.agent, evt.to, evt.text, evt.detail); break;
+        case 'tool': dashHandleTool(evt.agent, evt.data[0], evt.data[1]); break;
+        case 'task': dashHandleTask(evt.agent, evt.data[0], evt.data[1]); break;
+      }
+    }
+
+    function dashScheduleNext(){
+      const scenario = dashScenarios[dashScenarioIdx];
+      if(dashEventIdx >= scenario.length){
+        dashScenarioIdx = (dashScenarioIdx + 1) % dashScenarios.length;
+        dashEventIdx = 0;
+        setTimeout(dashScheduleNext, 4000);
+        return;
+      }
+      const evt = scenario[dashEventIdx];
+      dashProcessEvent(evt);
+      dashEventIdx++;
+      const base = evt.type === 'typing' ? 800 : 1500;
+      const jitter = Math.random() * 2500;
+      setTimeout(dashScheduleNext, base + jitter);
+    }
+
+    /* ═══════════════════════════════════════════
+       TASK BOARD ENGINE
+    ═══════════════════════════════════════════ */
+
+    const AGENT_COLORS = {
+      'Leader':'#6366f1', 'Agent A':'#06b6d4', 'Agent B':'#f59e0b',
+      'Agent C':'#8b5cf6', 'Agent D':'#ec4899',
+    };
+    const TEAM_COLORS = {
+      'perf-opt':'#6366f1', 'e2e-live':'#06b6d4', 'api-build':'#f59e0b',
+    };
+    const PRIORITY_COLORS = {
+      critical:'#ef4444', high:'#f59e0b', medium:'#6366f1', low:'#8f8f8f',
+    };
+
+    const now = Date.now();
+
+    const taskTeams = {
+      'perf-opt': {
+        name:'perf-opt', color:'#6366f1',
+        agents:[
+          { name:'Leader', color:'#6366f1', status:'active', task:'Coordinating optimization' },
+          { name:'Agent A', color:'#06b6d4', status:'active', task:'Fix auth middleware' },
+          { name:'Agent B', color:'#f59e0b', status:'idle', task:'Awaiting review' },
+        ],
+        tasks:[
+          { id:'1', subject:'Fix auth middleware', description:'JWT token validation failing on expired refresh tokens. Need to handle edge case where refresh token is rotated during concurrent requests.', type:'one-shot', status:'in_progress', priority:'high', owner:'Agent A', blockedBy:[], blocks:['3'], createdAt:now-3600000, completedAt:null, uptime:null, tags:['auth','security'] },
+          { id:'2', subject:'Monitor API health', description:'Continuous health monitoring for all API endpoints. Check response times, error rates, and availability every 30 seconds.', type:'continuous', status:'active', priority:'medium', owner:'Agent B', blockedBy:[], blocks:[], createdAt:now-7200000, completedAt:null, uptime:now-4*3600000-23*60000, tags:['monitoring','api'] },
+          { id:'3', subject:'DB migration for sessions', description:'Add refresh_token, device_fingerprint, last_active columns to sessions table. Create index on refresh_token.', type:'one-shot', status:'pending', priority:'high', owner:'Agent B', blockedBy:['1'], blocks:['5'], createdAt:now-1800000, completedAt:null, uptime:null, tags:['database','migration'] },
+          { id:'4', subject:'Cache invalidation logic', description:'Implement cache invalidation for user profile updates. Use Redis pub/sub for distributed invalidation across instances.', type:'one-shot', status:'completed', priority:'medium', owner:'Agent A', blockedBy:[], blocks:[], createdAt:now-86400000, completedAt:now-3600000, uptime:null, tags:['cache','redis'] },
+          { id:'5', subject:'Session cleanup cron', description:'Automated cleanup of expired sessions. Run every 6 hours, remove sessions older than 30 days.', type:'continuous', status:'paused', priority:'low', owner:'Leader', blockedBy:['3'], blocks:[], createdAt:now-5400000, completedAt:null, uptime:null, tags:['cron','sessions'] },
+          { id:'6', subject:'Rate limiter per-user', description:'Implement sliding window rate limiter using Redis sorted sets. 100 req/min default, configurable per endpoint.', type:'one-shot', status:'in_progress', priority:'critical', owner:'Leader', blockedBy:[], blocks:[], createdAt:now-2700000, completedAt:null, uptime:null, tags:['security','rate-limit'] },
+          { id:'7', subject:'Log aggregation pipeline', description:'Stream application logs to centralized logging. Support structured JSON logs with trace IDs.', type:'continuous', status:'active', priority:'medium', owner:'Agent A', blockedBy:[], blocks:[], createdAt:now-10800000, completedAt:null, uptime:now-2*3600000-45*60000, tags:['logging','observability'] },
+          { id:'8', subject:'Error tracking integration', description:'Integrate Sentry for error tracking. Configure source maps, breadcrumbs, and alert rules for critical paths.', type:'one-shot', status:'pending', priority:'medium', owner:null, blockedBy:[], blocks:[], createdAt:now-900000, completedAt:null, uptime:null, tags:['monitoring','errors'] },
+        ],
+      },
+      'e2e-live': {
+        name:'e2e-live', color:'#06b6d4',
+        agents:[
+          { name:'Leader', color:'#6366f1', status:'active', task:'Managing test suite' },
+          { name:'Agent A', color:'#06b6d4', status:'active', task:'Browser tests' },
+          { name:'Agent B', color:'#f59e0b', status:'active', task:'API integration tests' },
+          { name:'Agent C', color:'#8b5cf6', status:'idle', task:'Waiting for assignment' },
+        ],
+        tasks:[
+          { id:'1', subject:'Browser login flow', description:'End-to-end test for login flow including OAuth, MFA, and session persistence across browser restarts.', type:'one-shot', status:'in_progress', priority:'high', owner:'Agent A', blockedBy:[], blocks:['3'], createdAt:now-5400000, completedAt:null, uptime:null, tags:['e2e','auth'] },
+          { id:'2', subject:'API contract validation', description:'Validate all API responses match OpenAPI spec. Check status codes, response shapes, and error formats.', type:'continuous', status:'active', priority:'high', owner:'Agent B', blockedBy:[], blocks:[], createdAt:now-10800000, completedAt:null, uptime:now-3*3600000-12*60000, tags:['api','contract'] },
+          { id:'3', subject:'Checkout flow regression', description:'Full checkout regression: cart → shipping → payment → confirmation. Test all payment methods.', type:'one-shot', status:'pending', priority:'critical', owner:'Agent C', blockedBy:['1'], blocks:[], createdAt:now-3600000, completedAt:null, uptime:null, tags:['e2e','checkout'] },
+          { id:'4', subject:'Performance baseline', description:'Capture Lighthouse scores and Core Web Vitals as baseline. Store in CI artifacts for trend comparison.', type:'one-shot', status:'completed', priority:'medium', owner:'Agent A', blockedBy:[], blocks:[], createdAt:now-86400000, completedAt:now-7200000, uptime:null, tags:['performance','ci'] },
+          { id:'5', subject:'Visual regression monitor', description:'Continuous visual regression testing using Percy. Capture snapshots on every PR and flag visual changes.', type:'continuous', status:'active', priority:'medium', owner:'Leader', blockedBy:[], blocks:[], createdAt:now-14400000, completedAt:null, uptime:now-5*3600000-50*60000, tags:['visual','regression'] },
+          { id:'6', subject:'Load test runner', description:'Sustained load testing at 500 concurrent users. Monitor p95 latency and error rate under load.', type:'continuous', status:'stopped', priority:'low', owner:'Agent C', blockedBy:[], blocks:[], createdAt:now-28800000, completedAt:null, uptime:null, tags:['load','performance'] },
+        ],
+      },
+      'api-build': {
+        name:'api-build', color:'#f59e0b',
+        agents:[
+          { name:'Leader', color:'#6366f1', status:'active', task:'API architecture' },
+          { name:'Agent A', color:'#06b6d4', status:'active', task:'Endpoint implementation' },
+        ],
+        tasks:[
+          { id:'1', subject:'User CRUD endpoints', description:'Implement GET/POST/PUT/DELETE for /v1/users with Zod validation, pagination, and proper error responses.', type:'one-shot', status:'completed', priority:'high', owner:'Agent A', blockedBy:[], blocks:['2','3'], createdAt:now-172800000, completedAt:now-86400000, uptime:null, tags:['api','users'] },
+          { id:'2', subject:'Auth middleware', description:'JWT verification middleware with RS256. Handle expired tokens, missing headers, and malformed JWTs gracefully.', type:'one-shot', status:'completed', priority:'critical', owner:'Agent A', blockedBy:['1'], blocks:['4'], createdAt:now-86400000, completedAt:now-43200000, uptime:null, tags:['auth','middleware'] },
+          { id:'3', subject:'Project endpoints', description:'CRUD for /v1/projects with role-based access. Owners can edit, members can view, admins can delete.', type:'one-shot', status:'in_progress', priority:'high', owner:'Agent A', blockedBy:['1'], blocks:[], createdAt:now-43200000, completedAt:null, uptime:null, tags:['api','projects'] },
+          { id:'4', subject:'API health monitor', description:'Continuous health check endpoint monitoring. Report uptime, response time percentiles, and error budget.', type:'continuous', status:'active', priority:'medium', owner:'Leader', blockedBy:['2'], blocks:[], createdAt:now-21600000, completedAt:null, uptime:now-6*3600000, tags:['monitoring','health'] },
+          { id:'5', subject:'Rate limiting', description:'Implement token bucket rate limiter. 1000 req/hour per API key, 100 req/min per IP for unauthenticated.', type:'one-shot', status:'pending', priority:'high', owner:null, blockedBy:[], blocks:[], createdAt:now-7200000, completedAt:null, uptime:null, tags:['security','rate-limit'] },
+        ],
+      },
+    };
+
+    let taskSelectedTeam = 'perf-opt';
+    let taskActiveFilter = 'all';
+    let taskExpandedId = null;
+
+    /* Task Helpers */
+    function taskEscHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function taskFormatUptime(startMs){
+      if(!startMs) return '\u2014';
+      const diff = Math.floor((Date.now() - startMs) / 1000);
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      if(h > 0) return h + 'h ' + m + 'm';
+      return m + 'm';
+    }
+
+    function taskFormatTimestamp(ms){
+      if(!ms) return '\u2014';
+      const d = new Date(ms);
+      return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+
+    function getTeamStats(teamKey){
+      const t = taskTeams[teamKey];
+      const total = t.tasks.length;
+      const completed = t.tasks.filter(tk => tk.status === 'completed').length;
+      const active = t.tasks.filter(tk => tk.status === 'in_progress' || tk.status === 'active').length;
+      return { total, completed, active, pct: total > 0 ? Math.round(completed / total * 100) : 0 };
+    }
+
+    function getAllTaskStats(){
+      let total=0, completed=0, active=0, continuous=0;
+      Object.keys(taskTeams).forEach(k => {
+        const t = taskTeams[k];
+        total += t.tasks.length;
+        completed += t.tasks.filter(tk => tk.status === 'completed').length;
+        active += t.tasks.filter(tk => tk.status === 'in_progress' || tk.status === 'active').length;
+        continuous += t.tasks.filter(tk => tk.type === 'continuous' && tk.status === 'active').length;
+      });
+      return { total, completed, active, continuous, teams:Object.keys(taskTeams).length };
+    }
+
+    /* Render: Team Panel */
+    function renderTeamPanel(){
+      const container = document.getElementById('teamList');
+      let html = '';
+      Object.keys(taskTeams).forEach(key => {
+        const t = taskTeams[key];
+        const stats = getTeamStats(key);
+        const isSelected = key === taskSelectedTeam;
+        const isOpen = isSelected;
+        html += '<div class="teamCard' + (isSelected ? ' selected' : '') + '" data-team="' + key + '">';
+        html += '<button class="teamCard__toggle' + (isOpen ? ' open' : '') + '" data-team="' + key + '">';
+        html += '<svg class="teamCard__arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+        html += '<span class="teamCard__colorDot" style="background:' + t.color + '"></span>';
+        html += '<span class="teamCard__name">' + taskEscHtml(t.name) + '</span>';
+        html += '<span class="teamCard__count">' + stats.completed + '/' + stats.total + '</span>';
+        html += '</button>';
+        html += '<div class="teamCard__info">';
+        html += '<span>' + t.agents.length + ' agents</span>';
+        html += '<span>' + stats.completed + '/' + stats.total + ' tasks</span>';
+        html += '<div class="teamCard__progress"><div class="teamCard__progressFill" style="width:' + stats.pct + '%;background:' + t.color + '"></div></div>';
+        html += '</div>';
+        html += '<div class="teamCard__body' + (isOpen ? ' open' : '') + '">';
+        t.agents.forEach(a => {
+          const sColor = a.status === 'active' ? '#22c55e' : a.status === 'idle' ? '#f59e0b' : '#ef4444';
+          html += '<div class="teamAgent">';
+          html += '<span class="teamAgent__dot" style="background:' + a.color + '"></span>';
+          html += '<span class="teamAgent__name">' + taskEscHtml(a.name) + '</span>';
+          html += '<span class="teamAgent__task">' + taskEscHtml(a.task) + '</span>';
+          html += '<span class="teamAgent__status" style="background:' + sColor + '"></span>';
+          html += '</div>';
+        });
+        html += '</div>';
+        html += '</div>';
+      });
+      html += '<button class="addTeam" onclick="window.location.href=\'project_config.html\'"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Team</button>';
+      container.innerHTML = html;
+      container.querySelectorAll('.teamCard__toggle').forEach(btn => {
+        btn.addEventListener('click', () => { selectTeam(btn.dataset.team); });
+      });
+    }
+
+    function selectTeam(teamKey){
+      taskSelectedTeam = teamKey;
+      taskExpandedId = null;
+      renderTeamPanel();
+      renderTaskBoard();
+    }
+
+    /* Render: Task Board */
+    function renderTaskBoard(){
+      const t = taskTeams[taskSelectedTeam];
+      document.getElementById('boardTeamName').textContent = t.name;
+      document.getElementById('boardAgentCount').textContent = t.agents.length + ' agents';
+
+      let filtered = t.tasks;
+      if(taskActiveFilter === 'pending'){
+        filtered = filtered.filter(tk => tk.status === 'pending');
+      } else if(taskActiveFilter === 'active'){
+        filtered = filtered.filter(tk => tk.status === 'in_progress' || tk.status === 'active');
+      } else if(taskActiveFilter === 'completed'){
+        filtered = filtered.filter(tk => tk.status === 'completed' || tk.status === 'stopped');
+      }
+
+      const container = document.getElementById('taskList');
+      let html = '';
+
+      filtered.forEach((task, idx) => {
+        const isCompleted = task.status === 'completed';
+        const isExpanded = taskExpandedId === (taskSelectedTeam + '-' + task.id);
+
+        html += '<div class="taskRow' + (isCompleted ? ' completed' : '') + '" style="animation-delay:' + (idx * 0.05) + 's">';
+        html += '<div class="taskRow__main" data-taskid="' + task.id + '" role="button" tabindex="0" aria-expanded="' + isExpanded + '" aria-label="Task #' + task.id + ': ' + taskEscHtml(task.subject) + '">';
+        html += '<span class="taskRow__priorityDot" style="background:' + PRIORITY_COLORS[task.priority] + '" title="' + task.priority + '"></span>';
+        html += '<span class="taskRow__id">#' + task.id + '</span>';
+        html += '<span class="taskRow__subject">' + taskEscHtml(task.subject) + '</span>';
+
+        const typeClass = task.type === 'one-shot' ? 'typeBadge--oneshot' : 'typeBadge--continuous';
+        const typeLabel = task.type === 'one-shot' ? 'ONE-SHOT' : 'CONTINUOUS';
+        html += '<span class="typeBadge ' + typeClass + '">' + typeLabel + '</span>';
+
+        const statusClass = 'statusBadge--' + task.status.replace('-','_');
+        html += '<span class="statusBadge ' + statusClass + '">';
+        if(task.status === 'active') html += '<span class="statusBadge__pulse"></span>';
+        html += task.status.replace('_',' ');
+        html += '</span>';
+
+        if(task.type === 'continuous' && task.uptime && task.status === 'active'){
+          html += '<span class="uptimeCounter">' + taskFormatUptime(task.uptime) + '</span>';
+        }
+
+        if(task.owner){
+          const ownerColor = AGENT_COLORS[task.owner] || '#8f8f8f';
+          html += '<span class="ownerChip"><span class="ownerChip__dot" style="background:' + ownerColor + '"></span>' + taskEscHtml(task.owner) + '</span>';
+        }
+
+        if(task.blockedBy.length > 0){
+          html += '<span class="depInfo">blocked by #' + task.blockedBy.join(', #') + '</span>';
+        } else if(task.blocks.length > 0){
+          html += '<span class="depInfo">blocks #' + task.blocks.join(', #') + '</span>';
+        }
+
+        html += '</div>'; // /main
+
+        // Detail accordion
+        html += '<div class="taskRow__detail' + (isExpanded ? ' open' : '') + '">';
+        html += '<div class="detailSection"><div class="detailSection__label">Description</div><div class="detailSection__text">' + taskEscHtml(task.description) + '</div></div>';
+
+        if(task.blockedBy.length > 0 || task.blocks.length > 0){
+          html += '<div class="detailSection"><div class="detailSection__label">Dependencies</div><div class="depGraph">';
+          task.blockedBy.forEach(bid => {
+            html += '<span class="depGraph__item"><span class="depGraph__id depGraph__id--blocker">#' + bid + '</span><span class="depGraph__arrow"> &rarr; </span><span class="depGraph__id">#' + task.id + '</span></span>';
+          });
+          task.blocks.forEach(bid => {
+            html += '<span class="depGraph__item"><span class="depGraph__id">#' + task.id + '</span><span class="depGraph__arrow"> &rarr; </span><span class="depGraph__id depGraph__id--dependent">#' + bid + '</span></span>';
+          });
+          html += '</div></div>';
+        }
+
+        if(task.tags.length > 0){
+          html += '<div class="detailSection"><div class="detailSection__label">Tags</div><div class="tagChips">';
+          task.tags.forEach(tag => { html += '<span class="tagChip">' + taskEscHtml(tag) + '</span>'; });
+          html += '</div></div>';
+        }
+
+        html += '<div class="detailSection"><div class="detailSection__label">Timeline</div><div class="timestamps">';
+        html += '<span>Created: <b>' + taskFormatTimestamp(task.createdAt) + '</b></span>';
+        if(task.status === 'in_progress' || task.status === 'active'){
+          html += '<span>Started: <b>' + taskFormatTimestamp(task.createdAt + 300000) + '</b></span>';
+        }
+        if(task.completedAt) html += '<span>Completed: <b>' + taskFormatTimestamp(task.completedAt) + '</b></span>';
+        html += '</div></div>';
+
+        if(task.type === 'continuous'){
+          html += '<div class="detailSection">';
+          if(task.uptime && task.status === 'active') html += '<div class="detailSection__label">Uptime: ' + taskFormatUptime(task.uptime) + '</div>';
+          html += '<div class="continuousControls">';
+          if(task.status === 'active'){
+            html += '<button class="ctrlBtn ctrlBtn--pause">Pause</button>';
+            html += '<button class="ctrlBtn ctrlBtn--stop">Stop</button>';
+          } else if(task.status === 'paused'){
+            html += '<button class="ctrlBtn ctrlBtn--resume">Resume</button>';
+            html += '<button class="ctrlBtn ctrlBtn--stop">Stop</button>';
+          } else if(task.status === 'stopped'){
+            html += '<button class="ctrlBtn ctrlBtn--resume">Restart</button>';
+          }
+          html += '</div></div>';
+        }
+
+        html += '</div>'; // /detail
+        html += '</div>'; // /taskRow
+      });
+
+      container.innerHTML = html;
+
+      container.querySelectorAll('.taskRow__main').forEach(main => {
+        function toggleTask(){
+          const tid = taskSelectedTeam + '-' + main.dataset.taskid;
+          taskExpandedId = (taskExpandedId === tid) ? null : tid;
+          renderTaskBoard();
+        }
+        main.addEventListener('click', toggleTask);
+        main.addEventListener('keydown', (e) => {
+          if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleTask(); }
+        });
+      });
+    }
+
+    /* Combined Metrics Update */
+    function updateAllMetrics(){
+      const s = getAllTaskStats();
+      document.getElementById('metricTasksCompleted').textContent = s.completed;
+      document.getElementById('metricTasksOf').textContent = '/' + s.total;
+      document.getElementById('metricTasksProgress').style.width = (s.total > 0 ? Math.round(s.completed / s.total * 100) : 0) + '%';
+      document.getElementById('metricContinuous').textContent = s.continuous;
+      document.getElementById('metricAgents').textContent = Object.values(taskTeams).reduce((sum, t) => sum + t.agents.length, 0);
+      // Top bar stats
+      document.getElementById('topTotal').textContent = s.total;
+      document.getElementById('topActive').textContent = s.active;
+      document.getElementById('topCompleted').textContent = s.completed;
+    }
+
+    /* Filter Chips */
+    document.getElementById('filterChips').addEventListener('click', (e) => {
+      const chip = e.target.closest('.filterChip');
+      if(!chip) return;
+      taskActiveFilter = chip.dataset.filter;
+      document.querySelectorAll('.filterChip').forEach(c => {
+        const isActive = c.dataset.filter === taskActiveFilter;
+        c.classList.toggle('active', isActive);
+        c.setAttribute('aria-pressed', isActive);
+      });
+      renderTaskBoard();
+    });
+
+    /* Task DemoEngine (transitions) */
+    const taskTransitions = [
+      { team:'perf-opt', taskId:'1', field:'status', from:'in_progress', to:'completed' },
+      { team:'perf-opt', taskId:'3', field:'status', from:'pending', to:'in_progress' },
+      { team:'perf-opt', taskId:'3', field:'blockedBy', from:['1'], to:[] },
+      { team:'perf-opt', taskId:'8', field:'owner', from:null, to:'Agent B' },
+      { team:'perf-opt', taskId:'8', field:'status', from:'pending', to:'in_progress' },
+      { team:'perf-opt', taskId:'5', field:'status', from:'paused', to:'active' },
+      { team:'perf-opt', taskId:'5', field:'uptime', from:null, to:Date.now() },
+      { team:'perf-opt', taskId:'6', field:'status', from:'in_progress', to:'completed' },
+      { team:'e2e-live', taskId:'1', field:'status', from:'in_progress', to:'completed' },
+      { team:'e2e-live', taskId:'3', field:'status', from:'pending', to:'in_progress' },
+      { team:'e2e-live', taskId:'3', field:'blockedBy', from:['1'], to:[] },
+      { team:'e2e-live', taskId:'6', field:'status', from:'stopped', to:'active' },
+      { team:'e2e-live', taskId:'6', field:'uptime', from:null, to:Date.now() },
+      { team:'api-build', taskId:'3', field:'status', from:'in_progress', to:'completed' },
+      { team:'api-build', taskId:'5', field:'owner', from:null, to:'Agent A' },
+      { team:'api-build', taskId:'5', field:'status', from:'pending', to:'in_progress' },
+    ];
+
+    let taskTransitionIdx = 0;
+    let taskOriginalData = null;
+
+    function taskCaptureOriginal(){
+      taskOriginalData = JSON.parse(JSON.stringify(taskTeams));
+    }
+    function taskResetDemoData(){
+      const restored = JSON.parse(JSON.stringify(taskOriginalData));
+      Object.keys(restored).forEach(k => {
+        taskTeams[k].tasks = restored[k].tasks;
+        taskTeams[k].agents = restored[k].agents;
+      });
+    }
+
+    function taskApplyTransition(){
+      if(taskTransitionIdx >= taskTransitions.length){
+        taskTransitionIdx = 0;
+        taskResetDemoData();
+        renderTeamPanel();
+        renderTaskBoard();
+        updateAllMetrics();
+        return;
+      }
+      const tr = taskTransitions[taskTransitionIdx];
+      const team = taskTeams[tr.team];
+      if(!team){ taskTransitionIdx++; return; }
+      const task = team.tasks.find(t => t.id === tr.taskId);
+      if(!task){ taskTransitionIdx++; return; }
+      const current = task[tr.field];
+      if(JSON.stringify(current) === JSON.stringify(tr.from)){
+        task[tr.field] = tr.to;
+        if(tr.field === 'status' && tr.to === 'completed') task.completedAt = Date.now();
+      }
+      taskTransitionIdx++;
+      renderTeamPanel();
+      renderTaskBoard();
+      updateAllMetrics();
+    }
+
+    /* ═══════════════════════════════════════════
+       LIVE BACKEND — WebSocket + Polling
+    ═══════════════════════════════════════════ */
+    let historyRenderedIds = new Set();
+
+    function connectWebSocket(){
+      try {
+        ws = new WebSocket(WS_URL);
+      } catch(e){ return; }
+      ws.onopen = () => {
+        wsRetry = 1000;
+        console.log('[CC] WebSocket connected');
+      };
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if(data.type === 'message' && data.message){
+            handleLiveMessage(data.message);
+          } else if(data.type === 'agent_status'){
+            pollAgentStatus();
+          } else if(data.type === 'activity' && data.activity){
+            const a = data.activity;
+            dashAddFeedEntry('tool', agentDisplayName(a.agent_id),
+              a.action + (a.target ? ' ' + a.target : ''), a.description || '');
+          }
+        } catch(err){ console.error('[CC] WS parse error:', err); }
+      };
+      ws.onclose = () => {
+        setTimeout(connectWebSocket, wsRetry);
+        wsRetry = Math.min(wsRetry * 2, 30000);
+      };
+      ws.onerror = () => {};
+    }
+
+    function handleLiveMessage(msg){
+      if(msg.id && historyRenderedIds.has(msg.id)) return;
+      if(msg.id) historyRenderedIds.add(msg.id);
+      const from = agentDisplayName(msg.from);
+      const to = agentDisplayName(msg.to);
+      const text = (msg.content || '').substring(0, 120);
+      const detail = msg.to !== 'all' ? '\u2192 ' + to : '';
+      dashAddFeedEntry('message', from, text, detail);
+
+      const pathMap = {
+        'Leader-Agent A':'pathLA', 'Agent A-Leader':'pathLA',
+        'Leader-Agent B':'pathLB', 'Agent B-Leader':'pathLB',
+        'Agent A-Agent B':'pathAB', 'Agent B-Agent A':'pathAB',
+      };
+      const pathId = pathMap[from + '-' + to];
+      if(pathId) dashSendPacket(pathId, dashAgentColor(from));
+
+      if(dashSparkData[from]){
+        const d = dashSparkData[from];
+        if(d.length > 0) d[d.length - 1] += 2;
+      }
+
+      if(dashAgentStats[from]){
+        dashAgentStats[from].msgs++;
+        dashUpdateAgentStats(from);
+      }
+    }
+
+    async function pollAgentStatus(){
+      try {
+        const res = await fetch(API_BASE + '/agents');
+        const data = await res.json();
+        const agents = data.agents || [];
+        const active = agents.filter(a => a.status !== 'disconnected');
+
+        document.getElementById('metricAgents').textContent = active.length;
+
+        const dotMap = { teamlead:'dashStatusL', lead:'dashStatusL',
+          claude_a:'dashStatusA', agent_a:'dashStatusA',
+          claude_b:'dashStatusB', agent_b:'dashStatusB' };
+        agents.forEach(a => {
+          const dotId = dotMap[a.agent_id];
+          if(!dotId) return;
+          const color = a.status === 'live' ? '#22c55e' : a.status === 'connecting' ? '#f59e0b' : '#ef4444';
+          const el = document.getElementById(dotId);
+          if(el) el.setAttribute('fill', color);
+        });
+
+        const topBarDots = document.querySelectorAll('.topBar .statusDot');
+        if(topBarDots.length > 0){
+          const dot = topBarDots[0];
+          const label = document.querySelector('.topBar .statusLabel');
+          dot.className = 'statusDot';
+          if(active.length > 0){
+            dot.classList.add('statusDot--live');
+            if(label) label.textContent = active.length + ' online';
+          } else {
+            dot.classList.add('statusDot--connecting');
+            if(label) label.textContent = 'Keine Agents';
+          }
+        }
+      } catch(e){
+        const topBarDots = document.querySelectorAll('.topBar .statusDot');
+        if(topBarDots.length > 0){
+          topBarDots[0].className = 'statusDot statusDot--disconnected';
+          const label = document.querySelector('.topBar .statusLabel');
+          if(label) label.textContent = 'Offline';
+        }
+      }
+    }
+
+    async function loadHistory(){
+      try {
+        const res = await fetch(API_BASE + '/history?limit=50');
+        const data = await res.json();
+        const msgs = data.messages || [];
+        msgs.forEach(msg => {
+          if(msg.id) historyRenderedIds.add(msg.id);
+          const from = agentDisplayName(msg.from);
+          const to = agentDisplayName(msg.to);
+          const text = (msg.content || '').substring(0, 120);
+          const detail = msg.to !== 'all' ? '\u2192 ' + to : '';
+          dashAddFeedEntry('message', from, text, detail);
+        });
+        return true;
+      } catch(e){
+        return false;
+      }
+    }
+
+    async function tryLiveMode(){
+      try {
+        const res = await fetch(API_BASE + '/agents', { signal: AbortSignal.timeout(3000) });
+        if(!res.ok) return false;
+        liveMode = true;
+        await loadHistory();
+        connectWebSocket();
+        pollAgentStatus();
+        setInterval(pollAgentStatus, 5000);
+        console.log('[CC] Live mode active');
+        return true;
+      } catch(e){
+        return false;
+      }
+    }
+
+    /* ═══════════════════════════════════════════
+       INIT — Start Both Engines
+    ═══════════════════════════════════════════ */
+    taskCaptureOriginal();
+    renderTeamPanel();
+    renderTaskBoard();
+    updateAllMetrics();
+
+    // Try live backend; fall back to demo if offline
+    tryLiveMode().then(live => {
+      if(!live){
+        console.log('[CC] Backend offline — using demo scenarios');
+        setTimeout(dashScheduleNext, 1200);
+      }
+    });
+
+    // Task DemoEngine — transitions every 5-8s (always runs, independent of live mode)
+    function taskScheduleTransition(){
+      const delay = 5000 + Math.random() * 3000;
+      setTimeout(() => {
+        taskApplyTransition();
+        taskScheduleTransition();
+      }, delay);
+    }
+    setTimeout(taskScheduleTransition, 3000);
+
+    // Uptime refresh for continuous tasks every 30s
+    setInterval(() => { renderTaskBoard(); }, 30000);
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "977a38ca-94df-4080-9275-0dda40d20651": {
+    "stage": 1,
+    "started_at": "2026-03-10T11:22:21.878515+00:00",
+    "task_id": "977a38ca-94df-4080-9275-0dda40d20651",
+    "agent_id": "gemini_1",
+    "task_title": "reg_board_1773139341776_board_limit_0"
+  },
+  "ba3dd609-1a36-4448-9781-661445832565": {
+    "stage": 3,
+    "started_at": "2026-03-10T12:10:48.107030+00:00",
+    "task_id": "ba3dd609-1a36-4448-9781-661445832565",
+    "agent_id": "gemini_1",
+    "task_title": "reg_board_1773142357427_board_limit_0"
+  },
+  "60ce5fc4-6c8f-41a9-be7a-bb2e35ae4d0b": {
+    "stage": 2,
+    "started_at": "2026-03-10T21:12:18.489292+00:00",
+    "task_id": "60ce5fc4-6c8f-41a9-be7a-bb2e35ae4d0b",
+    "agent_id": "backend",
+    "task_title": "Globaler Error-Handler fuer do_GET und do_POST"
+  }
+}

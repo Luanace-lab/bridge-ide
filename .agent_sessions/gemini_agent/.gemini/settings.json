@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "bridge": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "/home/leo/Desktop/CC/BRIDGE/Backend/bridge_mcp.py"
+      ],
+      "env": {
+        "BRIDGE_CLI_AGENT_ID": "gemini_agent",
+        "BRIDGE_CLI_ENGINE": "gemini",
+        "BRIDGE_CLI_HOME_DIR": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/gemini_agent",
+        "BRIDGE_CLI_WORKSPACE": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/gemini_agent",
+        "BRIDGE_CLI_PROJECT_ROOT": "/home/leo/Desktop/CC/BRIDGE",
+        "BRIDGE_CLI_INSTRUCTION_PATH": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/gemini_agent/GEMINI.md",
+        "BRIDGE_CLI_SESSION_NAME": "acw_gemini_agent",
+        "BRIDGE_CLI_INCARNATION_ID": "gemini:gemini_agent:1773591916907747405",
+        "BRIDGE_TOKEN_CONFIG_FILE": "/home/leo/.config/bridge/tokens.json",
+        "BRIDGE_REGISTER_TOKEN": "be597e6e78af3ea44e63fd09bafd200d6924ef9786e1cef443d8c89a81274a91"
+      }
+    }
+  },
+  "tools": {
+    "allowed": [],
+    "sandbox": false
+  },
+  "security": {
+    "folderTrust": {
+      "trustedFolders": [
+        "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/gemini_agent",
+        "/home/leo/Desktop/CC/BRIDGE"
+      ],
+      "enabled": true
+    }
+  },
+  "general": {
+    "defaultApprovalMode": "default"
+  }
+}

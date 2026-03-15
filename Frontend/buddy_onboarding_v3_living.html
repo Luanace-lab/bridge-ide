@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bridge IDE</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%236366f1'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui' font-size='18' font-weight='700' fill='white'%3EB%3C/text%3E%3C/svg%3E">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#040810;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e7edf5}
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#subtitle{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:115px;z-index:15;
+  font-size:13px;letter-spacing:5px;text-transform:uppercase;
+  color:rgba(32,245,224,.4);opacity:0;transition:opacity 2s ease;
+  font-weight:300;pointer-events:none;
+}
+#subtitle.visible{opacity:1}
+#chat-container{
+  position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
+  z-index:20;width:min(500px,88vw);pointer-events:auto;
+  opacity:0;transition:opacity 1.2s ease;
+}
+#chat-container.visible{opacity:1}
+#chat-box{
+  background:rgba(8,14,30,.5);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(46,209,208,.08);border-radius:16px;padding:6px 6px 6px 18px;
+  display:flex;align-items:center;gap:8px;
+  box-shadow:0 0 80px rgba(40,149,229,.04);transition:border-color .4s,box-shadow .4s;
+}
+#chat-box:focus-within{border-color:rgba(46,209,208,.2);box-shadow:0 0 80px rgba(40,149,229,.1)}
+#chat-input{flex:1;background:none;border:none;outline:none;color:#e7edf5;font-size:15px;font-family:inherit;padding:12px 0;caret-color:#2ED1D0}
+#chat-input::placeholder{color:rgba(138,164,200,.3);font-weight:300}
+#send-btn{width:40px;height:40px;border-radius:10px;border:none;background:linear-gradient(135deg,#2895E5,#2ED1D0);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .3s;flex-shrink:0}
+#send-btn:hover{transform:scale(1.06);box-shadow:0 0 24px rgba(46,209,208,.35)}
+#send-btn svg{width:18px;height:18px}
+#response-area{max-height:180px;overflow-y:auto;padding:0 18px;margin-bottom:8px;scrollbar-width:thin;scrollbar-color:rgba(46,209,208,.12) transparent}
+.buddy-msg{font-size:14px;line-height:1.65;color:rgba(231,237,245,.85);padding:12px 0;border-bottom:1px solid rgba(46,209,208,.05);animation:msgIn .4s ease}
+.buddy-msg:last-child{border-bottom:none}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.typing-dots{display:inline-flex;gap:4px;padding:12px 0}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:rgba(46,209,208,.6);animation:dotP 1.4s ease infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotP{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="subtitle">Welcome to Bridge</div>
+<div id="chat-container">
+  <div id="response-area"></div>
+  <div id="chat-box">
+    <input id="chat-input" type="text" placeholder="Say hello..." autocomplete="off"/>
+    <button id="send-btn" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
+import {SMAAPass} from 'three/addons/postprocessing/SMAAPass.js';
+import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
+import {BokehPass} from 'three/addons/postprocessing/BokehPass.js';
+
+/* ── Chromatic Aberration Shader ── */
+const ChromaticShader = {
+  uniforms: {
+    tDiffuse: {value: null},
+    amount: {value: 0.0015}
+  },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float amount;
+    varying vec2 vUv;
+    void main(){
+      vec2 dir = vUv - 0.5;
+      float d = length(dir);
+      float shift = amount * d * d;
+      float r = texture2D(tDiffuse, vUv + dir * shift).r;
+      float g = texture2D(tDiffuse, vUv).g;
+      float b = texture2D(tDiffuse, vUv - dir * shift).b;
+      float a = texture2D(tDiffuse, vUv).a;
+      gl_FragColor = vec4(r, g, b, a);
+    }
+  `
+};
+
+/* ── Film Grain Shader ── */
+const GrainShader = {
+  uniforms: {
+    tDiffuse: {value: null},
+    time: {value: 0},
+    amount: {value: 0.03}
+  },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float time;
+    uniform float amount;
+    varying vec2 vUv;
+    float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float grain = (rand(vUv + vec2(time)) - 0.5) * amount;
+      gl_FragColor = vec4(c.rgb + grain, c.a);
+    }
+  `
+};
+
+/* ── Custom Sharpness Shader ── */
+const SharpenShader = {
+  uniforms: {
+    tDiffuse: {value: null},
+    resolution: {value: new THREE.Vector2(1,1)},
+    strength: {value: 0.8}
+  },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    uniform float strength;
+    varying vec2 vUv;
+    void main(){
+      vec2 px = 1.0 / resolution;
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec4 n = texture2D(tDiffuse, vUv + vec2(0., px.y));
+      vec4 s = texture2D(tDiffuse, vUv - vec2(0., px.y));
+      vec4 e = texture2D(tDiffuse, vUv + vec2(px.x, 0.));
+      vec4 w = texture2D(tDiffuse, vUv - vec2(px.x, 0.));
+      vec4 sharp = c * (1.0 + 4.0*strength) - (n+s+e+w)*strength;
+      gl_FragColor = clamp(sharp, 0.0, 1.0);
+    }
+  `
+};
+
+/* ── Contrast/Vibrance Shader ── */
+const ContrastShader = {
+  uniforms: {
+    tDiffuse: {value: null},
+    contrast: {value: 1.12},
+    vibrance: {value: 0.2}
+  },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float contrast;
+    uniform float vibrance;
+    varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      /* contrast */
+      vec3 col = (c.rgb - 0.5) * contrast + 0.5;
+      /* vibrance — boost undersaturated colors more */
+      float avg = (col.r + col.g + col.b) / 3.0;
+      float mx = max(col.r, max(col.g, col.b));
+      float sat = 1.0 - (mx - avg);
+      col = mix(vec3(avg), col, 1.0 + vibrance * sat);
+      gl_FragColor = vec4(clamp(col, 0.0, 1.0), c.a);
+    }
+  `
+};
+
+let speaking = false, speakIntensity = 0;
+
+/* ── textures ── */
+function radialTex(size, stops) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  stops.forEach(s => g.addColorStop(s[0], s[1]));
+  ctx.fillStyle = g; ctx.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex = radialTex(512,[[0,'rgba(255,255,255,1)'],[.08,'rgba(255,255,255,.6)'],[.2,'rgba(255,255,255,.15)'],[.45,'rgba(255,255,255,.02)'],[1,'rgba(255,255,255,0)']]);
+const dotTex = radialTex(128,[[0,'rgba(255,255,255,.95)'],[.15,'rgba(255,255,255,.4)'],[.4,'rgba(255,255,255,.05)'],[1,'rgba(255,255,255,0)']]);
+
+/* ── renderer ── */
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 3));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#040810');
+const camera = new THREE.PerspectiveCamera(36, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(0, 1.5, 22);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
+/* Bloom — tight, controlled */
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 0.35, 0.1, 0.5);
+composer.addPass(bloom);
+
+/* Sharpness pass */
+const sharpen = new ShaderPass(SharpenShader);
+sharpen.uniforms.resolution.value.set(innerWidth * renderer.getPixelRatio(), innerHeight * renderer.getPixelRatio());
+composer.addPass(sharpen);
+
+/* Contrast + Vibrance */
+const contrastPass = new ShaderPass(ContrastShader);
+composer.addPass(contrastPass);
+
+/* Chromatic Aberration — cinematic lens feel */
+const chroma = new ShaderPass(ChromaticShader);
+composer.addPass(chroma);
+
+/* FXAA — fast anti-aliasing on top */
+const fxaa = new ShaderPass(FXAAShader);
+fxaa.uniforms.resolution.value.set(1/(innerWidth*renderer.getPixelRatio()), 1/(innerHeight*renderer.getPixelRatio()));
+composer.addPass(fxaa);
+
+/* Film grain — subtle photographic texture */
+const grain = new ShaderPass(GrainShader);
+composer.addPass(grain);
+
+/* Output pass for correct color space */
+composer.addPass(new OutputPass());
+
+/* ── colors — more green mixed in ── */
+const C_CORE  = new THREE.Color('#20F5E0');  /* bright teal-green */
+const C_INNER = new THREE.Color('#22E8C8');  /* green-cyan */
+const C_MID1  = new THREE.Color('#27DEDE');  /* cyan-green */
+const C_MID2  = new THREE.Color('#2895E5');  /* blue */
+const C_MID   = new THREE.Color('#25B8A0');  /* green-teal mid */
+const C_OUTER = new THREE.Color('#1A8E6B');  /* deep green */
+const C_DEEP  = new THREE.Color('#1B7A55');  /* forest teal */
+const C_BLUE  = new THREE.Color('#1F6EB4');  /* original blue */
+const C_GLOW  = new THREE.Color('#80FFD0');  /* green-white glow */
+
+const logo = new THREE.Group();
+scene.add(logo);
+const allNodes = [];
+
+/* ── hex geometry ── */
+function hexGeo(r) {
+  const s = new THREE.Shape();
+  for (let i=0;i<6;i++){
+    const a = Math.PI/3*i - Math.PI/6;
+    i===0 ? s.moveTo(r*Math.cos(a),r*Math.sin(a)) : s.lineTo(r*Math.cos(a),r*Math.sin(a));
+  }
+  s.closePath();
+  return new THREE.ExtrudeGeometry(s,{depth:.08, bevelEnabled:true, bevelThickness:.02, bevelSize:.012, bevelSegments:4});
+}
+
+function node(x, y, z, size, color, ring, bodyPart) {
+  const pos = new THREE.Vector3(x, y, z);
+  const geo = hexGeo(size);
+  const bp = bodyPart || 'body';
+
+  /* eyes: less emission so dark pupils stay dark */
+  const isEyeDark = bp === 'eye' && (color.r < 0.2 || color.getHexString() === '0a1628');
+  const isEye = bp === 'eye';
+  const isCheek = bp === 'cheek';
+
+  const emI = isEyeDark ? 0.05 : isEye ? 0.3 : isCheek ? 0.5 : 0.7;
+  const met = isEye ? 0.3 : 0.85;
+  const rou = isEye ? 0.4 : 0.1;
+  const opa = isEyeDark ? 0.98 : 0.95;
+
+  const mat = new THREE.MeshStandardMaterial({
+    color, emissive: isEyeDark ? new THREE.Color('#000000') : color,
+    emissiveIntensity: emI,
+    metalness: met, roughness: rou, transparent:true, opacity: opa
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  mesh.rotation.set(pos.x*2.1 + size*3, pos.y*1.7 + size*5, pos.z*3.3);
+  logo.add(mesh);
+
+  /* less glow on eyes/dark parts */
+  const glowOpacity = isEyeDark ? 0.02 : isEye ? 0.1 : isCheek ? 0.15 : 0.25;
+  const gMat = new THREE.SpriteMaterial({map:glowTex, color: isEyeDark ? new THREE.Color('#000000') : color, transparent:true, opacity:glowOpacity, blending:THREE.AdditiveBlending, depthWrite:false});
+  const glow = new THREE.Sprite(gMat);
+  glow.position.copy(pos);
+  glow.scale.setScalar(size * (isEyeDark ? 1.5 : 3.5));
+  logo.add(glow);
+
+  allNodes.push({mesh, glow, mat, gMat, color:color.clone(), pos:pos.clone(), size, ring, bodyPart: bp});
+  return pos;
+}
+
+/* ══════════════════════════════════════════════
+   BUDDY CREATURE — Pokemon-style, corona-cell pattern
+   Cute creature made of shimmering hex nodes
+   ══════════════════════════════════════════════ */
+
+/* Seeded random for deterministic chaos */
+let seed = 42;
+function sRand(){ seed=(seed*16807+0)%2147483647; return(seed&0x7fffffff)/0x7fffffff; }
+
+/* Helper: fill a sphere volume with nodes */
+function fillSphere(cx, cy, cz, radius, density, sizeRange, colors, bodyPart) {
+  const [minS, maxS] = sizeRange;
+  const step = radius * 2 / density;
+  for (let x = -radius; x <= radius; x += step) {
+    for (let y = -radius; y <= radius; y += step) {
+      for (let z = -radius; z <= radius; z += step) {
+        const d = Math.sqrt(x*x + y*y + z*z);
+        if (d > radius) continue;
+        /* denser near surface for crisp outline */
+        if (d < radius * 0.4 && sRand() > 0.5) continue;
+        const jitter = step * 0.3;
+        const px = cx + x + (sRand()-0.5)*jitter;
+        const py = cy + y + (sRand()-0.5)*jitter;
+        const pz = cz + z + (sRand()-0.5)*jitter;
+        const sz = minS + sRand() * (maxS - minS);
+        const c = colors[Math.floor(sRand() * colors.length)];
+        node(px, py, pz, sz, c, 0, bodyPart);
+      }
+    }
+  }
+}
+
+/* Helper: fill an ellipsoid */
+function fillEllipsoid(cx, cy, cz, rx, ry, rz, density, sizeRange, colors, bodyPart) {
+  const [minS, maxS] = sizeRange;
+  const maxR = Math.max(rx, ry, rz);
+  const step = maxR * 2 / density;
+  for (let x = -rx; x <= rx; x += step) {
+    for (let y = -ry; y <= ry; y += step) {
+      for (let z = -rz; z <= rz; z += step) {
+        const d = (x/rx)**2 + (y/ry)**2 + (z/rz)**2;
+        if (d > 1) continue;
+        if (d < 0.15 && sRand() > 0.4) continue;
+        const jitter = step * 0.25;
+        const px = cx + x + (sRand()-0.5)*jitter;
+        const py = cy + y + (sRand()-0.5)*jitter;
+        const pz = cz + z + (sRand()-0.5)*jitter;
+        const sz = minS + sRand() * (maxS - minS);
+        const c = colors[Math.floor(sRand() * colors.length)];
+        node(px, py, pz, sz, c, 0, bodyPart);
+      }
+    }
+  }
+}
+
+/* Helper: fill along a curved path (for tails, arms) */
+function fillTube(points, radius, density, sizeRange, colors, bodyPart) {
+  const [minS, maxS] = sizeRange;
+  for (let pi = 0; pi < points.length; pi++) {
+    const [cx, cy, cz] = points[pi];
+    const t = pi / (points.length - 1);
+    const r = radius * (1 - t * 0.5); /* taper */
+    const step = r * 2 / density;
+    for (let x = -r; x <= r; x += step) {
+      for (let y = -r; y <= r; y += step) {
+        for (let z = -r; z <= r; z += step) {
+          if (x*x+y*y+z*z > r*r) continue;
+          const jitter = step * 0.3;
+          const px = cx + x + (sRand()-0.5)*jitter;
+          const py = cy + y + (sRand()-0.5)*jitter;
+          const pz = cz + z + (sRand()-0.5)*jitter;
+          const sz = (minS + sRand()*(maxS-minS)) * (1 - t*0.3);
+          const c = colors[Math.floor(sRand() * colors.length)];
+          node(px, py, pz, sz, c, 0, bodyPart);
+        }
+      }
+    }
+  }
+}
+
+/* eye colors */
+const C_EYE_WHITE = new THREE.Color('#E8FFFC');
+const C_EYE_PUPIL = new THREE.Color('#0A1628');
+const C_CHEEK = new THREE.Color('#FF8FA0');
+const C_BELLY = new THREE.Color('#80FFD0');
+
+/* ══════════════════════════════════════════════════════════
+   BUDDY — Pokemon/Digimon style creature
+   Big head (60%), thin neck, compact body, HUGE eyes
+   Think: Pikachu meets Patamon meets Koromon
+   ══════════════════════════════════════════════════════════ */
+
+/* --- HEAD: massive round, THE dominant feature --- */
+/* Dense layers for smooth Pokemon surface */
+fillSphere(0, 2.8, 0, 2.6, 18, [0.05, 0.1], [C_CORE, C_CORE, C_INNER, C_MID1], 'head');
+fillSphere(0, 2.8, 0, 2.55, 14, [0.06, 0.1], [C_CORE, C_INNER], 'head');
+fillSphere(0, 2.8, 0, 2.3, 10, [0.07, 0.11], [C_INNER, C_CORE, C_MID1], 'head');
+
+/* --- NECK: narrow connector, clear separation --- */
+fillEllipsoid(0, 0.3, 0, 0.85, 0.55, 0.75, 8, [0.05, 0.08], [C_INNER, C_MID1, C_CORE], 'body');
+
+/* --- BODY: compact round, dense Pokemon torso --- */
+fillEllipsoid(0, -1.5, 0, 2.2, 1.8, 1.8, 16, [0.05, 0.1], [C_CORE, C_INNER, C_MID1], 'body');
+fillEllipsoid(0, -1.5, 0, 2.1, 1.7, 1.7, 12, [0.06, 0.1], [C_INNER, C_CORE, C_MID], 'body');
+
+/* --- EYES: HUGE, expressive Pokemon eyes, ULTRA DENSE + SHARP --- */
+/* White sclera — triple-layered for solid clean shape */
+fillEllipsoid(-0.95, 3.0, 2.0, 0.9, 0.95, 0.5, 14, [0.03, 0.06], [C_EYE_WHITE, C_EYE_WHITE], 'eye');
+fillEllipsoid(-0.95, 3.0, 2.0, 0.85, 0.9, 0.45, 10, [0.04, 0.06], [C_EYE_WHITE, C_EYE_WHITE], 'eye');
+fillEllipsoid(0.95, 3.0, 2.0, 0.9, 0.95, 0.5, 14, [0.03, 0.06], [C_EYE_WHITE, C_EYE_WHITE], 'eye');
+fillEllipsoid(0.95, 3.0, 2.0, 0.85, 0.9, 0.45, 10, [0.04, 0.06], [C_EYE_WHITE, C_EYE_WHITE], 'eye');
+
+/* Iris — ACE teal-cyan, dense layers */
+const C_IRIS = new THREE.Color('#0E9AA7');
+const C_IRIS2 = new THREE.Color('#20F5E0');
+fillEllipsoid(-0.85, 2.95, 2.35, 0.65, 0.7, 0.3, 12, [0.03, 0.06], [C_IRIS, C_IRIS, C_IRIS2, C_MID2], 'eye');
+fillEllipsoid(-0.85, 2.95, 2.35, 0.6, 0.65, 0.25, 8, [0.03, 0.05], [C_IRIS, C_IRIS2], 'eye');
+fillEllipsoid(0.85, 2.95, 2.35, 0.65, 0.7, 0.3, 12, [0.03, 0.06], [C_IRIS, C_IRIS, C_IRIS2, C_MID2], 'eye');
+fillEllipsoid(0.85, 2.95, 2.35, 0.6, 0.65, 0.25, 8, [0.03, 0.05], [C_IRIS, C_IRIS2], 'eye');
+
+/* Pupil — large dark center, very dense */
+fillEllipsoid(-0.8, 2.95, 2.55, 0.35, 0.42, 0.2, 10, [0.03, 0.05], [C_EYE_PUPIL, C_EYE_PUPIL], 'eye');
+fillEllipsoid(-0.8, 2.95, 2.55, 0.32, 0.38, 0.18, 7, [0.03, 0.05], [C_EYE_PUPIL, C_EYE_PUPIL], 'eye');
+fillEllipsoid(0.8, 2.95, 2.55, 0.35, 0.42, 0.2, 10, [0.03, 0.05], [C_EYE_PUPIL, C_EYE_PUPIL], 'eye');
+fillEllipsoid(0.8, 2.95, 2.55, 0.32, 0.38, 0.18, 7, [0.03, 0.05], [C_EYE_PUPIL, C_EYE_PUPIL], 'eye');
+
+/* Eye highlights — anime sparkle, multiple nodes for crisp glint */
+node(-0.55, 3.35, 2.65, 0.16, C_EYE_WHITE, 0, 'eye');
+node(-0.53, 3.33, 2.66, 0.12, C_EYE_WHITE, 0, 'eye');
+node(-0.5, 3.3, 2.67, 0.09, C_EYE_WHITE, 0, 'eye');
+node(-0.48, 3.28, 2.68, 0.06, C_EYE_WHITE, 0, 'eye');
+node(-1.0, 2.65, 2.6, 0.08, C_EYE_WHITE, 0, 'eye');
+node(-0.98, 2.63, 2.61, 0.05, C_EYE_WHITE, 0, 'eye');
+node(0.55, 3.35, 2.65, 0.16, C_EYE_WHITE, 0, 'eye');
+node(0.53, 3.33, 2.66, 0.12, C_EYE_WHITE, 0, 'eye');
+node(0.5, 3.3, 2.67, 0.09, C_EYE_WHITE, 0, 'eye');
+node(0.48, 3.28, 2.68, 0.06, C_EYE_WHITE, 0, 'eye');
+node(1.0, 2.65, 2.6, 0.08, C_EYE_WHITE, 0, 'eye');
+node(0.98, 2.63, 2.61, 0.05, C_EYE_WHITE, 0, 'eye');
+
+/* --- EARS: tall pointed, Pikachu-style, ULTRA DENSE --- */
+fillEllipsoid(-1.6, 5.2, -0.2, 0.5, 1.5, 0.38, 14, [0.03, 0.07], [C_CORE, C_MID1, C_INNER], 'ear');
+fillEllipsoid(-1.6, 5.2, -0.2, 0.48, 1.45, 0.35, 10, [0.04, 0.07], [C_CORE, C_INNER], 'ear');
+fillEllipsoid(-1.6, 5.0, 0.0, 0.25, 1.0, 0.16, 8, [0.03, 0.06], [C_CHEEK, C_CHEEK], 'ear');
+node(-1.6, 6.3, -0.2, 0.09, C_GLOW, 0, 'ear');
+node(-1.6, 6.1, -0.2, 0.07, C_CORE, 0, 'ear');
+node(-1.6, 5.9, -0.2, 0.06, C_INNER, 0, 'ear');
+
+fillEllipsoid(1.6, 5.2, -0.2, 0.5, 1.5, 0.38, 14, [0.03, 0.07], [C_CORE, C_MID1, C_INNER], 'ear');
+fillEllipsoid(1.6, 5.2, -0.2, 0.48, 1.45, 0.35, 10, [0.04, 0.07], [C_CORE, C_INNER], 'ear');
+fillEllipsoid(1.6, 5.0, 0.0, 0.25, 1.0, 0.16, 8, [0.03, 0.06], [C_CHEEK, C_CHEEK], 'ear');
+node(1.6, 6.3, -0.2, 0.09, C_GLOW, 0, 'ear');
+node(1.6, 6.1, -0.2, 0.07, C_CORE, 0, 'ear');
+node(1.6, 5.9, -0.2, 0.06, C_INNER, 0, 'ear');
+
+/* --- CHEEKS: rosy blush, denser --- */
+fillEllipsoid(-1.7, 2.3, 1.5, 0.55, 0.38, 0.3, 7, [0.04, 0.07], [C_CHEEK, C_CHEEK], 'cheek');
+fillEllipsoid(1.7, 2.3, 1.5, 0.55, 0.38, 0.3, 7, [0.04, 0.07], [C_CHEEK, C_CHEEK], 'cheek');
+
+/* --- NOSE: tiny triangle --- */
+node(0, 2.4, 2.5, 0.08, C_DEEP, 0, 'mouth');
+node(-0.05, 2.35, 2.48, 0.05, C_DEEP, 0, 'mouth');
+node(0.05, 2.35, 2.48, 0.05, C_DEEP, 0, 'mouth');
+
+/* --- MOUTH: small 'w' shaped cat mouth --- */
+/* left curve */
+for (let i = 0; i < 5; i++) {
+  const a = (i/4) * Math.PI * 0.5;
+  node(-0.15 - Math.sin(a)*0.2, 2.0 - Math.cos(a)*0.12, 2.4, 0.035, C_DEEP, 0, 'mouth');
+}
+/* right curve */
+for (let i = 0; i < 5; i++) {
+  const a = (i/4) * Math.PI * 0.5;
+  node(0.15 + Math.sin(a)*0.2, 2.0 - Math.cos(a)*0.12, 2.4, 0.035, C_DEEP, 0, 'mouth');
+}
+
+/* --- BELLY PATCH: lighter oval, dense --- */
+fillEllipsoid(0, -1.3, 1.2, 1.3, 1.3, 0.7, 10, [0.05, 0.09], [C_BELLY, C_BELLY, C_CORE], 'belly');
+
+/* --- ARMS: thick stubby, raised for waving --- */
+fillTube([[-1.9,-0.8,0.5],[-2.5,-0.5,0.9],[-3.0,-0.1,1.2],[-3.2,0.2,1.4]], 0.55, 6, [0.05, 0.1], [C_INNER, C_MID1, C_CORE], 'arm');
+fillSphere(-3.3, 0.3, 1.5, 0.4, 6, [0.04, 0.08], [C_CORE, C_INNER, C_GLOW], 'arm');
+
+fillTube([[1.9,-0.8,0.5],[2.5,-0.5,0.9],[3.0,-0.1,1.2],[3.2,0.2,1.4]], 0.55, 6, [0.05, 0.1], [C_INNER, C_MID1, C_CORE], 'arm');
+fillSphere(3.3, 0.3, 1.5, 0.4, 6, [0.04, 0.08], [C_CORE, C_INNER, C_GLOW], 'arm');
+
+/* --- LEGS/FEET: round stubby, dense --- */
+fillEllipsoid(-1.0, -3.2, 0.3, 0.85, 0.6, 0.95, 8, [0.05, 0.1], [C_MID1, C_MID, C_CORE], 'foot');
+fillEllipsoid(1.0, -3.2, 0.3, 0.85, 0.6, 0.95, 8, [0.05, 0.1], [C_MID1, C_MID, C_CORE], 'foot');
+/* toe beans! */
+node(-1.2, -3.55, 1.05, 0.07, C_CHEEK, 0, 'foot');
+node(-0.95, -3.6, 1.1, 0.06, C_CHEEK, 0, 'foot');
+node(-0.7, -3.55, 1.05, 0.06, C_CHEEK, 0, 'foot');
+node(1.2, -3.55, 1.05, 0.07, C_CHEEK, 0, 'foot');
+node(0.95, -3.6, 1.1, 0.06, C_CHEEK, 0, 'foot');
+node(0.7, -3.55, 1.05, 0.06, C_CHEEK, 0, 'foot');
+
+/* --- TAIL: curled upward, glowing tip --- */
+fillTube([
+  [0, -2.2, -1.5],
+  [0.3, -2.0, -2.1],
+  [0.6, -1.5, -2.5],
+  [0.8, -0.8, -2.6],
+  [0.7, -0.2, -2.3],
+  [0.4, 0.2, -1.9]
+], 0.4, 6, [0.05, 0.09], [C_MID1, C_CORE, C_INNER], 'tail');
+/* tail tip — glowing orb */
+fillSphere(0.4, 0.3, -1.8, 0.5, 6, [0.04, 0.08], [C_GLOW, C_CORE, C_GLOW, C_INNER], 'tail');
+
+/* --- ANTENNA/TUFT: small tuft on top of head between ears --- */
+node(0, 5.3, 0.2, 0.07, C_GLOW, 0, 'ear');
+node(-0.1, 5.5, 0.15, 0.06, C_CORE, 0, 'ear');
+node(0.1, 5.5, 0.15, 0.06, C_CORE, 0, 'ear');
+node(0, 5.7, 0.1, 0.05, C_GLOW, 0, 'ear');
+
+/* ═══ ENERGY WISPS — floating sparkles ═══ */
+for (let i = 0; i < 50; i++) {
+  const theta = sRand() * Math.PI * 2;
+  const phi = Math.acos(2*sRand()-1);
+  const r = 5.0 + sRand() * 3.0;
+  const x = r * Math.sin(phi) * Math.cos(theta);
+  const y = r * Math.sin(phi) * Math.sin(theta) + 1.5;
+  const z = r * Math.cos(phi);
+  const sz = 0.03 + sRand() * 0.05;
+  const c = [C_CORE, C_MID1, C_GLOW, C_INNER][Math.floor(sRand()*4)];
+  node(x, y, z, sz, c, 4, 'wisp');
+}
+
+/* ── environment map — rich multi-light for sharp metallic reflections ── */
+{
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  /* multiple colored lights create varied reflections across surfaces */
+  const el1 = new THREE.PointLight(0x20F5E0, 12, 60); el1.position.set(0,5,0); envScene.add(el1);
+  const el2 = new THREE.PointLight(0x2895E5, 8, 60); el2.position.set(5,-3,5); envScene.add(el2);
+  const el3 = new THREE.PointLight(0x1A8E6B, 6, 50); el3.position.set(-5,0,-5); envScene.add(el3);
+  const el4 = new THREE.PointLight(0xFFFFFF, 3, 40); el4.position.set(3,3,-4); envScene.add(el4);
+  const el5 = new THREE.PointLight(0x80FFD0, 5, 50); el5.position.set(-4,-4,3); envScene.add(el5);
+  envScene.add(new THREE.AmbientLight(0x0a2218, 0.6));
+  const envMap = pmrem.fromScene(envScene, 0, 0.1, 100).texture;
+  scene.environment = envMap;
+  pmrem.dispose();
+}
+
+/* no hull sphere — causes sharp circle artifact */
+
+/* ── particles ── */
+const PCOUNT = 500;
+const pGeo = new THREE.BufferGeometry();
+const pp = new Float32Array(PCOUNT*3);
+for (let i=0;i<PCOUNT;i++){
+  const t=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), r=8+Math.random()*20;
+  pp[i*3]=r*Math.sin(ph)*Math.cos(t); pp[i*3+1]=r*Math.sin(ph)*Math.sin(t); pp[i*3+2]=r*Math.cos(ph)-5;
+}
+pGeo.setAttribute('position',new THREE.BufferAttribute(pp,3));
+const pMat = new THREE.PointsMaterial({map:dotTex,color:0x22E8C8,size:.12,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,sizeAttenuation:true,depthWrite:false});
+scene.add(new THREE.Points(pGeo, pMat));
+
+/* ── lights — extended range so ALL nodes shimmer ── */
+scene.add(new THREE.AmbientLight(0x0a2218, 1.0));
+const kl = new THREE.PointLight(0x20F5E0, 3, 50); kl.position.set(0,0,8); scene.add(kl);
+const rl = new THREE.PointLight(0x22E8C8, 1.5, 40); rl.position.set(-6,4,5); scene.add(rl);
+const fl = new THREE.PointLight(0x2895E5, 1.0, 40); fl.position.set(5,-3,5); scene.add(fl);
+const gl = new THREE.PointLight(0x1A8E6B, 1.2, 40); gl.position.set(4,5,3); scene.add(gl);
+const bl = new THREE.PointLight(0x22E8C8, 1.5, 40); bl.position.set(0,0,-8); scene.add(bl);
+/* extra rim lights for outer spike tips */
+const rl2 = new THREE.PointLight(0x20F5E0, 0.8, 35); rl2.position.set(-8,-5,3); scene.add(rl2);
+const rl3 = new THREE.PointLight(0x2895E5, 0.8, 35); rl3.position.set(8,5,-3); scene.add(rl3);
+
+/* ── animation ── */
+const clock = new THREE.Clock();
+(function animate(){
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  /* speak lerp */
+  speakIntensity += ((speaking?1:0) - speakIntensity) * 0.1;
+
+  /* ── gentle idle sway — creature faces forward, subtle movement ── */
+  logo.rotation.y = Math.sin(t * 0.15) * 0.12;
+  logo.rotation.x = Math.sin(t * 0.11) * 0.03;
+  logo.rotation.z = Math.sin(t * 0.08) * 0.025;
+
+  /* breathing + cute bounce */
+  const breath = 1 + Math.sin(t*.7)*.012 + speakIntensity*Math.sin(t*5)*.015;
+  logo.scale.setScalar(breath);
+  /* gentle hovering bob */
+  logo.position.y = 0.5 + Math.sin(t*.4)*.15 + Math.sin(t*0.9)*.05;
+
+  /* ── nodes: individual movement + shimmer + SPEAK GLOW ── */
+  for (let i=0; i<allNodes.length; i++) {
+    const n = allNodes[i];
+    /* each node has its own unique shimmer rhythm */
+    const freq = 1.5 + (i%7)*0.3;  /* different speed per node */
+    const phase = t*freq + i*0.97 + n.pos.x*1.3 + n.pos.y*0.9;
+    const shimmer = Math.sin(phase);  /* -1 to 1 */
+    const shimNorm = shimmer*.5+.5;   /* 0 to 1 */
+
+    /* individual micro-movement — organic jitter */
+    const bp = n.bodyPart;
+    if (bp === 'wisp') {
+      /* wisps orbit slowly */
+      const angle = t * 0.3 + i * 0.5;
+      const orbitR = 0.15;
+      n.mesh.position.x = n.pos.x + Math.sin(angle) * orbitR;
+      n.mesh.position.y = n.pos.y + Math.cos(angle * 0.7) * orbitR * 0.5;
+      n.mesh.position.z = n.pos.z + Math.cos(angle) * orbitR;
+      n.glow.position.copy(n.mesh.position);
+    } else if (bp === 'ear') {
+      /* ears twitch — perk up when speaking */
+      const perk = speakIntensity * 0.12;
+      const twitch = Math.sin(t*2.5+i)*0.02 + speakIntensity*Math.sin(t*7+i)*0.06;
+      n.mesh.position.y = n.pos.y + twitch + perk;
+      n.glow.position.copy(n.mesh.position);
+    } else if (bp === 'arm') {
+      /* ARMS: wave when speaking! Idle: gentle sway. Speaking: animated gestures */
+      const side = n.pos.x < 0 ? -1 : 1;
+      const idleSway = Math.sin(t*1.2 + side*1.5) * 0.05;
+      /* speaking: arms raise up and wave enthusiastically */
+      const speakWave = speakIntensity * Math.sin(t*5 + side*2.0) * 0.35;
+      const speakLift = speakIntensity * 0.25;
+      const speakOut = speakIntensity * Math.sin(t*4 + side*1.5) * 0.15 * side;
+      n.mesh.position.x = n.pos.x + idleSway * side + speakOut;
+      n.mesh.position.y = n.pos.y + speakLift + speakWave;
+      n.mesh.position.z = n.pos.z + Math.sin(t*3+i*0.5)*0.02;
+      n.glow.position.copy(n.mesh.position);
+    } else if (bp === 'tail') {
+      /* tail wags — faster when speaking */
+      const speed = 3 + speakIntensity * 5;
+      const amp = 0.06 + speakIntensity * 0.12;
+      const wag = Math.sin(t*speed+i*0.2)*amp;
+      n.mesh.position.x = n.pos.x + wag;
+      n.mesh.position.z = n.pos.z + Math.sin(t*speed*0.8+i*0.3)*amp*0.5;
+      n.glow.position.copy(n.mesh.position);
+    } else if (bp === 'cheek') {
+      /* cheeks pulse brighter when speaking */
+      n.mesh.position.x = n.pos.x;
+      n.mesh.position.y = n.pos.y;
+      n.glow.position.copy(n.mesh.position);
+    } else {
+      /* body/head: subtle breathing */
+      const jx = Math.sin(t*1.5+i*1.3)*0.008;
+      const jy = Math.cos(t*1.2+i*0.9)*0.008;
+      n.mesh.position.x = n.pos.x + jx;
+      n.mesh.position.y = n.pos.y + jy;
+      n.glow.position.copy(n.mesh.position);
+    }
+
+    /* speaking: ripple outward from center */
+    const nodeDist = n.pos.length();
+    const wave = Math.sin(t*8 - nodeDist*0.8)*.5 + .5;
+    const speak = speakIntensity * wave;
+
+    /* per-node shimmer — reduced for eyes/dark parts */
+    const isEyeN = n.bodyPart === 'eye';
+    const isDarkEye = isEyeN && n.color.r < 0.2;
+    if (isDarkEye) {
+      /* dark pupils: minimal shimmer, stay dark */
+      n.mat.emissiveIntensity = 0.02 + shimNorm * 0.03;
+      n.mat.opacity = 0.95 + shimNorm * 0.05;
+      n.gMat.opacity = 0.01;
+      n.glow.scale.setScalar(n.size * 1.2);
+    } else if (isEyeN) {
+      /* eye whites: gentle shimmer */
+      n.mat.emissiveIntensity = .2 + shimNorm*.2 + speak * 0.1;
+      n.mat.opacity = .9 + shimNorm*.1;
+      n.gMat.opacity = .05 + shimNorm*.08;
+      n.glow.scale.setScalar(n.size * (2.0 + shimNorm*1.0));
+    } else {
+      /* body: full shimmer */
+      n.mat.emissiveIntensity = .2 + shimNorm*.8 + speak * 0.4;
+      n.mat.opacity = .7 + shimNorm*.28;
+      n.gMat.opacity = .08 + shimNorm*.3 + speak * 0.15;
+      n.glow.scale.setScalar(n.size * (2.5 + shimNorm*2.5 + speak * 1.5));
+    }
+
+    /* hex rotation */
+    n.mesh.rotation.z += Math.sin(t*0.5 + i*0.3) * 0.002;
+
+    /* color shift when speaking */
+    if (speakIntensity > 0.01) {
+      n.mat.emissive.lerpColors(n.color, C_GLOW, speak * 0.25);
+    } else {
+      n.mat.emissive.copy(n.color);
+    }
+  }
+
+  /* no core sphere to animate */
+
+  /* particles */
+  const pa = pGeo.attributes.position.array;
+  for(let i=0;i<PCOUNT;i++){pa[i*3+1]+=Math.sin(t*.2+i)*.0008;pa[i*3]+=Math.cos(t*.1+i*.3)*.0004;}
+  pGeo.attributes.position.needsUpdate = true;
+  pMat.opacity = .16 + speakIntensity*.1;
+
+  /* bloom + key light — gentle speak response */
+  bloom.strength = .35 + speakIntensity * 0.2;
+  kl.intensity = 2.5 + speakIntensity * (0.5 + Math.sin(t*6)*0.3);
+
+  /* film grain time */
+  grain.uniforms.time.value = t;
+
+  /* chromatic aberration — slight pulse */
+  chroma.uniforms.amount.value = 0.001 + Math.sin(t*0.3)*0.0005 + speakIntensity * 0.001;
+
+  composer.render();
+})();
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
+  const pr=renderer.getPixelRatio();
+  sharpen.uniforms.resolution.value.set(innerWidth*pr,innerHeight*pr);
+  fxaa.uniforms.resolution.value.set(1/(innerWidth*pr),1/(innerHeight*pr));
+});
+
+/* ── intro — show UI immediately ── */
+setTimeout(()=>document.getElementById('subtitle').classList.add('visible'), 800);
+setTimeout(()=>document.getElementById('chat-container').classList.add('visible'), 1500);
+
+/* ── chat ── */
+const ci = document.getElementById('chat-input');
+const sb = document.getElementById('send-btn');
+const ra = document.getElementById('response-area');
+let proc = false;
+
+async function send() {
+  const txt = ci.value.trim();
+  if (!txt || proc) return;
+  proc = true; ci.value = '';
+  speaking = true;
+
+  const dots = document.createElement('div');
+  dots.className = 'typing-dots';
+  dots.innerHTML = '<span></span><span></span><span></span>';
+  ra.appendChild(dots); ra.scrollTop = ra.scrollHeight;
+
+  await new Promise(r => setTimeout(r, 1200 + Math.random()*800));
+  dots.remove();
+
+  const m = document.createElement('div');
+  m.className = 'buddy-msg';
+  m.textContent = respond(txt);
+  ra.appendChild(m); ra.scrollTop = ra.scrollHeight;
+
+  /* keep glowing a bit after response */
+  setTimeout(() => { speaking = false; }, 600);
+  proc = false;
+}
+
+function respond(input) {
+  const l = input.toLowerCase();
+  if (l.match(/hall?o|hey|hi|moin|servus|guten/))
+    return 'Hey! Ich bin Buddy \u2014 dein Guide f\u00fcr Bridge IDE. Ich zeig dir wie alles funktioniert. Arbeitest du eher mit Code oder mit Menschen?';
+  if (l.match(/code|entwickl|program|terminal|cli|tech/))
+    return 'Alles klar. Bridge IDE ist eine Multi-Agent-Plattform. Mehrere AI-Agents arbeiten als Team \u2014 du steuerst sie von hier aus.';
+  if (l.match(/mensch|manage|menschen|team|chef|lead/))
+    return 'Perfekt. Stell dir Bridge IDE vor wie ein B\u00fcro mit deinem AI-Team. Du bist der Chef \u2014 deine Agents arbeiten f\u00fcr dich.';
+  if (l.match(/ja|klar|gerne|zeig|los|ok/))
+    return 'Links der Management Chat, rechts das Team Board, oben rechts das Control Center. Schreib einfach was du brauchst!';
+  return 'Verstanden. Ich k\u00fcmmere mich drum. Schreib einfach \u2014 ich bin immer da.';
+}
+
+sb.addEventListener('click', send);
+ci.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+/* NO auto-speaking on focus — only on actual messages */
+</script>
+</body>
+</html>

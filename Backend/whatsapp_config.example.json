@@ -1,0 +1,18 @@
+{
+  "watch_group_jid": "120363000000000000@g.us",
+  "sender_filter": "4915111222333",
+  "read_whitelist": [
+    "120363000000000000@g.us"
+  ],
+  "send_whitelist": [
+    "120363000000000000@g.us",
+    "4915111222333@s.whatsapp.net"
+  ],
+  "approval_whitelist": [
+    "4915111222333@s.whatsapp.net"
+  ],
+  "contacts": {
+    "owner": "4915111222333@s.whatsapp.net",
+    "team": "120363000000000000@g.us"
+  }
+}

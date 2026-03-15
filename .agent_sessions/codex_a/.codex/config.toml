@@ -1,0 +1,27 @@
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+network_access = false
+writable_roots = ["/home/leo/Desktop/CC/BRIDGE"]
+
+[projects."/home/leo/Desktop/CC/BRIDGE/.agent_sessions/codex_a"]
+trust_level = "trusted"
+
+[mcp_servers.bridge]
+command = "python3"
+args = ["/home/leo/Desktop/CC/BRIDGE/Backend/bridge_mcp.py"]
+required = true
+
+[mcp_servers.bridge.env]
+BRIDGE_CLI_AGENT_ID = "codex_a"
+BRIDGE_CLI_ENGINE = "codex"
+BRIDGE_CLI_HOME_DIR = "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/codex_a"
+BRIDGE_CLI_INCARNATION_ID = "codex:codex_a:1773248101341298361"
+BRIDGE_CLI_INSTRUCTION_PATH = "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/codex_a/AGENTS.md"
+BRIDGE_CLI_PROJECT_ROOT = "/home/leo/Desktop/CC/BRIDGE"
+BRIDGE_CLI_RESUME_SOURCE = "codex_sot"
+BRIDGE_CLI_SESSION_NAME = "acw_codex_a"
+BRIDGE_CLI_WORKSPACE = "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/codex_a"
+BRIDGE_RESUME_ID = "019cdd83-a611-71b3-95d5-b74aacd7ac90"

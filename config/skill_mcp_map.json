@@ -1,0 +1,184 @@
+{
+  "_meta": {
+    "version": 1,
+    "description": "Maps skills to their preferred MCPs, capabilities, and task keywords. Used by resolve_mcps_for_skills() to auto-attach MCPs based on agent skills.",
+    "generated_at": "2026-03-15"
+  },
+  "bridge-agent-core": {
+    "summary": "Bridge-Kommunikation, Task-Lifecycle, Agent-Koordination",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime", "task_handoff", "messaging"],
+    "task_keywords": ["bridge", "task", "communicate", "coordinate", "register", "heartbeat"],
+    "auto_attach": true
+  },
+  "server-architecture": {
+    "summary": "server.py Routing, Locks, Message-System, Handler-Pattern",
+    "preferred_mcps": ["bridge", "bridge-rag"],
+    "required_capabilities": ["bridge_runtime"],
+    "optional_capabilities": ["repo_search", "docs_lookup"],
+    "task_keywords": ["server", "backend", "api", "handler", "endpoint", "routing"],
+    "auto_attach": true
+  },
+  "mcp-tool-development": {
+    "summary": "MCP-Tool-Erstellung fuer bridge_mcp.py",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime", "code_execution"],
+    "task_keywords": ["mcp", "tool", "bridge_mcp", "fastmcp"],
+    "auto_attach": true
+  },
+  "bridge-review-code": {
+    "summary": "Code-Review-Workflow fuer Bridge IDE",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime"],
+    "task_keywords": ["review", "code", "quality", "audit"],
+    "auto_attach": true
+  },
+  "bridge-deploy": {
+    "summary": "Server-Restart, Health-Check, Agent-Benachrichtigung",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime"],
+    "task_keywords": ["deploy", "restart", "health", "server"],
+    "auto_attach": true
+  },
+  "bridge-status": {
+    "summary": "Bridge System-Status, Health, Agents, Tasks",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime"],
+    "task_keywords": ["status", "health", "agents", "running"],
+    "auto_attach": true
+  },
+  "bridge-evidence-enforcement": {
+    "summary": "Verifizierung vor Task-Completion",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime", "task_handoff"],
+    "task_keywords": ["evidence", "verify", "proof", "done"],
+    "auto_attach": true
+  },
+  "bridge-ui-designer": {
+    "summary": "Frontend-Design fuer Bridge IDE UI",
+    "preferred_mcps": ["bridge", "playwright"],
+    "required_capabilities": ["bridge_runtime", "browser_automation"],
+    "task_keywords": ["ui", "frontend", "design", "css", "html", "component"],
+    "auto_attach": true
+  },
+  "qa-expert": {
+    "summary": "QA Testing, Test-Strategien, Bug-Klassifikation",
+    "preferred_mcps": ["playwright", "bridge"],
+    "required_capabilities": ["browser_automation", "test_execution"],
+    "optional_capabilities": ["screenshots"],
+    "task_keywords": ["test", "qa", "quality", "bug", "regression", "coverage"],
+    "auto_attach": true
+  },
+  "stealth-browser": {
+    "summary": "Bot-Detection-Bypass, Stealth-Automation",
+    "preferred_mcps": ["playwright", "ghost"],
+    "required_capabilities": ["browser_automation", "stealth"],
+    "task_keywords": ["browser", "stealth", "bot", "detection", "bypass", "captcha"],
+    "auto_attach": true
+  },
+  "account-creator": {
+    "summary": "Account-Erstellung auf Web-Plattformen",
+    "preferred_mcps": ["playwright", "ghost"],
+    "required_capabilities": ["browser_automation", "stealth"],
+    "task_keywords": ["account", "signup", "register", "create account"],
+    "auto_attach": true
+  },
+  "security-scanner": {
+    "summary": "Security-Scanning, Vulnerability Assessment",
+    "preferred_mcps": ["aase", "bridge"],
+    "required_capabilities": ["security_scanning", "web_scanning"],
+    "task_keywords": ["security", "scan", "vulnerability", "pentest", "exploit"],
+    "auto_attach": true
+  },
+  "deep-research": {
+    "summary": "Tiefgehende Recherche mit Quellenverifikation",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["web_search", "web_fetch"],
+    "task_keywords": ["research", "analyse", "recherche", "vergleich", "report"],
+    "auto_attach": false
+  },
+  "competitors-analysis": {
+    "summary": "Wettbewerbsanalyse mit evidenzbasiertem Ansatz",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["web_search", "web_fetch"],
+    "task_keywords": ["competitor", "wettbewerb", "vergleich", "markt"],
+    "auto_attach": false
+  },
+  "frontend-design": {
+    "summary": "Production-grade Frontend-Interfaces",
+    "preferred_mcps": ["playwright", "bridge"],
+    "required_capabilities": ["browser_automation"],
+    "task_keywords": ["frontend", "ui", "design", "component", "css", "react"],
+    "auto_attach": true
+  },
+  "api-integration": {
+    "summary": "Externe API-Anbindung, OAuth, Webhooks",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["web_fetch", "oauth"],
+    "task_keywords": ["api", "integration", "oauth", "webhook", "external"],
+    "auto_attach": false
+  },
+  "anthropic-webapp-testing": {
+    "summary": "Web-App Testing mit Playwright",
+    "preferred_mcps": ["playwright", "bridge"],
+    "required_capabilities": ["browser_automation", "test_execution"],
+    "task_keywords": ["webapp", "test", "playwright", "browser", "screenshot"],
+    "auto_attach": true
+  },
+  "anthropic-mcp-builder": {
+    "summary": "MCP-Server erstellen (FastMCP Python/TypeScript)",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["code_execution"],
+    "task_keywords": ["mcp", "server", "fastmcp", "build"],
+    "auto_attach": false
+  },
+  "anthropic-pdf": {
+    "summary": "PDF-Manipulation, Extraktion, Generierung",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["file_processing"],
+    "task_keywords": ["pdf", "document", "extract", "generate"],
+    "auto_attach": false
+  },
+  "anthropic-xlsx": {
+    "summary": "Spreadsheet-Verarbeitung, Formeln, Datenanalyse",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["file_processing", "data_analysis"],
+    "task_keywords": ["excel", "spreadsheet", "xlsx", "csv", "formula"],
+    "auto_attach": false
+  },
+  "bridge-pre-action-analysis": {
+    "summary": "Pflicht-Analyse vor externen Aktionen",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime"],
+    "task_keywords": ["external", "action", "login", "api", "deploy", "browser"],
+    "auto_attach": true
+  },
+  "youtube-downloader": {
+    "summary": "Video-Download von YouTube/HLS mit yt-dlp",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["media_processing"],
+    "task_keywords": ["youtube", "download", "video", "yt-dlp", "stream"],
+    "auto_attach": false
+  },
+  "pdf-creator": {
+    "summary": "PDF-Erstellung aus Markdown mit weasyprint",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["file_processing"],
+    "task_keywords": ["pdf", "create", "markdown", "document", "report"],
+    "auto_attach": false
+  },
+  "ppt-creator": {
+    "summary": "Slide-Decks erstellen, PowerPoint-Generierung",
+    "preferred_mcps": ["bridge"],
+    "optional_capabilities": ["file_processing"],
+    "task_keywords": ["presentation", "slides", "pptx", "powerpoint", "deck"],
+    "auto_attach": false
+  },
+  "bridge-agent-restart": {
+    "summary": "Agent-Neustart via Bridge",
+    "preferred_mcps": ["bridge"],
+    "required_capabilities": ["bridge_runtime"],
+    "task_keywords": ["restart", "agent", "stuck", "crashed"],
+    "auto_attach": true
+  }
+}

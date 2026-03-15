@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bridge Browser Fixture - Login Flow</title>
+  </head>
+  <body>
+    <main>
+      <h1>Creator Studio Login</h1>
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="creator@example.com">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Password">
+        <button type="submit">Sign In</button>
+      </form>
+      <p id="status" data-state="idle">Waiting for sign in.</p>
+    </main>
+    <script>
+      const form = document.getElementById("login-form");
+      const status = document.getElementById("status");
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+        if (email && password) {
+          status.dataset.state = "success";
+          status.textContent = "Dashboard Ready";
+          document.body.dataset.auth = "ready";
+        } else {
+          status.dataset.state = "error";
+          status.textContent = "Missing credentials";
+          document.body.dataset.auth = "error";
+        }
+      });
+    </script>
+  </body>
+</html>

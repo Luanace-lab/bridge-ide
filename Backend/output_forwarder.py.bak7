@@ -1,0 +1,528 @@
+#!/usr/bin/env python3
+"""
+output_forwarder.py — Stream Manager Terminal Output → Bridge
+
+Uses tmux pipe-pane to stream terminal output line-by-line.
+Accumulates lines in a debounce buffer, then runs through
+text extraction filters to separate agent prose from terminal chrome.
+
+Option A: Two message types:
+  - meta.type="prose"  → real agent text (shown as chat bubble)
+  - meta.type="status" → spinner/thinking indicator (shown as typing dot)
+
+Usage:
+    python3 output_forwarder.py
+    FORWARDER_SESSION=acw_manager python3 output_forwarder.py
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import select
+import signal
+import stat
+import subprocess
+import sys
+import time
+import urllib.request
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+TMUX_SESSION = os.environ.get("FORWARDER_SESSION", "acw_manager")
+BRIDGE_URL = os.environ.get("BRIDGE_URL", "http://127.0.0.1:9111")
+STATUS_COOLDOWN = float(os.environ.get("STATUS_COOLDOWN", "10.0"))
+FLUSH_DELAY = float(os.environ.get("FLUSH_DELAY", "2.5"))
+MIN_PROSE_LEN = int(os.environ.get("MIN_PROSE_LEN", "10"))
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PID_DIR = os.path.join(_SCRIPT_DIR, "pids")
+PID_FILE = os.path.join(PID_DIR, "output_forwarder.pid")
+FIFO_PATH = os.environ.get("FORWARDER_FIFO", f"/tmp/bridge_forwarder_{TMUX_SESSION}.fifo")
+
+# ---------------------------------------------------------------------------
+# ANSI / terminal escape stripping
+# ---------------------------------------------------------------------------
+
+_ANSI_RE = re.compile(
+    r"\x1b\[[0-9;]*[a-zA-Z]"   # CSI sequences
+    r"|\x1b\].*?\x07"           # OSC sequences
+    r"|\x1b[()][AB012]"         # charset switching
+    r"|\x1b\[[\?]?\d*[hl]"     # mode set/reset
+    r"|\r"                       # carriage returns
+)
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_RE.sub("", text)
+
+
+# ---------------------------------------------------------------------------
+# Spinner words (Claude Code thinking/processing status)
+# ---------------------------------------------------------------------------
+
+_SPINNER_WORDS = {
+    "Fermenting", "Brewing", "Actualizing", "Thinking", "Reasoning",
+    "Orbiting", "Pondering", "Computing", "Leavening", "Wandering",
+    "Brewed", "Crunched",
+}
+
+_SPINNER_RE = re.compile(
+    r"^(?:" + "|".join(_SPINNER_WORDS) + r")"
+)
+
+_SPINNER_DURATION_RE = re.compile(
+    r"(?:" + "|".join(_SPINNER_WORDS) + r") for \d"
+)
+
+
+# ---------------------------------------------------------------------------
+# Line classification
+# ---------------------------------------------------------------------------
+
+# Tool call: ● <server> - <tool> (MCP)(...) or ● <ToolName> (...)
+_TOOL_CALL_RE = re.compile(
+    r"^●\s+.+\((?:MCP|Bash|Read|Write|Edit|Glob|Grep|Task|Skill|"
+    r"NotebookEdit|WebFetch|WebSearch|EnterPlanMode|ExitPlanMode|"
+    r"AskUserQuestion|EnterWorktree|TeamCreate|SendMessage)\)"
+)
+_TOOL_SEARCH_RE = re.compile(
+    r"^●\s+(?:Searched for|Found \d+|Read \(|Wrote \(|Edited \()"
+)
+
+
+def _is_tool_call(stripped: str) -> bool:
+    """True if line is a Claude Code tool invocation header."""
+    if not stripped.startswith("●"):
+        return False
+    if _TOOL_CALL_RE.search(stripped):
+        return True
+    if _TOOL_SEARCH_RE.search(stripped):
+        return True
+    # Generic: ● word - word (SomeProvider)
+    if re.match(r"^●\s+\w+\s+-\s+\w+\s+\(", stripped):
+        return True
+    return False
+
+
+def _is_spinner(stripped: str) -> bool:
+    """True if line is a Claude Code spinner/thinking status."""
+    if not stripped:
+        return False
+    # Special spinner prefix chars: ✻ ✽ ✦ ✶
+    if stripped[0] in ("✻", "✽", "✦", "✶"):
+        return True
+    # Regular asterisk: "* Orbiting…", "* Brewing…"
+    if stripped.startswith("*") and not stripped.startswith("**"):
+        rest = stripped.lstrip("* ").rstrip("…. ")
+        if rest and rest.split()[0] in _SPINNER_WORDS:
+            return True
+    # Bare spinner word at start: "Brewing for 3s", "Orbiting…"
+    if _SPINNER_RE.match(stripped):
+        return True
+    if _SPINNER_DURATION_RE.search(stripped):
+        return True
+    # "(thought for Xs)" pattern
+    if re.search(r"\(thought for \d+s?\)", stripped):
+        return True
+    # Token counter: "(39s · ↑ 552 tokens)" — always chrome
+    if re.search(r"\d+s\s*·\s*↑\s*[\d,]+ tokens", stripped):
+        return True
+    # Generic catch-all: Line is ONLY a capitalized word (possibly hyphenated) + …
+    # Must be the entire line to avoid false positives on German prose
+    if re.match(r"^[A-Z][a-z]+(?:-[A-Za-z]+)*…\.{0,3}$", stripped):
+        return True
+    return False
+
+
+def _is_chrome(stripped: str) -> bool:
+    """True if line is terminal UI chrome (not agent content).
+    NOTE: Spinners are handled separately by _is_spinner()."""
+    if not stripped:
+        return True
+    if stripped.startswith("❯"):
+        return True
+    if stripped.startswith("────"):
+        return True
+    if stripped.startswith("⏵"):
+        return True
+    if "bypass permissions" in stripped:
+        return True
+    if "esc to interrupt" in stripped:
+        return True
+    if "ctrl+o to expand" in stripped:
+        return True
+    if "shift+tab to cycle" in stripped:
+        return True
+    if re.match(r"^\s*[…\.]{1,3}\s*\+\d+ lines", stripped):
+        return True
+    # Raw JSON fragments (e.g. leaked curl / tool output)
+    if re.match(r'^\s*[\{\}"\[]', stripped):
+        return True
+    if re.search(r'"timestamp"\s*:', stripped):
+        return True
+    if re.search(r'"result"\s*:', stripped):
+        return True
+    if re.search(r'"ok"\s*:', stripped):
+        return True
+    if re.search(r'"message"\s*:', stripped):
+        return True
+    # Bare tool call text without ● prefix: "Bash(...)", "Read(...)", etc.
+    if re.match(
+        r"^(?:Bash|Read|Write|Edit|Glob|Grep|Task|Skill|WebFetch|WebSearch)\s*\(",
+        stripped,
+    ):
+        return True
+    # Numbered source code lines from Read tool output (e.g. "311→  except...")
+    # Require 2+ digits followed by → or tab to avoid false positives like "3 Agents"
+    if re.match(r"^\d{2,}[→\t]", stripped):
+        return True
+    # Lines starting with +/- (diff output — with or without trailing space)
+    if re.match(r"^[+\-]{1,3}[a-zA-Z|#]", stripped):
+        return True
+    if re.match(r"^[+\-]{1,3}\s", stripped):
+        return True
+    # Table rows from tool output (e.g. "| Column | Value |")
+    if re.match(r"^\|.*\|", stripped):
+        return True
+    # Markdown headers leaked from tool output context
+    if re.match(r"^#{1,6}\s", stripped):
+        return True
+    # Token counter line: "↑ N tokens" or "(Xs · ↑ N tokens)"
+    if re.search(r"↑\s*[\d,]+\s*tokens", stripped):
+        return True
+    # Context/statusline messages: "Context left until auto-compact: N%"
+    if re.search(r"Context left until auto-compact", stripped):
+        return True
+    return False
+
+
+def _is_tool_result_continuation(line: str, stripped: str) -> bool:
+    """True if line is indented continuation of a tool result block."""
+    leading = len(line) - len(line.lstrip())
+    # Box-drawing lines (table output from tools) — any indent level
+    if re.search(r"[│├┌└┬┼┤┐┘]{1}", stripped):
+        return True
+    # Numbered source code lines from Read tool (e.g. "  311→  except...")
+    if re.match(r"^\d+[→\t]\s*", stripped):
+        return True
+    if leading < 2:
+        return False
+    # Looks like JSON or quoted result text
+    if stripped.startswith(("{", "}", '"', "'", "…")):
+        return True
+    if re.match(r'^"?\w+"?\s*:', stripped):
+        return True
+    # Escaped JSON strings (leaked curl output)
+    if re.search(r'\\u[0-9a-fA-F]{4}', stripped):
+        return True
+    if re.search(r'\\"[a-z_]+\\"', stripped):
+        return True
+    # Indented text that looks like tool output (file paths, commands)
+    if leading >= 3 and re.match(r"^/\w|^[a-z_]+\.[a-z]+", stripped):
+        return True
+    # Table rows (any indent) — "| Col | Val |"
+    if re.match(r"^\|.*\|", stripped):
+        return True
+    # Diff additions/removals in tool output context
+    if re.match(r"^[+\-]{1,3}[a-zA-Z|#]", stripped):
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Text extraction (state machine)
+# ---------------------------------------------------------------------------
+
+def extract_agent_text(lines: list[str]) -> tuple[str, bool]:
+    """Extract agent prose from raw terminal lines.
+
+    Returns (prose_text, has_spinner).
+    - prose_text: The actual agent prose (filtered)
+    - has_spinner: True if any spinner/thinking lines were detected
+
+    Uses a simple state machine:
+      TEXT       — collecting agent output
+      TOOL_BLOCK — inside a tool call / result block, skipping
+    """
+    output: list[str] = []
+    in_tool_block = False
+    has_spinner = False
+
+    for raw_line in lines:
+        line = _strip_ansi(raw_line)
+        stripped = line.strip()
+
+        # ----- detect spinner (don't add to output) -----
+        if _is_spinner(stripped):
+            has_spinner = True
+            continue
+
+        # ----- skip UI chrome always -----
+        if _is_chrome(stripped):
+            continue
+
+        # ----- tool result start (⎿) -----
+        if stripped.startswith("⎿"):
+            in_tool_block = True
+            continue
+
+        # ----- tool call start (●) -----
+        if stripped.startswith("●"):
+            if _is_tool_call(stripped):
+                in_tool_block = True
+                continue
+            else:
+                # Agent text paragraph starting with ●
+                in_tool_block = False
+                # Remove the ● marker for cleaner text
+                text = re.sub(r"^●\s*", "", stripped)
+                if text:
+                    output.append(text)
+                continue
+
+        # ----- inside tool block: skip continuations -----
+        if in_tool_block:
+            if _is_tool_result_continuation(line, stripped):
+                continue
+            if not stripped:
+                continue
+            # Non-indented, non-empty → end of tool block
+            in_tool_block = False
+
+        # ----- regular text -----
+        if stripped:
+            output.append(line.rstrip())
+
+    # Clean up trailing/leading empties
+    while output and not output[0].strip():
+        output.pop(0)
+    while output and not output[-1].strip():
+        output.pop()
+
+    return "\n".join(output).strip(), has_spinner
+
+
+# ---------------------------------------------------------------------------
+# FIFO management
+# ---------------------------------------------------------------------------
+
+def _create_fifo() -> None:
+    """Create named pipe (FIFO) if it doesn't exist."""
+    if os.path.exists(FIFO_PATH):
+        if stat.S_ISFIFO(os.stat(FIFO_PATH).st_mode):
+            return
+        os.remove(FIFO_PATH)
+    os.mkfifo(FIFO_PATH)
+    _log(f"Created FIFO: {FIFO_PATH}")
+
+
+def _remove_fifo() -> None:
+    """Remove the FIFO."""
+    try:
+        os.remove(FIFO_PATH)
+    except OSError:
+        pass
+
+
+def _start_pipe_pane() -> None:
+    """Attach tmux pipe-pane to stream output to our FIFO."""
+    # First stop any existing pipe-pane on this session
+    subprocess.run(
+        ["tmux", "pipe-pane", "-t", TMUX_SESSION],
+        capture_output=True, timeout=5,
+    )
+    # Start pipe-pane writing to our FIFO
+    # -o flag: only output (not input)
+    result = subprocess.run(
+        ["tmux", "pipe-pane", "-t", TMUX_SESSION, "-o",
+         f"cat >> {FIFO_PATH}"],
+        capture_output=True, text=True, timeout=5,
+    )
+    if result.returncode != 0:
+        _log(f"pipe-pane failed: {result.stderr}")
+        sys.exit(1)
+    _log(f"pipe-pane attached to {TMUX_SESSION} → {FIFO_PATH}")
+
+
+def _stop_pipe_pane() -> None:
+    """Detach tmux pipe-pane."""
+    try:
+        subprocess.run(
+            ["tmux", "pipe-pane", "-t", TMUX_SESSION],
+            capture_output=True, timeout=5,
+        )
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Bridge HTTP sender
+# ---------------------------------------------------------------------------
+
+def send_to_bridge(content: str, msg_type: str = "prose") -> bool:
+    """Send message via Bridge HTTP API.
+
+    msg_type: "prose" for real agent text, "status" for spinner/thinking.
+    """
+    payload = json.dumps(
+        {
+            "from": "manager",
+            "to": "user",
+            "content": content,
+            "meta": {
+                "source": "output_forwarder",
+                "auto_capture": True,
+                "type": msg_type,
+            },
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{BRIDGE_URL}/send",
+        data=payload,
+        headers={"Content-Type": "application/json; charset=utf-8"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status in (200, 201)
+    except Exception as exc:
+        _log(f"send failed: {exc}")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# PID management
+# ---------------------------------------------------------------------------
+
+def _write_pid() -> None:
+    os.makedirs(PID_DIR, exist_ok=True)
+    with open(PID_FILE, "w") as fh:
+        fh.write(str(os.getpid()))
+
+
+def _cleanup(*_args: object) -> None:
+    _log("Shutting down...")
+    _stop_pipe_pane()
+    _remove_fifo()
+    try:
+        os.remove(PID_FILE)
+    except OSError:
+        pass
+    sys.exit(0)
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+def _log(msg: str) -> None:
+    ts = time.strftime("%H:%M:%S")
+    print(f"[forwarder {ts}] {msg}", flush=True)
+
+
+# ---------------------------------------------------------------------------
+# Buffer flush
+# ---------------------------------------------------------------------------
+
+def _flush_buffer(
+    buffer: list[str],
+    last_status_sent: float,
+) -> float:
+    """Process accumulated buffer lines and send to bridge.
+
+    Returns updated last_status_sent timestamp.
+    """
+    if not buffer:
+        return last_status_sent
+
+    prose, has_spinner = extract_agent_text(buffer)
+
+    # Send typing status for spinners (with cooldown)
+    if has_spinner:
+        now = time.time()
+        if now - last_status_sent >= STATUS_COOLDOWN:
+            send_to_bridge("typing", msg_type="status")
+            last_status_sent = now
+            _log("Sent status: typing")
+
+    # Send prose if substantial
+    if prose and len(prose) >= MIN_PROSE_LEN:
+        send_to_bridge(prose, msg_type="prose")
+        _log(f"Sent prose: {len(prose)} chars")
+
+    return last_status_sent
+
+
+# ---------------------------------------------------------------------------
+# Main loop — reads FIFO with debounce buffer
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    _write_pid()
+    signal.signal(signal.SIGTERM, _cleanup)
+    signal.signal(signal.SIGINT, _cleanup)
+
+    _log(f"Started PID={os.getpid()} session={TMUX_SESSION}")
+
+    # Setup FIFO and pipe-pane
+    _create_fifo()
+    _start_pipe_pane()
+
+    last_status_sent: float = 0.0
+
+    _log(f"Reading from FIFO (debounce={FLUSH_DELAY}s): {FIFO_PATH}")
+
+    while True:
+        try:
+            # Open FIFO for reading (blocks until writer connects)
+            # Re-open in loop because writer (pipe-pane) may disconnect
+            with open(FIFO_PATH, "r") as fifo:
+                buffer: list[str] = []
+
+                while True:
+                    # Wait for data or debounce timeout
+                    # None timeout = block indefinitely (when buffer empty)
+                    timeout = FLUSH_DELAY if buffer else None
+                    ready, _, _ = select.select([fifo], [], [], timeout)
+
+                    if ready:
+                        line = fifo.readline()
+                        if not line:
+                            # EOF — writer disconnected
+                            # Flush remaining buffer first
+                            if buffer:
+                                last_status_sent = _flush_buffer(
+                                    buffer, last_status_sent
+                                )
+                                buffer.clear()
+                            break
+
+                        buffer.append(line)
+                    else:
+                        # Timeout — no new data for FLUSH_DELAY seconds
+                        if buffer:
+                            last_status_sent = _flush_buffer(
+                                buffer, last_status_sent
+                            )
+                            buffer.clear()
+
+            # FIFO EOF — writer disconnected, wait briefly and reopen
+            _log("FIFO EOF — writer disconnected, reopening...")
+            time.sleep(1.0)
+
+        except OSError as exc:
+            _log(f"FIFO read error: {exc}, retrying in 2s...")
+            time.sleep(2.0)
+            # Recreate FIFO + pipe-pane in case something broke
+            _create_fifo()
+            _start_pipe_pane()
+
+
+if __name__ == "__main__":
+    main()

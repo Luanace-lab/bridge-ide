@@ -1,0 +1,430 @@
+#!/usr/bin/env python3
+"""
+output_forwarder.py — Capture Manager Terminal Output → Bridge
+
+Polls tmux capture-pane for the manager session, detects new text,
+filters out tool calls / UI chrome, and forwards agent prose to
+the Bridge server as manager→user messages.
+
+Usage:
+    python3 output_forwarder.py
+    FORWARDER_SESSION=acw_manager POLL_INTERVAL=2.5 python3 output_forwarder.py
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+import urllib.request
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+TMUX_SESSION = os.environ.get("FORWARDER_SESSION", "acw_manager")
+BRIDGE_URL = os.environ.get("BRIDGE_URL", "http://127.0.0.1:9111")
+POLL_INTERVAL = float(os.environ.get("POLL_INTERVAL", "2.5"))
+# Minimum chars for a message to be worth sending
+MIN_CONTENT_LEN = int(os.environ.get("MIN_CONTENT_LEN", "10"))
+# How many stable polls before sending accumulated text (debounce)
+DEBOUNCE_CYCLES = int(os.environ.get("DEBOUNCE_CYCLES", "1"))
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PID_DIR = os.path.join(_SCRIPT_DIR, "pids")
+PID_FILE = os.path.join(PID_DIR, "output_forwarder.pid")
+
+# ---------------------------------------------------------------------------
+# ANSI / terminal escape stripping
+# ---------------------------------------------------------------------------
+
+_ANSI_RE = re.compile(
+    r"\x1b\[[0-9;]*[a-zA-Z]"   # CSI sequences
+    r"|\x1b\].*?\x07"           # OSC sequences
+    r"|\x1b[()][AB012]"         # charset switching
+    r"|\x1b\[[\?]?\d*[hl]"     # mode set/reset
+    r"|\r"                       # carriage returns
+)
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_RE.sub("", text)
+
+
+# ---------------------------------------------------------------------------
+# Line classification
+# ---------------------------------------------------------------------------
+
+# Tool call: ● <server> - <tool> (MCP)(...) or ● <ToolName> (...)
+_TOOL_CALL_RE = re.compile(
+    r"^●\s+.+\((?:MCP|Bash|Read|Write|Edit|Glob|Grep|Task|Skill|"
+    r"NotebookEdit|WebFetch|WebSearch|EnterPlanMode|ExitPlanMode|"
+    r"AskUserQuestion|EnterWorktree|TeamCreate|SendMessage)\)"
+)
+_TOOL_SEARCH_RE = re.compile(
+    r"^●\s+(?:Searched for|Found \d+|Read \(|Wrote \(|Edited \()"
+)
+
+
+def _is_tool_call(stripped: str) -> bool:
+    """True if line is a Claude Code tool invocation header."""
+    if not stripped.startswith("●"):
+        return False
+    if _TOOL_CALL_RE.search(stripped):
+        return True
+    if _TOOL_SEARCH_RE.search(stripped):
+        return True
+    # Generic: ● word - word (SomeProvider)
+    if re.match(r"^●\s+\w+\s+-\s+\w+\s+\(", stripped):
+        return True
+    return False
+
+
+def _is_chrome(stripped: str) -> bool:
+    """True if line is terminal UI chrome (not agent content)."""
+    if not stripped:
+        return True
+    if stripped.startswith("❯"):
+        return True
+    if stripped.startswith("✻") or stripped.startswith("✽"):
+        return True
+    if stripped.startswith("✦") or stripped.startswith("✶"):
+        return True
+    # Regular asterisk spinner: "* Orbiting…", "* Brewing…", etc.
+    if stripped.startswith("*") and not stripped.startswith("**"):
+        return True
+    if stripped.startswith("────"):
+        return True
+    if stripped.startswith("⏵"):
+        return True
+    if "bypass permissions" in stripped:
+        return True
+    if "esc to interrupt" in stripped:
+        return True
+    if "ctrl+o to expand" in stripped:
+        return True
+    if "shift+tab to cycle" in stripped:
+        return True
+    if re.search(r"(?:Brewed|Crunched|Fermenting|Brewing|Actualizing|Orbiting|Pondering|Computing|Leavening) for \d", stripped):
+        return True
+    if re.match(
+        r"^(?:Fermenting|Brewing|Actualizing|Thinking|Reasoning|Orbiting|Pondering|Computing|Leavening)",
+        stripped,
+    ):
+        return True
+    if re.search(r"\(thought for \d+s?\)", stripped):
+        return True
+    if re.match(r"^\s*[…\.]{1,3}\s*\+\d+ lines", stripped):
+        return True
+    # Raw JSON fragments (e.g. leaked curl / tool output)
+    if re.match(r'^\s*[\{\}"\[]', stripped):
+        return True
+    if re.search(r'"timestamp"\s*:', stripped):
+        return True
+    if re.search(r'"result"\s*:', stripped):
+        return True
+    if re.search(r'"ok"\s*:', stripped):
+        return True
+    if re.search(r'"message"\s*:', stripped):
+        return True
+    if stripped.startswith("*") and re.search(r"\(thought for", stripped):
+        return True
+    # NOTE: Box-drawing chars NOT filtered here — manager may send tables intentionally.
+    # Tables from tool results are handled in _is_tool_result_continuation instead.
+    # Bare tool call text without ● prefix: "Bash(...)", "Read(...)", etc.
+    if re.match(
+        r"^(?:Bash|Read|Write|Edit|Glob|Grep|Task|Skill|WebFetch|WebSearch)\s*\(",
+        stripped,
+    ):
+        return True
+    # Numbered source code lines from Read tool output (e.g. "311→  except...")
+    # Require 2+ digits followed by → or tab to avoid false positives like "3 Agents"
+    if re.match(r"^\d{2,}[→\t]", stripped):
+        return True
+    # Lines starting with +/- (diff output)
+    if re.match(r"^[+\-]{1,3}\s", stripped):
+        return True
+    return False
+
+
+def _is_tool_result_continuation(line: str, stripped: str) -> bool:
+    """True if line is indented continuation of a tool result block."""
+    leading = len(line) - len(line.lstrip())
+    # Box-drawing lines (table output from tools) — any indent level
+    if re.search(r"[│├┌└┬┼┤┐┘]{1}", stripped):
+        return True
+    # Numbered source code lines from Read tool (e.g. "  311→  except...")
+    if re.match(r"^\d+[→\t]\s*", stripped):
+        return True
+    if leading < 2:
+        return False
+    # Looks like JSON or quoted result text
+    if stripped.startswith(("{", "}", '"', "'", "…")):
+        return True
+    if re.match(r'^"?\w+"?\s*:', stripped):
+        return True
+    # Escaped JSON strings (leaked curl output)
+    if re.search(r'\\u[0-9a-fA-F]{4}', stripped):
+        return True
+    if re.search(r'\\"[a-z_]+\\"', stripped):
+        return True
+    # Indented text that looks like tool output (file paths, commands)
+    if leading >= 3 and re.match(r"^/\w|^[a-z_]+\.[a-z]+", stripped):
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Text extraction (state machine)
+# ---------------------------------------------------------------------------
+
+def extract_agent_text(lines: list[str]) -> str:
+    """Extract agent prose from raw terminal delta lines.
+
+    Uses a simple state machine:
+      TEXT       — collecting agent output
+      TOOL_BLOCK — inside a tool call / result block, skipping
+    """
+    output: list[str] = []
+    in_tool_block = False
+
+    for raw_line in lines:
+        line = _strip_ansi(raw_line)
+        stripped = line.strip()
+
+        # ----- skip UI chrome always -----
+        if _is_chrome(stripped):
+            continue
+
+        # ----- tool result start (⎿) -----
+        if stripped.startswith("⎿"):
+            in_tool_block = True
+            continue
+
+        # ----- tool call start (●) -----
+        if stripped.startswith("●"):
+            if _is_tool_call(stripped):
+                in_tool_block = True
+                continue
+            else:
+                # Agent text paragraph starting with ●
+                in_tool_block = False
+                # Remove the ● marker for cleaner text
+                text = re.sub(r"^●\s*", "", stripped)
+                if text:
+                    output.append(text)
+                continue
+
+        # ----- inside tool block: skip continuations -----
+        if in_tool_block:
+            if _is_tool_result_continuation(line, stripped):
+                continue
+            if not stripped:
+                continue
+            # Non-indented, non-empty → end of tool block
+            in_tool_block = False
+
+        # ----- regular text -----
+        if stripped:
+            output.append(line.rstrip())
+
+    # Clean up trailing/leading empties
+    while output and not output[0].strip():
+        output.pop(0)
+    while output and not output[-1].strip():
+        output.pop()
+
+    return "\n".join(output).strip()
+
+
+# ---------------------------------------------------------------------------
+# tmux capture
+# ---------------------------------------------------------------------------
+
+def capture_pane() -> list[str]:
+    """Capture full scrollback from the manager tmux pane."""
+    try:
+        result = subprocess.run(
+            ["tmux", "capture-pane", "-t", TMUX_SESSION, "-p", "-S", "-"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            return []
+        return (result.stdout or "").splitlines()
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# Delta detection
+# ---------------------------------------------------------------------------
+
+def find_delta(
+    prev_lines: list[str],
+    prev_count: int,
+    curr_lines: list[str],
+) -> list[str]:
+    """Find new lines appended since the last capture.
+
+    Strategy:
+    1. If curr has more lines than prev → take lines[prev_count:]
+       but verify via tail fingerprint to handle scrollback wrap.
+    2. If same count → compare last lines for changes.
+    3. If fewer → screen cleared / reset, skip this cycle.
+    """
+    curr_count = len(curr_lines)
+
+    if curr_count <= prev_count:
+        # Same or fewer lines — either no change or screen cleared
+        if curr_count == prev_count and curr_lines == prev_lines:
+            return []
+        # Content changed but no new lines — probably in-place update
+        return []
+
+    # More lines than before — common case
+    # Verify with tail fingerprint (last 5 non-empty lines of prev)
+    fingerprint = [l for l in prev_lines[-5:] if l.strip()]
+    fp_len = len(fingerprint)
+
+    if fingerprint and fp_len > 0:
+        # Search for fingerprint near expected position
+        search_start = max(0, prev_count - fp_len - 5)
+        search_end = min(curr_count, prev_count + 5)
+        best_match = -1
+
+        for i in range(search_start, search_end):
+            if i + fp_len <= curr_count:
+                candidate = [l for l in curr_lines[i : i + fp_len] if l.strip()]
+                if len(candidate) == fp_len and candidate == fingerprint:
+                    best_match = i + fp_len
+                    break
+
+        if best_match >= 0:
+            return curr_lines[best_match:]
+
+    # Fallback: trust line count
+    return curr_lines[prev_count:]
+
+
+# ---------------------------------------------------------------------------
+# Bridge HTTP sender
+# ---------------------------------------------------------------------------
+
+def send_to_bridge(content: str) -> bool:
+    """Send captured text as manager→user message via Bridge HTTP API."""
+    payload = json.dumps(
+        {
+            "from": "manager",
+            "to": "user",
+            "content": content,
+            "meta": {"source": "output_forwarder", "auto_capture": True},
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{BRIDGE_URL}/send",
+        data=payload,
+        headers={"Content-Type": "application/json; charset=utf-8"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status in (200, 201)
+    except Exception as exc:
+        _log(f"send failed: {exc}")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# PID management
+# ---------------------------------------------------------------------------
+
+def _write_pid() -> None:
+    os.makedirs(PID_DIR, exist_ok=True)
+    with open(PID_FILE, "w") as fh:
+        fh.write(str(os.getpid()))
+
+
+def _cleanup(*_args: object) -> None:
+    try:
+        os.remove(PID_FILE)
+    except OSError:
+        pass
+    sys.exit(0)
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+def _log(msg: str) -> None:
+    ts = time.strftime("%H:%M:%S")
+    print(f"[forwarder {ts}] {msg}", flush=True)
+
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    _write_pid()
+    signal.signal(signal.SIGTERM, _cleanup)
+    signal.signal(signal.SIGINT, _cleanup)
+
+    _log(f"Started PID={os.getpid()} session={TMUX_SESSION} poll={POLL_INTERVAL}s")
+
+    # Initial capture — establish baseline (don't send existing content)
+    prev_lines = capture_pane()
+    prev_count = len(prev_lines)
+    _log(f"Baseline: {prev_count} lines")
+
+    # Debounce accumulator
+    accumulated: list[str] = []
+    stable_cycles = 0
+
+    while True:
+        time.sleep(POLL_INTERVAL)
+
+        curr_lines = capture_pane()
+        if not curr_lines:
+            continue
+
+        curr_count = len(curr_lines)
+
+        # Find delta
+        delta = find_delta(prev_lines, prev_count, curr_lines)
+
+        prev_lines = curr_lines
+        prev_count = curr_count
+
+        if delta:
+            # Extract agent text from delta
+            agent_text = extract_agent_text(delta)
+            if agent_text and len(agent_text) >= MIN_CONTENT_LEN:
+                accumulated.append(agent_text)
+                stable_cycles = 0
+                _log(f"Accumulated {len(agent_text)} chars (total chunks: {len(accumulated)})")
+                continue
+
+        # No new delta — check if we have accumulated text to send
+        if accumulated:
+            stable_cycles += 1
+            if stable_cycles >= DEBOUNCE_CYCLES:
+                # Output has stabilized — send accumulated text
+                full_text = "\n\n".join(accumulated).strip()
+                if full_text and len(full_text) >= MIN_CONTENT_LEN:
+                    ok = send_to_bridge(full_text)
+                    _log(f"{'Sent' if ok else 'FAILED'}: {len(full_text)} chars")
+                accumulated.clear()
+                stable_cycles = 0
+
+
+if __name__ == "__main__":
+    main()

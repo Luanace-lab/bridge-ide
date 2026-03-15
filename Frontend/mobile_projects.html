@@ -1,0 +1,2223 @@
+<!doctype html>
+<html lang="de" data-theme="warm">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Bridge – Mobile Projektstart</title>
+  <style>
+    html[data-theme="warm"]{
+      --bg:#fbf8f1; --bgFlat:#fbf8f1;
+      --sidebar:#c8bfa8; --sbThumb:#b8af98; --sbDark:#8a7f6a;
+      --surface:#fdfcfa; --surfaceStrong:#ffffff; --surfaceMuted:#f7f3ea;
+      --line:rgba(138,127,106,.18); --lineStrong:rgba(138,127,106,.28);
+      --text:#3d3d3a; --muted:#8f8f8f; --accent:#8a7f6a;
+      --ok:#22c55e; --warn:#b45309; --error:#b91c1c;
+      --shadow:0 22px 48px rgba(138,127,106,.14);
+      --shadowSoft:0 12px 28px rgba(138,127,106,.10);
+    }
+    html[data-theme="light"]{
+      --bg:#ffffff; --bgFlat:#ffffff;
+      --sidebar:#d6e8f7; --sbThumb:#b8d4ed; --sbDark:#5a9ac7;
+      --surface:#fbfdff; --surfaceStrong:#ffffff; --surfaceMuted:#f2f8fd;
+      --line:rgba(90,154,199,.16); --lineStrong:rgba(90,154,199,.26);
+      --text:#1f2937; --muted:#6b7280; --accent:#5a9ac7;
+      --ok:#22c55e; --warn:#b45309; --error:#dc2626;
+      --shadow:0 22px 48px rgba(90,154,199,.12);
+      --shadowSoft:0 12px 28px rgba(90,154,199,.10);
+    }
+    html[data-theme="rose"]{
+      --bg:#fdf2f4; --bgFlat:#fdf2f4;
+      --sidebar:#e8c4cc; --sbThumb:#d9adb7; --sbDark:#a3707e;
+      --surface:#fff8f9; --surfaceStrong:#ffffff; --surfaceMuted:#fdf0f3;
+      --line:rgba(163,112,126,.18); --lineStrong:rgba(163,112,126,.28);
+      --text:#3f2730; --muted:#8b6b74; --accent:#a3707e;
+      --ok:#16a34a; --warn:#b45309; --error:#be123c;
+      --shadow:0 22px 48px rgba(163,112,126,.14);
+      --shadowSoft:0 12px 28px rgba(163,112,126,.10);
+    }
+    html[data-theme="dark"]{
+      --bg:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);
+      --bgFlat:#161e3a;
+      --sidebar:#1e2a42; --sbThumb:#2d3f5e; --sbDark:#8aa4c8;
+      --surface:#162033; --surfaceStrong:#1b2740; --surfaceMuted:#111827;
+      --line:rgba(138,164,200,.18); --lineStrong:rgba(138,164,200,.28);
+      --text:#e7edf5; --muted:#8da1be; --accent:#8aa4c8;
+      --ok:#4ade80; --warn:#fbbf24; --error:#fca5a5;
+      --shadow:0 22px 48px rgba(3,7,18,.46);
+      --shadowSoft:0 12px 28px rgba(3,7,18,.34);
+      color-scheme:dark;
+    }
+    html[data-theme="black"]{
+      --bg:#000000; --bgFlat:#000000;
+      --sidebar:#111111; --sbThumb:#222222; --sbDark:#7a8fa8;
+      --surface:#111111; --surfaceStrong:#181818; --surfaceMuted:#0c0c0c;
+      --line:rgba(122,143,168,.18); --lineStrong:rgba(122,143,168,.28);
+      --text:#f3f4f6; --muted:#98a2b3; --accent:#7a8fa8;
+      --ok:#4ade80; --warn:#fbbf24; --error:#fca5a5;
+      --shadow:0 22px 48px rgba(0,0,0,.64);
+      --shadowSoft:0 12px 28px rgba(0,0,0,.42);
+      color-scheme:dark;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ min-height:100%; }
+    html{ background:var(--bgFlat); }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+
+    html, body{
+      scrollbar-width:thin;
+      scrollbar-color:color-mix(in srgb, var(--sbDark) 22%, var(--bgFlat)) transparent;
+    }
+    html::-webkit-scrollbar, body::-webkit-scrollbar{ width:6px; height:6px; }
+    html::-webkit-scrollbar-track, body::-webkit-scrollbar-track{
+      background:color-mix(in srgb, var(--sidebar) 12%, var(--bgFlat));
+    }
+    html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb{
+      background:color-mix(in srgb, var(--sbDark) 22%, var(--bgFlat));
+      border-radius:999px;
+    }
+
+    .skipLink{
+      position:absolute;
+      left:16px;
+      top:-40px;
+      padding:10px 14px;
+      background:var(--surfaceStrong);
+      color:var(--text);
+      border-radius:999px;
+      z-index:1000;
+    }
+    .skipLink:focus{ top:16px; }
+
+    body{
+      min-height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      background:
+        radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--sidebar) 20%, transparent), transparent 48%),
+        radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--sidebar) 16%, transparent), transparent 42%),
+        var(--bg);
+    }
+
+    .app{
+      width:min(100%, 430px);
+      height:min(100dvh - 20px, 900px);
+      min-height:680px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 15%, var(--bgFlat)), color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat)));
+      border:1px solid color-mix(in srgb, var(--sidebar) 28%, transparent);
+      border-radius:34px;
+      box-shadow:0 30px 80px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.28);
+      padding:10px;
+    }
+
+    .shell{
+      height:100%;
+      border-radius:28px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--bgFlat) 96%, var(--sidebar) 4%), color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat)));
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      position:relative;
+      isolation:isolate;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.36);
+    }
+
+    .shell::before{
+      content:'';
+      position:absolute;
+      inset:0 0 auto 0;
+      height:132px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 10%, transparent), transparent);
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .header{
+      padding:14px 14px 4px;
+      background:transparent;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      position:relative;
+      z-index:1;
+    }
+
+    .logoBtn{
+      width:50px;
+      height:50px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 30%, transparent);
+      border-radius:18px;
+      background:linear-gradient(180deg, color-mix(in srgb, #ffffff 90%, var(--bgFlat) 10%), color-mix(in srgb, var(--sidebar) 10%, var(--bgFlat)));
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 12px 28px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.72);
+      cursor:pointer;
+      flex-shrink:0;
+      padding:8px;
+      position:relative;
+      z-index:2;
+    }
+    .logoBtn img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
+
+    .screenViewport{
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      padding:8px 10px 12px;
+      position:relative;
+      z-index:1;
+    }
+
+    .eyebrow{
+      margin:0 0 6px;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:var(--accent);
+    }
+
+    .screenTitle{
+      margin:0;
+      font-size:30px;
+      line-height:1.02;
+      font-weight:760;
+      letter-spacing:-.04em;
+    }
+
+    .screenSub{
+      margin:8px 0 0;
+      font-size:14px;
+      line-height:1.45;
+      color:var(--muted);
+      max-width:28ch;
+    }
+
+    .surface{
+      background:#fdfcfa;
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      border-radius:26px;
+      box-shadow:0 16px 38px rgba(0,0,0,.08), 0 3px 10px rgba(0,0,0,.04);
+      padding:16px;
+      overflow:hidden;
+    }
+    .surface + .surface{ margin-top:12px; }
+    html:is([data-theme="dark"],[data-theme="black"]) .surface{
+      background:rgba(0,0,0,.25);
+      border-color:rgba(255,255,255,.06);
+      box-shadow:0 10px 24px rgba(0,0,0,.24);
+    }
+
+    .statusPanel{
+      display:grid;
+      gap:14px;
+    }
+
+    .mobileBoard{
+      display:flex;
+      flex-direction:column;
+      border-radius:26px;
+      overflow:hidden;
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      box-shadow:0 16px 38px rgba(0,0,0,.08), 0 3px 10px rgba(0,0,0,.04);
+      background:#fdfcfa;
+    }
+    html[data-theme="light"] .mobileBoard,
+    html[data-theme="rose"] .mobileBoard{ background:#ffffff; }
+    html:is([data-theme="dark"],[data-theme="black"]) .mobileBoard{
+      background:rgba(0,0,0,.25);
+      border-color:rgba(255,255,255,.06);
+      box-shadow:0 10px 24px rgba(0,0,0,.24);
+    }
+
+    .boardHeaderMobile{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:9px 12px 8px;
+      background:color-mix(in srgb, var(--sidebar) 10%, #ffffff);
+      backdrop-filter:blur(8px);
+      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 12%, transparent);
+    }
+    html[data-theme="light"] .boardHeaderMobile{
+      border-color:transparent;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .boardHeaderMobile{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.08);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .boardHeader__title{
+      font-size:11px;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      color:#3d3d3a;
+      opacity:.56;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .boardHeader__title{
+      color:#e7edf5;
+    }
+
+    .boardHeader__agents{
+      display:flex;
+      gap:6px;
+      justify-content:flex-end;
+      overflow:hidden;
+      flex:1 1 0;
+      min-width:0;
+    }
+
+    .projectBoardBody{
+      padding:16px;
+      display:grid;
+      gap:14px;
+    }
+
+    .statusRows{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .statusRow{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      align-items:flex-start;
+      padding:12px 13px;
+      border-radius:18px;
+      background:#ffffff;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .statusRow{
+      background:rgba(255,255,255,.04);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .statusRow__label{
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--accent);
+    }
+
+    .statusRow__value{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+
+    .statusRow__value strong{
+      font-size:15px;
+      line-height:1.2;
+      font-weight:760;
+      letter-spacing:-.02em;
+      word-break:break-word;
+    }
+
+    .statusRow__value span{
+      font-size:12px;
+      line-height:1.35;
+      color:var(--muted);
+      word-break:break-word;
+    }
+
+    .statusChip{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 12%, #ffffff);
+      color:var(--text);
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      width:max-content;
+      max-width:100%;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    .statusChip__dot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--ok);
+      flex-shrink:0;
+    }
+    .sectionHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .sectionHead__title{
+      margin:0;
+      font-size:22px;
+      line-height:1.08;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+    .sectionHead__sub{
+      margin:6px 0 0;
+      font-size:14px;
+      line-height:1.45;
+      color:var(--muted);
+    }
+    .sectionBadge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:8px 11px;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 12%, #ffffff);
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      color:var(--accent);
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .sectionBadge__dot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--ok);
+      flex-shrink:0;
+    }
+    .sectionBadge[data-state="warn"] .sectionBadge__dot{ background:var(--warn); }
+    .sectionBadge[data-state="error"] .sectionBadge__dot{ background:var(--error); }
+
+    .inlineHint{
+      font-size:13px;
+      line-height:1.45;
+      color:var(--muted);
+      margin:0 0 16px;
+    }
+    .fieldGrid{
+      display:grid;
+      gap:12px;
+    }
+    .fieldRow{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:12px;
+    }
+    .fieldRow--triple{
+      grid-template-columns:repeat(3, minmax(0,1fr));
+    }
+    .fieldGroup{
+      min-width:0;
+    }
+    .fieldLabel{
+      display:block;
+      margin-bottom:6px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.02em;
+      color:var(--accent);
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select{
+      width:100%;
+      min-width:0;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      border-radius:18px;
+      background:#ffffff;
+      color:var(--text);
+      padding:14px 16px;
+      font:inherit;
+      font-size:16px;
+      line-height:1.4;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 6px 14px rgba(0,0,0,.03);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) input[type="text"],
+    html:is([data-theme="dark"],[data-theme="black"]) input[type="number"],
+    html:is([data-theme="dark"],[data-theme="black"]) textarea,
+    html:is([data-theme="dark"],[data-theme="black"]) select{
+      background:rgba(255,255,255,.05);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    textarea{
+      min-height:92px;
+      resize:vertical;
+    }
+    ::placeholder{ color:var(--muted); }
+    input:focus,
+    textarea:focus,
+    select:focus{
+      outline:none;
+      border-color:color-mix(in srgb, var(--sbDark) 48%, var(--surfaceStrong));
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--sbDark) 18%, transparent);
+    }
+
+    .pathRow{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+    }
+    .btn,
+    .chipBtn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:48px;
+      padding:0 16px;
+      border:none;
+      border-radius:18px;
+      font:inherit;
+      font-size:15px;
+      font-weight:700;
+      letter-spacing:-.01em;
+      cursor:pointer;
+      transition:transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .btn:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+      transform:none;
+    }
+    .btn:not(:disabled):active,
+    .chipBtn:active{ transform:translateY(1px); }
+    .btn--primary{
+      background:color-mix(in srgb, var(--sidebar) 22%, #ffffff);
+      color:var(--text);
+      box-shadow:var(--shadowSoft);
+      border:1px solid color-mix(in srgb, var(--sidebar) 22%, transparent);
+    }
+    .btn--secondary{
+      background:#ffffff;
+      color:var(--text);
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      box-shadow:var(--shadowSoft);
+    }
+    .btn--ghost{
+      background:color-mix(in srgb, var(--sidebar) 16%, var(--surfaceStrong));
+      color:var(--accent);
+      border:1px solid var(--line);
+    }
+    .actionRow{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    .actionRow--footer{
+      margin-top:18px;
+    }
+    .btn svg,
+    .chipBtn svg{
+      width:18px;
+      height:18px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+
+    .feedback{
+      display:none;
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid transparent;
+      font-size:14px;
+      line-height:1.45;
+      font-weight:600;
+    }
+    .feedback.is-visible{ display:block; }
+    .feedback[data-type="ok"]{
+      background:rgba(34,197,94,.12);
+      border-color:rgba(34,197,94,.24);
+      color:var(--ok);
+    }
+    .feedback[data-type="warn"]{
+      background:rgba(245,158,11,.12);
+      border-color:rgba(245,158,11,.24);
+      color:var(--warn);
+    }
+    .feedback[data-type="error"]{
+      background:rgba(239,68,68,.10);
+      border-color:rgba(239,68,68,.24);
+      color:var(--error);
+    }
+    html[data-theme="warm"] .feedback[data-type="error"]{ color:#b91c1c; }
+    html[data-theme="rose"] .feedback[data-type="error"]{ color:#be123c; }
+    html[data-theme="warm"] .feedback[data-type="warn"],
+    html[data-theme="rose"] .feedback[data-type="warn"]{ color:#b45309; }
+
+    .quickProjects{
+      display:grid;
+      gap:10px;
+      margin-top:16px;
+    }
+    .quickProjects__empty{
+      margin:0;
+      padding:14px 16px;
+      border-radius:18px;
+      background:var(--surfaceStrong);
+      border:1px dashed var(--lineStrong);
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+    }
+    .quickProject{
+      display:grid;
+      gap:4px;
+      width:100%;
+      text-align:left;
+      padding:14px 16px;
+      border-radius:20px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      background:#ffffff;
+      box-shadow:var(--shadowSoft);
+      color:var(--text);
+      cursor:pointer;
+    }
+    .quickProject__title{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+    .quickProject__name{
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:-.02em;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .quickProject__badge{
+      flex-shrink:0;
+      padding:4px 8px;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 16%, var(--surfaceStrong));
+      color:var(--accent);
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .quickProject__path,
+    .quickProject__preview{
+      margin:0;
+      font-size:13px;
+      line-height:1.45;
+      color:var(--muted);
+      word-break:break-word;
+    }
+
+    .scanResults{
+      display:none;
+      margin-top:16px;
+      padding:16px;
+      border-radius:22px;
+      background:#ffffff;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+    }
+    .scanResults.is-visible{ display:block; }
+    .scanHeadline{
+      margin:0 0 10px;
+      font-size:15px;
+      line-height:1.45;
+      font-weight:700;
+    }
+    .scanList{
+      display:grid;
+      gap:8px;
+      max-height:280px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .scanItem{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:12px 14px;
+      border-radius:16px;
+      background:color-mix(in srgb, var(--sidebar) 8%, var(--surfaceStrong));
+      border:1px solid var(--line);
+    }
+    .scanItem__icon{
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      background:var(--error);
+      flex-shrink:0;
+    }
+    .scanItem--found .scanItem__icon{ background:var(--ok); }
+    .scanItem__text{
+      min-width:0;
+      font-size:13px;
+      font-weight:600;
+      line-height:1.4;
+      word-break:break-word;
+    }
+    .scanItem__status{
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .detailPanel{
+      margin-top:16px;
+      border-radius:22px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      background:#ffffff;
+      overflow:hidden;
+    }
+    .detailPanel > summary{
+      list-style:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:16px;
+      cursor:pointer;
+      font-size:15px;
+      font-weight:700;
+    }
+    .detailPanel > summary::-webkit-details-marker{ display:none; }
+    .detailPanel > summary svg{
+      width:18px;
+      height:18px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      transition:transform .18s ease;
+    }
+    .detailPanel[open] > summary svg{ transform:rotate(180deg); }
+    .detailPanel__body{
+      padding:0 16px 16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .teamMetaRow{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .teamMeta{
+      margin:0;
+      font-size:14px;
+      line-height:1.45;
+      color:var(--muted);
+    }
+
+    .cardStack{
+      display:grid;
+      gap:12px;
+    }
+    .configCard{
+      border-radius:24px;
+      overflow:hidden;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      background:#ffffff;
+      box-shadow:var(--shadowSoft);
+    }
+    .configCard__toggle{
+      width:100%;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto auto;
+      gap:12px;
+      align-items:center;
+      padding:16px;
+      border:none;
+      background:none;
+      color:inherit;
+      text-align:left;
+      cursor:pointer;
+    }
+    .configCard__meta{
+      min-width:0;
+    }
+    .configCard__eyebrow{
+      display:block;
+      margin-bottom:4px;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--accent);
+    }
+    .configCard__title{
+      display:block;
+      font-size:19px;
+      line-height:1.1;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+    .configCard__subtitle{
+      display:block;
+      margin-top:6px;
+      font-size:13px;
+      line-height:1.45;
+      color:var(--muted);
+    }
+    .configCard__badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:32px;
+      padding:0 12px;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 14%, var(--surfaceStrong));
+      color:var(--accent);
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .configCard__arrow{
+      width:36px;
+      height:36px;
+      border-radius:50%;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background:color-mix(in srgb, var(--sidebar) 12%, var(--surfaceStrong));
+      color:var(--accent);
+      flex-shrink:0;
+    }
+    .configCard__arrow svg{
+      width:18px;
+      height:18px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      transition:transform .18s ease;
+    }
+    .configCard__toggle[aria-expanded="true"] .configCard__arrow svg{ transform:rotate(180deg); }
+    .configCard__body{
+      display:none;
+      padding:0 16px 16px;
+      border-top:1px solid color-mix(in srgb, var(--sidebar) 14%, transparent);
+      background:color-mix(in srgb, var(--sidebar) 4%, #ffffff);
+    }
+    .configCard__body.is-open{
+      display:grid;
+      gap:14px;
+    }
+    .subPanel{
+      border-radius:18px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 14%, transparent);
+      background:#ffffff;
+      overflow:hidden;
+    }
+    .subPanel > summary{
+      list-style:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:14px 16px;
+      cursor:pointer;
+      font-size:14px;
+      font-weight:700;
+    }
+    .subPanel > summary::-webkit-details-marker{ display:none; }
+    .subPanel > summary svg{
+      width:18px;
+      height:18px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      transition:transform .18s ease;
+    }
+    .subPanel[open] > summary svg{ transform:rotate(180deg); }
+    .subPanel__body{
+      padding:0 16px 16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .chipGrid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .toggleChip{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:40px;
+      padding:0 14px;
+      border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      background:#ffffff;
+      color:var(--muted);
+      font:inherit;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .toggleChip.on{
+      border-color:color-mix(in srgb, var(--sbDark) 34%, transparent);
+      background:color-mix(in srgb, var(--sidebar) 16%, var(--surfaceStrong));
+      color:var(--text);
+    }
+
+    .checkRow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:48px;
+      padding:0 2px;
+    }
+    .checkRow input[type="checkbox"]{
+      width:22px;
+      height:22px;
+      accent-color:var(--accent);
+      flex-shrink:0;
+    }
+    .checkRow label{
+      font-size:14px;
+      font-weight:600;
+      color:var(--text);
+    }
+
+    #shell #buddyWidget.bw-cloudMode{
+      z-index:18;
+    }
+    #shell #buddyWidget.bw-cloudMode #buddyWidgetBubble::after{
+      display:none;
+    }
+    #shell #buddyWidget.bw-cloudMode #buddyWidgetBubble{
+      box-shadow:0 18px 40px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.65);
+    }
+
+    .pageSpacer{ height:4px; }
+
+    @media (max-width: 520px){
+      body{ padding:0; }
+      .app{
+        width:100%;
+        height:100dvh;
+        min-height:100dvh;
+        border-radius:0;
+        padding:0;
+        border:none;
+        box-shadow:none;
+      }
+      .shell{ border-radius:0; }
+      .screenViewport{ padding:8px 8px 10px; }
+      .fieldRow,
+      .fieldRow--triple,
+      .actionRow{
+        grid-template-columns:1fr;
+      }
+      .pathRow{ grid-template-columns:1fr; }
+      .sectionHead{ flex-direction:column; align-items:flex-start; }
+      .statusRows{ grid-template-columns:1fr 1fr; }
+      .teamMetaRow{ grid-template-columns:1fr; }
+      .configCard__toggle{ grid-template-columns:minmax(0,1fr) auto; }
+      .configCard__arrow{ grid-column:2; grid-row:1 / span 2; }
+      .configCard__badge{ grid-column:1; justify-self:start; }
+    }
+
+    @media (max-width: 360px){
+      .statusRows{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skipLink" href="#mobileProjectsPage">Zum Inhalt</a>
+
+  <main class="app">
+    <section class="shell" id="shell">
+      <header class="header">
+        <button class="logoBtn" id="backBtn" type="button" aria-label="Zurueck zur mobilen Uebersicht">
+          <img src="ace_logo.svg" alt="Bridge Logo" />
+        </button>
+      </header>
+
+      <div class="screenViewport" id="mobileProjectsPage" aria-label="Mobile Projektkonfiguration">
+        <section class="mobileBoard statusPanel" aria-labelledby="projectStatusHeading">
+          <header class="boardHeaderMobile" id="projectStatusHeader">
+            <span class="boardHeader__title" id="projectStatusHeading">Neues Projekt</span>
+            <div class="boardHeader__agents">
+              <span class="sectionBadge" id="platformBadge" data-state="warn">
+                <span class="sectionBadge__dot" aria-hidden="true"></span>
+                <span id="platformBadgeLabel">Runtime laedt</span>
+              </span>
+            </div>
+          </header>
+
+          <div class="projectBoardBody">
+            <div class="sectionHead">
+              <div>
+                <h1 class="sectionHead__title" id="projectsTitle">Mobile Projektstart</h1>
+                <p class="sectionHead__sub">Projektpfad pruefen, Bestand scannen und danach das Team sauber aus demselben Backend-Flow starten.</p>
+              </div>
+            </div>
+
+            <div class="statusRows">
+              <div class="statusRow">
+                <div class="statusRow__label">Runtime</div>
+                <div class="statusRow__value">
+                  <strong id="runtimeState">Laedt</strong>
+                  <span id="runtimeDetail">Bridge prueft die mobile Projektstrecke.</span>
+                </div>
+              </div>
+              <div class="statusRow">
+                <div class="statusRow__label">Basisordner</div>
+                <div class="statusRow__value">
+                  <strong id="baseDirValue">wird geladen</strong>
+                  <span>Projekt-Erstellung bleibt innerhalb des serverseitig erlaubten Bereichs.</span>
+                </div>
+              </div>
+              <div class="statusRow">
+                <div class="statusRow__label">Projekte</div>
+                <div class="statusRow__value">
+                  <strong><span id="projectCountValue">0</span> bekannte Arbeitsraeume</strong>
+                  <span id="projectCountHint">zuletzt bekannte Arbeitsraeume</span>
+                </div>
+              </div>
+              <div class="statusRow">
+                <div class="statusRow__label">Team</div>
+                <div class="statusRow__value">
+                  <strong><span id="teamCountValue">3</span> Rollen vorbereitet</strong>
+                  <span id="teamCountHint">Leiter plus Start-Agenten fuer den mobilen Bootstrap.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="surface" aria-labelledby="projectSectionHeading">
+          <div class="sectionHead">
+            <div>
+              <p class="eyebrow">Projekt</p>
+              <h2 class="sectionHead__title" id="projectSectionHeading">Arbeitsraum anlegen</h2>
+              <p class="sectionHead__sub">Pfad setzen, Bestand scannen und bei Bedarf den Projektordner direkt erzeugen.</p>
+            </div>
+            <button class="btn btn--ghost" id="reloadProjectsBtn" type="button" aria-label="Projektliste neu laden">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg>
+              Neu laden
+            </button>
+          </div>
+
+          <div class="fieldGrid">
+            <div class="fieldGroup">
+              <label class="fieldLabel" for="projName">Projektname</label>
+              <input type="text" id="projName" value="" placeholder="z. B. bridge-mobile-release" />
+            </div>
+
+            <div class="fieldGroup">
+              <label class="fieldLabel" for="projPath">Projektpfad / Basisordner</label>
+              <div class="pathRow">
+                <input type="text" id="projPath" value="" placeholder="/path/to/project-or-base" />
+                <button class="btn btn--secondary" id="browsePathBtn" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path></svg>
+                  Durchsuchen
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="actionRow">
+            <button class="btn btn--secondary" id="scanBtn" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              Scannen
+            </button>
+            <button class="btn btn--primary" id="createBtn" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+              Erstellen
+            </button>
+          </div>
+
+          <div class="feedback" id="projectFeedback" aria-live="polite"></div>
+
+          <section class="scanResults" id="scanResults" aria-live="polite" aria-label="Scan-Ergebnisse">
+            <p class="scanHeadline" id="scanHeadline">Noch kein Scan ausgefuehrt.</p>
+            <div class="scanList" id="scanList"></div>
+          </section>
+
+          <details class="detailPanel" id="projectDetails">
+            <summary>
+              <span>Erweiterte Projektdetails</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+            </summary>
+            <div class="detailPanel__body">
+              <div class="fieldGroup">
+                <label class="fieldLabel" for="projTags">Tags</label>
+                <input type="text" id="projTags" placeholder="z. B. bridge, mobile, release" />
+              </div>
+              <div class="fieldGroup">
+                <label class="fieldLabel" for="projNotes">Notizen</label>
+                <textarea id="projNotes" rows="4" placeholder="Ziele, Einschraenkungen, Arbeitsbereich..."></textarea>
+              </div>
+            </div>
+          </details>
+
+          <div class="quickProjects" id="recentProjects" aria-label="Bekannte Projekte"></div>
+        </section>
+
+        <section class="surface" aria-labelledby="teamSectionHeading">
+          <div class="sectionHead">
+            <div>
+              <p class="eyebrow">Team</p>
+              <h2 class="sectionHead__title" id="teamSectionHeading">Rollen mobil zusammenstellen</h2>
+              <p class="sectionHead__sub">Leiter, Agenten und Profile bleiben erhalten, werden hier aber als klare Mobile-Karten gefuehrt.</p>
+            </div>
+            <span class="sectionBadge" id="teamBadge" data-state="ok">
+              <span class="sectionBadge__dot" aria-hidden="true"></span>
+              <span id="teamBadgeLabel">3 Rollen</span>
+            </span>
+          </div>
+
+          <div class="teamMetaRow">
+            <p class="teamMeta" id="teamMetaText">Leiter plus zwei Start-Agenten sind vorbereitet. Weitere Agenten kannst du direkt hier hinzufuegen.</p>
+            <button class="btn btn--ghost" id="addAgentBtn" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+              Agent hinzufuegen
+            </button>
+          </div>
+
+          <div class="cardStack" id="teamCards" aria-label="Team-Konfiguration"></div>
+
+          <div class="feedback" id="teamFeedback" aria-live="polite"></div>
+
+          <div class="actionRow actionRow--footer">
+            <button class="btn btn--secondary" id="exportBtn" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M8 11l4 4 4-4"></path><path d="M5 21h14"></path></svg>
+              Exportieren
+            </button>
+            <button class="btn btn--primary" id="startTeamBtn" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>
+              Team starten
+            </button>
+          </div>
+        </section>
+
+        <div class="pageSpacer" aria-hidden="true"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="bridge_runtime_urls.js"></script>
+  <script>
+    const root = document.documentElement;
+    const BRIDGE_RUNTIME = window.BridgeRuntimeUrls.resolveConfig();
+    const API_BASE = BRIDGE_RUNTIME.apiBase;
+    const API_SERVER = BRIDGE_RUNTIME.apiBase;
+    const BRIDGE_UI_TOKEN = typeof window.__BRIDGE_UI_TOKEN === 'string' ? window.__BRIDGE_UI_TOKEN : '';
+    const BRIDGE_NATIVE_FETCH = window.fetch.bind(window);
+    const CANONICAL_THEMES = new Set(['warm', 'light', 'rose', 'dark', 'black']);
+
+    function isBridgeHttpTarget(input){
+      try {
+        const raw = input instanceof Request ? input.url : String(input);
+        const url = new URL(raw, window.location.href);
+        return window.BridgeRuntimeUrls.isBridgeHttpTarget(url.toString(), API_BASE, window.location.href);
+      } catch {
+        return false;
+      }
+    }
+
+    function bridgeAuthHeaders(headers){
+      const merged = new Headers(headers || {});
+      if(BRIDGE_UI_TOKEN && !merged.has('X-Bridge-Token')) merged.set('X-Bridge-Token', BRIDGE_UI_TOKEN);
+      return merged;
+    }
+
+    function bridgeFetch(input, init){
+      if(!BRIDGE_UI_TOKEN || !isBridgeHttpTarget(input)) return BRIDGE_NATIVE_FETCH(input, init);
+      const reqInit = { ...(init || {}) };
+      reqInit.headers = bridgeAuthHeaders(reqInit.headers);
+      return BRIDGE_NATIVE_FETCH(input, reqInit);
+    }
+    window.fetch = bridgeFetch;
+
+    const backBtn = document.getElementById('backBtn');
+    const runtimeState = document.getElementById('runtimeState');
+    const runtimeDetail = document.getElementById('runtimeDetail');
+    const platformBadge = document.getElementById('platformBadge');
+    const platformBadgeLabel = document.getElementById('platformBadgeLabel');
+    const baseDirValue = document.getElementById('baseDirValue');
+    const projectCountValue = document.getElementById('projectCountValue');
+    const projectCountHint = document.getElementById('projectCountHint');
+    const teamCountValue = document.getElementById('teamCountValue');
+    const teamCountHint = document.getElementById('teamCountHint');
+    const teamBadgeLabel = document.getElementById('teamBadgeLabel');
+    const projName = document.getElementById('projName');
+    const projPath = document.getElementById('projPath');
+    const browsePathBtn = document.getElementById('browsePathBtn');
+    const reloadProjectsBtn = document.getElementById('reloadProjectsBtn');
+    const scanBtn = document.getElementById('scanBtn');
+    const createBtn = document.getElementById('createBtn');
+    const startTeamBtn = document.getElementById('startTeamBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const addAgentBtn = document.getElementById('addAgentBtn');
+    const projTags = document.getElementById('projTags');
+    const projNotes = document.getElementById('projNotes');
+    const projectFeedback = document.getElementById('projectFeedback');
+    const teamFeedback = document.getElementById('teamFeedback');
+    const recentProjects = document.getElementById('recentProjects');
+    const scanResults = document.getElementById('scanResults');
+    const scanHeadline = document.getElementById('scanHeadline');
+    const scanList = document.getElementById('scanList');
+    const teamCards = document.getElementById('teamCards');
+    const teamMetaText = document.getElementById('teamMetaText');
+
+    let allowedProjectsBaseDir = '';
+    let recentProjectPayload = [];
+    let engineModels = null;
+    let dynamicAgentCount = 0;
+
+    const FALLBACK_MODEL_OPTIONS = [
+      { value:'claude-opus-4-6', label:'Opus 4.6 — Maximale Qualitaet' },
+      { value:'claude-sonnet-4-6', label:'Sonnet 4.6 — Ausgewogen (empfohlen)' },
+      { value:'claude-haiku-4-5-20251001', label:'Haiku 4.5 — Schnell & guenstig' }
+    ];
+
+    const modelHints = {
+      opus:'Staerkstes Modell — komplex, langsamer, teurer',
+      sonnet:'Ausgewogen — schnell und leistungsstark',
+      haiku:'Schnell & guenstig — fuer einfache Tasks',
+      'o4-mini':'OpenAI — schnell, kosteneffizient',
+      'o3':'OpenAI — stark, teurer',
+      'gpt-4.1':'OpenAI — vielseitig',
+      'gemini-2.5-pro':'Google — stark bei Analyse',
+      'gemini-2.5-flash':'Google — schnell & guenstig',
+      'gemini-2.5-flash-lite':'Google — guenstig fuer leichte Tasks'
+    };
+
+    const defaultLeader = {
+      key:'teamlead',
+      type:'leader',
+      title:'Team-Leiter',
+      subtitle:'Koordiniert die mobile Projektanlage und startet das Runtime-Team.',
+      badge:'Lead',
+      model:'claude-sonnet-4-6',
+      name:'teamlead',
+      prompt:'Du koordinierst Agents, priorisierst Aufgaben, meldest STOP nur direkt an Leo. Keine Rundenbegrenzung.',
+      permission:'default',
+      maxTurns:'',
+      planApproval:true,
+      position:'',
+      scope:'',
+      hierarchyLevel:'lead',
+      teamAssignment:'management',
+      reportsTo:'',
+      permissions:['code', 'review', 'strategy'],
+      open:true
+    };
+
+    const defaultAgents = [
+      {
+        key:'agent_a',
+        type:'agent',
+        title:'Agent A',
+        subtitle:'Implementierung und konkrete Umsetzung.',
+        badge:'Agent',
+        model:'claude-sonnet-4-6',
+        slot:'agent_a',
+        position:'Implementer',
+        prompt:'Implementiere praezise. Keine UI-Entscheidungen ohne Spec. Liefere Diffs.',
+        permission:'acceptEdits',
+        isolation:'none',
+        maxTurns:'50',
+        tools:['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash'],
+        scope:'',
+        hierarchyLevel:'worker',
+        teamAssignment:'delivery',
+        reportsTo:'teamlead',
+        permissions:['code'],
+        open:false
+      },
+      {
+        key:'agent_b',
+        type:'agent',
+        title:'Agent B',
+        subtitle:'Review, Widersprueche und Qualitaetssicherung.',
+        badge:'Agent',
+        model:'claude-sonnet-4-6',
+        slot:'agent_b',
+        position:'Reviewer',
+        prompt:'Review. Finde Widersprueche. Gib konkrete Fixes. Keine Prosa.',
+        permission:'default',
+        isolation:'none',
+        maxTurns:'50',
+        tools:['Read', 'Glob', 'Grep', 'Bash'],
+        scope:'',
+        hierarchyLevel:'worker',
+        teamAssignment:'delivery',
+        reportsTo:'teamlead',
+        permissions:['code', 'review', 'qa'],
+        open:false
+      }
+    ];
+
+    function escapeHtml(value){
+      const div = document.createElement('div');
+      div.textContent = value == null ? '' : String(value);
+      return div.innerHTML;
+    }
+
+    function normalizeFsPath(path){
+      return String(path || '').trim().replace(/\/+$/, '');
+    }
+
+    function isPathWithin(base, candidate){
+      const normalizedBase = normalizeFsPath(base);
+      const normalizedCandidate = normalizeFsPath(candidate);
+      if(!normalizedBase || !normalizedCandidate) return false;
+      return normalizedCandidate === normalizedBase || normalizedCandidate.startsWith(normalizedBase + '/');
+    }
+
+    function updatePathContract(){
+      if(allowedProjectsBaseDir){
+        projPath.placeholder = allowedProjectsBaseDir + '/<projekt>';
+        projPath.title = 'Projektpfad zum Scannen oder Zielpfad/Basisordner innerhalb von ' + allowedProjectsBaseDir;
+      } else {
+        projPath.placeholder = '/path/to/project-or-base';
+        projPath.title = 'Projektpfad zum Scannen oder Basisordner fuer neue Projekte';
+      }
+    }
+
+    function resolveCreateBaseDir(projectPath, projectName){
+      const path = normalizeFsPath(projectPath);
+      const name = String(projectName || '').trim();
+      if(!path || !name) return { ok:false, error:'Projektname und Projektpfad sind erforderlich.' };
+
+      if(allowedProjectsBaseDir && !isPathWithin(allowedProjectsBaseDir, path)){
+        return {
+          ok:false,
+          error:'Projekt-Erstellung ist nur innerhalb von ' + allowedProjectsBaseDir + ' erlaubt.'
+        };
+      }
+
+      const leaf = path.split('/').filter(Boolean).pop() || '';
+      if(leaf === name){
+        const idx = path.lastIndexOf('/' + leaf);
+        const parent = idx > 0 ? path.slice(0, idx) : '/';
+        return { ok:true, baseDir: parent || '/' };
+      }
+
+      return { ok:true, baseDir: path };
+    }
+
+    function setFeedback(target, type, text){
+      target.dataset.type = type;
+      target.textContent = text;
+      target.classList.add('is-visible');
+    }
+
+    function clearFeedback(target){
+      target.classList.remove('is-visible');
+      target.textContent = '';
+      delete target.dataset.type;
+    }
+
+    function setTheme(theme){
+      const resolved = CANONICAL_THEMES.has(theme) ? theme : 'warm';
+      root.setAttribute('data-theme', resolved);
+      try {
+        window.localStorage.setItem('bridge_theme', resolved);
+      } catch {}
+    }
+
+    function applyStoredTheme(){
+      let theme = 'warm';
+      try {
+        theme = window.localStorage.getItem('bridge_theme') || theme;
+      } catch {}
+      setTheme(theme);
+    }
+
+    function resolveModelSelection(model){
+      const raw = String(model || '').trim();
+      if(!raw) return { model:'', engine:'claude' };
+      if(engineModels){
+        for(const [eid, edata] of Object.entries(engineModels)){
+          const models = edata.models || [];
+          for(const entry of models){
+            const id = String(entry.id || '').trim();
+            const alias = String(entry.alias || '').trim();
+            if(raw === id || (alias && raw === alias)){
+              return { model:id || raw, engine:eid };
+            }
+          }
+        }
+      }
+      if(raw === 'opus') return { model:'claude-opus-4-6', engine:'claude' };
+      if(raw === 'sonnet') return { model:'claude-sonnet-4-6', engine:'claude' };
+      if(raw === 'haiku') return { model:'claude-haiku-4-5-20251001', engine:'claude' };
+      if(raw.startsWith('claude-')) return { model:raw, engine:'claude' };
+      if(raw.startsWith('auto-gemini') || raw.startsWith('gemini')) return { model:raw, engine:'gemini' };
+      if(raw === 'coder-model' || raw.startsWith('qwen')) return { model:raw, engine:'qwen' };
+      if(raw.startsWith('o') || raw.startsWith('gpt') || raw.startsWith('codex')) return { model:raw, engine:'codex' };
+      return { model:raw, engine:'claude' };
+    }
+
+    function buildModelOptionsHtml(){
+      if(!engineModels){
+        return FALLBACK_MODEL_OPTIONS.map(item => `<option value="${item.value}">${escapeHtml(item.label)}</option>`).join('');
+      }
+      let html = '';
+      for(const [, edata] of Object.entries(engineModels)){
+        if(edata.available === false) continue;
+        const models = edata.models || [];
+        models.forEach(model => {
+          const val = model.id || model.alias;
+          const label = model.label || model.alias || model.id || val;
+          const hint = model.description || modelHints[val] || modelHints[model.alias] || modelHints[model.id] || '';
+          const displayLabel = hint ? label + ' — ' + hint : label;
+          html += `<option value="${escapeHtml(val)}" title="${escapeHtml(hint)}">${escapeHtml(displayLabel)}</option>`;
+        });
+      }
+      return html || FALLBACK_MODEL_OPTIONS.map(item => `<option value="${item.value}">${escapeHtml(item.label)}</option>`).join('');
+    }
+
+    function populateAllModelDropdowns(){
+      const html = buildModelOptionsHtml();
+      document.querySelectorAll('select[data-field="model"]').forEach(select => {
+        const currentValue = resolveModelSelection(select.dataset.currentModel || select.value).model || '';
+        select.innerHTML = html;
+        if(currentValue && !Array.from(select.options).some(option => option.value === currentValue)){
+          const fallback = document.createElement('option');
+          fallback.value = currentValue;
+          fallback.textContent = currentValue + ' — konfiguriert';
+          select.appendChild(fallback);
+        }
+        select.value = currentValue || 'claude-sonnet-4-6';
+        select.dataset.currentModel = select.value;
+      });
+    }
+
+    async function fetchEngineModels(){
+      try {
+        const response = await fetch(API_SERVER + '/engines/models', { signal: AbortSignal.timeout(5000) });
+        if(!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        engineModels = data.engines || data;
+      } catch(error){
+        console.log('[mobile_projects] engines/models not available:', error.message);
+      } finally {
+        populateAllModelDropdowns();
+      }
+    }
+
+    function cardOption(card){
+      const type = card.dataset.cardType;
+      const label = card.querySelector('[data-card-title]')?.textContent?.trim() || '';
+      if(type === 'leader') return { value:'teamlead', label:'teamlead' };
+      const slot = card.querySelector('[data-field="slot"]')?.value.trim();
+      const name = card.querySelector('[data-field="name"]')?.value.trim();
+      const fallback = card.dataset.cardId || label.toLowerCase().replace(/\s+/g, '_');
+      return { value:slot || name || fallback, label:name || slot || label || fallback };
+    }
+
+    function syncProfileSelectors(){
+      const cards = Array.from(teamCards.querySelectorAll('.configCard'));
+      const options = cards.map(cardOption).filter(Boolean);
+      const teamValues = new Set(['management', 'delivery']);
+      cards.forEach(card => {
+        const teamSelect = card.querySelector('[data-field="teamAssignment"]');
+        if(teamSelect && teamSelect.value.trim()) teamValues.add(teamSelect.value.trim());
+      });
+
+      cards.forEach(card => {
+        const ownOption = cardOption(card);
+        const teamSelect = card.querySelector('[data-field="teamAssignment"]');
+        if(teamSelect){
+          const current = teamSelect.value.trim();
+          teamSelect.innerHTML = '<option value="">— kein Team —</option>';
+          Array.from(teamValues).sort().forEach(teamId => {
+            const option = document.createElement('option');
+            option.value = teamId;
+            option.textContent = teamId;
+            teamSelect.appendChild(option);
+          });
+          const defaultTeam = card.dataset.cardType === 'leader' ? 'management' : 'delivery';
+          teamSelect.value = current && teamValues.has(current) ? current : defaultTeam;
+        }
+
+        const reportsTo = card.querySelector('[data-field="reportsTo"]');
+        if(reportsTo){
+          const current = reportsTo.value.trim();
+          reportsTo.innerHTML = '<option value="">— niemand —</option><option value="user">user</option>';
+          options.forEach(optionData => {
+            if(ownOption && optionData.value === ownOption.value) return;
+            const option = document.createElement('option');
+            option.value = optionData.value;
+            option.textContent = optionData.label;
+            reportsTo.appendChild(option);
+          });
+          const leaderOption = options.find(optionData => optionData.value === 'teamlead');
+          if(current){
+            reportsTo.value = current;
+          } else if(card.dataset.cardType !== 'leader' && leaderOption){
+            reportsTo.value = leaderOption.value;
+          }
+        }
+      });
+    }
+
+    function updateTeamSummary(){
+      const agentCards = teamCards.querySelectorAll('.configCard[data-card-type="agent"]').length;
+      const totalRoles = agentCards + 1;
+      teamCountValue.textContent = String(totalRoles);
+      teamCountHint.textContent = agentCards + ' Agent' + (agentCards !== 1 ? 'en' : '') + ' plus Leiter';
+      teamBadgeLabel.textContent = totalRoles + ' Rollen';
+      teamMetaText.textContent = 'Leiter plus ' + agentCards + ' Agent' + (agentCards !== 1 ? 'en' : '') + ' sind konfiguriert. Weitere Agenten koennen direkt mobil hinzugefuegt werden.';
+    }
+
+    function buildChipButtons(values, activeValues, group){
+      return values.map(value => {
+        const active = activeValues.includes(value);
+        return `<button class="toggleChip${active ? ' on' : ''}" type="button" data-chip-group="${group}" data-chip-value="${escapeHtml(value)}" aria-pressed="${active ? 'true' : 'false'}">${escapeHtml(value)}</button>`;
+      }).join('');
+    }
+
+    function renderLeaderCard(config){
+      return `
+        <article class="configCard" data-card-type="leader" data-card-id="${escapeHtml(config.key)}">
+          <button class="configCard__toggle" type="button" data-card-toggle aria-expanded="${config.open ? 'true' : 'false'}" aria-controls="${escapeHtml(config.key)}Body">
+            <span class="configCard__meta">
+              <span class="configCard__eyebrow">Leiter</span>
+              <span class="configCard__title" data-card-title>${escapeHtml(config.title)}</span>
+              <span class="configCard__subtitle">${escapeHtml(config.subtitle)}</span>
+            </span>
+            <span class="configCard__badge">${escapeHtml(config.badge)}</span>
+            <span class="configCard__arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+            </span>
+          </button>
+          <div class="configCard__body${config.open ? ' is-open' : ''}" id="${escapeHtml(config.key)}Body">
+            <div class="fieldRow">
+              <div class="fieldGroup">
+                <label class="fieldLabel">Modell</label>
+                <select data-field="model" data-current-model="${escapeHtml(config.model)}"></select>
+              </div>
+              <div class="fieldGroup">
+                <label class="fieldLabel">Name</label>
+                <input type="text" data-field="name" value="${escapeHtml(config.name)}" />
+              </div>
+            </div>
+            <div class="fieldGroup">
+              <label class="fieldLabel">Prompt</label>
+              <textarea data-field="prompt" rows="4">${escapeHtml(config.prompt)}</textarea>
+            </div>
+            <div class="fieldRow">
+              <div class="fieldGroup">
+                <label class="fieldLabel">Berechtigung</label>
+                <select data-field="permission">
+                  <option value="default"${config.permission === 'default' ? ' selected' : ''}>Standard (fragt bei wichtigen Aktionen)</option>
+                  <option value="acceptEdits"${config.permission === 'acceptEdits' ? ' selected' : ''}>Editiert selbststaendig</option>
+                  <option value="dontAsk"${config.permission === 'dontAsk' ? ' selected' : ''}>Arbeitet autonom (schnell)</option>
+                  <option value="bypassPermissions"${config.permission === 'bypassPermissions' ? ' selected' : ''}>Volle Kontrolle (Experten)</option>
+                  <option value="plan"${config.permission === 'plan' ? ' selected' : ''}>Nur planen (liest, aendert nichts)</option>
+                </select>
+              </div>
+              <div class="fieldGroup">
+                <label class="fieldLabel">Max. Arbeitsschritte</label>
+                <input type="number" data-field="maxTurns" value="${escapeHtml(config.maxTurns)}" placeholder="unlimited" />
+              </div>
+            </div>
+            <div class="checkRow">
+              <input type="checkbox" id="${escapeHtml(config.key)}PlanApproval" data-field="planApproval"${config.planApproval ? ' checked' : ''} />
+              <label for="${escapeHtml(config.key)}PlanApproval">Plan-Freigabe erforderlich</label>
+            </div>
+            <details class="subPanel">
+              <summary>
+                <span>Agenten-Profil</span>
+                <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+              </summary>
+              <div class="subPanel__body">
+                <div class="fieldRow">
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Rolle</label>
+                    <input type="text" data-field="position" value="${escapeHtml(config.position)}" placeholder="z. B. Koordinator" />
+                  </div>
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Hierarchie-Level</label>
+                    <select data-field="hierarchyLevel">
+                      <option value=""${config.hierarchyLevel === '' ? ' selected' : ''}>— waehlen —</option>
+                      <option value="owner"${config.hierarchyLevel === 'owner' ? ' selected' : ''}>Owner</option>
+                      <option value="lead"${config.hierarchyLevel === 'lead' ? ' selected' : ''}>Lead</option>
+                      <option value="senior"${config.hierarchyLevel === 'senior' ? ' selected' : ''}>Senior</option>
+                      <option value="worker"${config.hierarchyLevel === 'worker' ? ' selected' : ''}>Worker</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="fieldGroup">
+                  <label class="fieldLabel">Zustaendigkeitsbereich</label>
+                  <input type="text" data-field="scope" value="${escapeHtml(config.scope)}" placeholder="z. B. Orchestrierung, Strategie-Dokumente" />
+                </div>
+                <div class="fieldRow">
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Team-Zuordnung</label>
+                    <select data-field="teamAssignment"></select>
+                  </div>
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Reports-to</label>
+                    <select data-field="reportsTo"></select>
+                  </div>
+                </div>
+                <div class="fieldGroup">
+                  <label class="fieldLabel">Berechtigungen</label>
+                  <div class="chipGrid">${buildChipButtons(['code','review','strategy','marketing','finance','ops','design','qa'], config.permissions, 'permissions')}</div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderAgentCard(config){
+      return `
+        <article class="configCard" data-card-type="agent" data-card-id="${escapeHtml(config.key)}">
+          <button class="configCard__toggle" type="button" data-card-toggle aria-expanded="${config.open ? 'true' : 'false'}" aria-controls="${escapeHtml(config.key)}Body">
+            <span class="configCard__meta">
+              <span class="configCard__eyebrow">Agent</span>
+              <span class="configCard__title" data-card-title>${escapeHtml(config.title)}</span>
+              <span class="configCard__subtitle">${escapeHtml(config.subtitle)}</span>
+            </span>
+            <span class="configCard__badge">${escapeHtml(config.badge)}</span>
+            <span class="configCard__arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+            </span>
+          </button>
+          <div class="configCard__body${config.open ? ' is-open' : ''}" id="${escapeHtml(config.key)}Body">
+            <div class="fieldRow fieldRow--triple">
+              <div class="fieldGroup">
+                <label class="fieldLabel">Modell</label>
+                <select data-field="model" data-current-model="${escapeHtml(config.model)}"></select>
+              </div>
+              <div class="fieldGroup">
+                <label class="fieldLabel">Rolle</label>
+                <input type="text" data-field="position" value="${escapeHtml(config.position)}" />
+              </div>
+              <div class="fieldGroup">
+                <label class="fieldLabel">ID</label>
+                <input type="text" data-field="slot" value="${escapeHtml(config.slot)}" />
+              </div>
+            </div>
+            <div class="fieldGroup">
+              <label class="fieldLabel">Prompt</label>
+              <textarea data-field="prompt" rows="3">${escapeHtml(config.prompt)}</textarea>
+            </div>
+            <details class="subPanel">
+              <summary>
+                <span>Ausfuehrung & Werkzeuge</span>
+                <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+              </summary>
+              <div class="subPanel__body">
+                <div class="fieldGroup">
+                  <label class="fieldLabel">Werkzeuge</label>
+                  <div class="chipGrid">${buildChipButtons(['Read','Write','Edit','Glob','Grep','Bash','WebFetch','WebSearch','Task'], config.tools, 'tools')}</div>
+                </div>
+                <div class="fieldRow fieldRow--triple">
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Berechtigung</label>
+                    <select data-field="permission">
+                      <option value="default"${config.permission === 'default' ? ' selected' : ''}>Standard</option>
+                      <option value="acceptEdits"${config.permission === 'acceptEdits' ? ' selected' : ''}>Editiert selbststaendig</option>
+                      <option value="dontAsk"${config.permission === 'dontAsk' ? ' selected' : ''}>Arbeitet autonom</option>
+                      <option value="bypassPermissions"${config.permission === 'bypassPermissions' ? ' selected' : ''}>Volle Kontrolle</option>
+                      <option value="plan"${config.permission === 'plan' ? ' selected' : ''}>Nur planen</option>
+                    </select>
+                  </div>
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Isolierung</label>
+                    <select data-field="isolation">
+                      <option value="none"${config.isolation === 'none' ? ' selected' : ''}>none</option>
+                      <option value="worktree"${config.isolation === 'worktree' ? ' selected' : ''}>worktree</option>
+                    </select>
+                  </div>
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Max. Arbeitsschritte</label>
+                    <input type="number" data-field="maxTurns" value="${escapeHtml(config.maxTurns)}" />
+                  </div>
+                </div>
+              </div>
+            </details>
+            <details class="subPanel">
+              <summary>
+                <span>Agenten-Profil</span>
+                <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+              </summary>
+              <div class="subPanel__body">
+                <div class="fieldGroup">
+                  <label class="fieldLabel">Zustaendigkeitsbereich</label>
+                  <input type="text" data-field="scope" value="${escapeHtml(config.scope)}" placeholder="z. B. Frontend/CSS, API-Endpunkte" />
+                </div>
+                <div class="fieldRow">
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Hierarchie-Level</label>
+                    <select data-field="hierarchyLevel">
+                      <option value=""${config.hierarchyLevel === '' ? ' selected' : ''}>— waehlen —</option>
+                      <option value="owner"${config.hierarchyLevel === 'owner' ? ' selected' : ''}>Owner</option>
+                      <option value="lead"${config.hierarchyLevel === 'lead' ? ' selected' : ''}>Lead</option>
+                      <option value="senior"${config.hierarchyLevel === 'senior' ? ' selected' : ''}>Senior</option>
+                      <option value="worker"${config.hierarchyLevel === 'worker' ? ' selected' : ''}>Worker</option>
+                    </select>
+                  </div>
+                  <div class="fieldGroup">
+                    <label class="fieldLabel">Team-Zuordnung</label>
+                    <select data-field="teamAssignment"></select>
+                  </div>
+                </div>
+                <div class="fieldGroup">
+                  <label class="fieldLabel">Reports-to</label>
+                  <select data-field="reportsTo"></select>
+                </div>
+                <div class="fieldGroup">
+                  <label class="fieldLabel">Berechtigungen</label>
+                  <div class="chipGrid">${buildChipButtons(['code','review','strategy','marketing','finance','ops','design','qa'], config.permissions, 'permissions')}</div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </article>
+      `;
+    }
+
+    function buildAgentDefaults(index){
+      const letter = String.fromCharCode(65 + index);
+      return {
+        key:'agent_' + letter.toLowerCase(),
+        type:'agent',
+        title:'Agent ' + letter,
+        subtitle:'Zusatzrolle fuer Spezialaufgaben.',
+        badge:'Agent',
+        model:'claude-sonnet-4-6',
+        slot:'agent_' + letter.toLowerCase(),
+        position:'Worker',
+        prompt:'Arbeite praezise im zugewiesenen Scope. Melde konkrete Ergebnisse statt Prosa.',
+        permission:'default',
+        isolation:'none',
+        maxTurns:'40',
+        tools:['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash'],
+        scope:'',
+        hierarchyLevel:'worker',
+        teamAssignment:'delivery',
+        reportsTo:'teamlead',
+        permissions:['code'],
+        open:true
+      };
+    }
+
+    function renderTeamCards(){
+      const cardsHtml = [renderLeaderCard(defaultLeader)].concat(defaultAgents.map(renderAgentCard)).join('');
+      teamCards.innerHTML = cardsHtml;
+      dynamicAgentCount = defaultAgents.length;
+      populateAllModelDropdowns();
+      syncProfileSelectors();
+      updateTeamSummary();
+    }
+
+    function appendAgentCard(config){
+      teamCards.insertAdjacentHTML('beforeend', renderAgentCard(config));
+      dynamicAgentCount += 1;
+      populateAllModelDropdowns();
+      syncProfileSelectors();
+      updateTeamSummary();
+    }
+
+    function extractCardData(card){
+      const fieldValue = (selector) => {
+        const element = card.querySelector(selector);
+        return element ? element.value : '';
+      };
+      const modelSelection = resolveModelSelection(fieldValue('[data-field="model"]'));
+      const permission = fieldValue('[data-field="permission"]');
+      const position = fieldValue('[data-field="position"]');
+      const slot = fieldValue('[data-field="slot"]');
+      const name = fieldValue('[data-field="name"]');
+      const prompt = fieldValue('[data-field="prompt"]');
+      const isolation = fieldValue('[data-field="isolation"]');
+      const maxTurns = fieldValue('[data-field="maxTurns"]');
+      const teamAssignment = fieldValue('[data-field="teamAssignment"]');
+      const reportsTo = fieldValue('[data-field="reportsTo"]');
+      const scope = fieldValue('[data-field="scope"]');
+      const hierarchyLevel = fieldValue('[data-field="hierarchyLevel"]');
+      const planApproval = card.querySelector('[data-field="planApproval"]');
+      const tools = Array.from(card.querySelectorAll('[data-chip-group="tools"].on')).map(node => node.dataset.chipValue);
+      const permissions = Array.from(card.querySelectorAll('[data-chip-group="permissions"].on')).map(node => node.dataset.chipValue);
+      return {
+        model:modelSelection.model,
+        engine:modelSelection.engine,
+        position,
+        slot,
+        name,
+        prompt,
+        permission,
+        isolation,
+        tools,
+        maxTurns:maxTurns ? parseInt(maxTurns, 10) || 0 : 0,
+        planApproval:planApproval ? planApproval.checked : false,
+        scope,
+        hierarchyLevel,
+        teamAssignment,
+        reportsTo,
+        permissions
+      };
+    }
+
+    function collectTeamConfig(){
+      const projectPath = projPath.value.trim();
+      const projectName = projName.value.trim();
+      const cards = Array.from(teamCards.querySelectorAll('.configCard'));
+      const leaderCard = cards.find(card => card.dataset.cardType === 'leader');
+      const agentCards = cards.filter(card => card.dataset.cardType === 'agent');
+
+      const leader = leaderCard ? extractCardData(leaderCard) : extractCardData(teamCards.querySelector('.configCard'));
+      const agents = agentCards.map(extractCardData);
+      const config = {
+        project_path:projectPath,
+        project_name:projectName,
+        team_lead_engine:leader.engine || resolveModelSelection(leader.model).engine,
+        team_lead_model:leader.model,
+        team_lead_enabled:true,
+        team_lead_cli_enabled:true,
+        leader,
+        agents
+      };
+      if(agents[0]){
+        config.agent_a_engine = agents[0].engine || resolveModelSelection(agents[0].model).engine;
+        config.agent_a_model = agents[0].model;
+        config.agent_a_position = agents[0].position;
+      }
+      if(agents[1]){
+        config.agent_b_engine = agents[1].engine || resolveModelSelection(agents[1].model).engine;
+        config.agent_b_model = agents[1].model;
+        config.agent_b_position = agents[1].position;
+      }
+      return config;
+    }
+
+    function syncProjectActionState(){
+      const hasName = projName.value.trim().length > 0;
+      const hasPath = projPath.value.trim().length > 0;
+      scanBtn.disabled = !hasPath;
+      createBtn.disabled = !(hasName && hasPath);
+      startTeamBtn.disabled = !hasPath;
+    }
+
+    async function loadAllowedProjectsBaseDir(){
+      try {
+        const response = await fetch(API_SERVER + '/projects');
+        if(!response.ok) return;
+        const data = await response.json();
+        allowedProjectsBaseDir = typeof data.base_dir === 'string' ? normalizeFsPath(data.base_dir) : '';
+        baseDirValue.textContent = allowedProjectsBaseDir || 'unbekannt';
+        recentProjectPayload = Array.isArray(data.projects) ? data.projects.slice().sort((a, b) => Number(b.mtime || 0) - Number(a.mtime || 0)) : [];
+        projectCountValue.textContent = String(recentProjectPayload.length);
+        projectCountHint.textContent = recentProjectPayload.length ? 'zuletzt bekannte Arbeitsraeume' : 'keine Projekte gefunden';
+        updatePathContract();
+        renderRecentProjects();
+      } catch(error){
+        console.warn('Projects base lookup failed:', error);
+        baseDirValue.textContent = 'nicht erreichbar';
+        renderRecentProjects();
+      }
+    }
+
+    function fillProjectForm(name, path){
+      projName.value = name || '';
+      projPath.value = path || '';
+      syncProjectActionState();
+      clearFeedback(projectFeedback);
+      projName.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+
+    function renderRecentProjects(){
+      if(!recentProjectPayload.length){
+        recentProjects.innerHTML = '<p class="quickProjects__empty">Keine bekannte Projektliste verfuegbar. Du kannst Pfad und Namen direkt manuell eingeben.</p>';
+        return;
+      }
+      const cards = recentProjectPayload.slice(0, 5).map(project => {
+        const name = escapeHtml(project.name || 'Projekt');
+        const path = escapeHtml(project.path || '');
+        const preview = escapeHtml((project.preview || '').trim().slice(0, 120));
+        const badge = project.has_project_md ? 'mit PROJECT.md' : 'Ordner';
+        return `
+          <button class="quickProject" type="button" data-project-name="${name}" data-project-path="${path}">
+            <span class="quickProject__title">
+              <span class="quickProject__name">${name}</span>
+              <span class="quickProject__badge">${escapeHtml(badge)}</span>
+            </span>
+            <span class="quickProject__path">${path}</span>
+            ${preview ? `<span class="quickProject__preview">${preview}</span>` : ''}
+          </button>
+        `;
+      }).join('');
+      recentProjects.innerHTML = cards;
+    }
+
+    function flattenScanItems(data){
+      const items = [];
+      for(const engine of ['claude', 'codex', 'gemini', 'qwen']){
+        if(!data[engine]) continue;
+        for(const group of Object.values(data[engine])){
+          if(Array.isArray(group)) group.forEach(item => items.push(item));
+        }
+      }
+      return items;
+    }
+
+    function renderScanResults(data){
+      const items = flattenScanItems(data);
+      const foundCount = items.filter(item => item.exists).length;
+      const total = items.length || Number(data.summary?.total_scanned || 0);
+      const scannedPath = data.project_path || projPath.value.trim();
+      scanHeadline.textContent = (total
+        ? foundCount + ' von ' + total + ' Konfigurationen gefunden.'
+        : 'Keine scanbaren Konfigurationen gefunden.')
+        + ' Pfad: ' + scannedPath;
+      scanList.innerHTML = items.map(item => {
+        const found = !!item.exists;
+        const label = item.source || item.path || 'Unbekannt';
+        const status = found ? (item.is_dir ? 'ordner' : 'gefunden') : 'fehlt';
+        return `
+          <div class="scanItem${found ? ' scanItem--found' : ''}">
+            <span class="scanItem__icon" aria-hidden="true"></span>
+            <span class="scanItem__text">${escapeHtml(label)}</span>
+            <span class="scanItem__status">${escapeHtml(status)}</span>
+          </div>
+        `;
+      }).join('');
+      scanResults.classList.add('is-visible');
+    }
+
+    function formatRuntimeConfigureError(data){
+      if(!data || typeof data !== 'object') return 'Konfiguration fehlgeschlagen';
+      const failures = Array.isArray(data.failed) ? data.failed : [];
+      const first = failures.find(item => item && (item.error_detail || item.error_reason || item.id || item.name));
+      if(first){
+        const label = first.id || first.name || 'runtime';
+        const detail = first.error_detail || first.error_reason || data.error || 'Konfiguration fehlgeschlagen';
+        return label + ': ' + detail;
+      }
+      return data.error || 'Konfiguration fehlgeschlagen';
+    }
+
+    async function pollPlatformStatus(){
+      try {
+        const response = await fetch(API_BASE + '/status');
+        const data = await response.json();
+        const runtime = data.runtime || {};
+        const platformOnline = Number(data.platform?.online_count || 0);
+        const runtimeOnline = Number(runtime.running_count || 0);
+        const runtimeTotal = Number(runtime.agents_total || 0);
+        if(runtime.configured){
+          runtimeState.textContent = runtimeOnline > 0 ? 'Bereit' : 'Verbinde';
+          runtimeDetail.textContent = runtimeOnline + '/' + runtimeTotal + ' Runtime-Agents';
+          platformBadge.dataset.state = runtimeOnline > 0 ? 'ok' : 'warn';
+          platformBadgeLabel.textContent = runtimeOnline > 0 ? 'Runtime aktiv' : 'Runtime startet';
+        } else if(platformOnline > 0){
+          runtimeState.textContent = 'Live';
+          runtimeDetail.textContent = platformOnline + ' Agent' + (platformOnline !== 1 ? 's' : '') + ' online';
+          platformBadge.dataset.state = 'ok';
+          platformBadgeLabel.textContent = 'Agents online';
+        } else {
+          runtimeState.textContent = 'Offline';
+          runtimeDetail.textContent = 'Keine Agents';
+          platformBadge.dataset.state = 'error';
+          platformBadgeLabel.textContent = 'Keine Agents';
+        }
+      } catch(error){
+        runtimeState.textContent = 'Offline';
+        runtimeDetail.textContent = 'Status nicht erreichbar';
+        platformBadge.dataset.state = 'error';
+        platformBadgeLabel.textContent = 'Status offline';
+      }
+    }
+
+    backBtn.addEventListener('click', () => {
+      if(window.history.length > 1){
+        window.history.back();
+        return;
+      }
+      window.location.href = 'mobile_buddy.html';
+    });
+
+    projName.addEventListener('input', syncProjectActionState);
+    projPath.addEventListener('input', syncProjectActionState);
+
+    browsePathBtn.addEventListener('click', async () => {
+      clearFeedback(projectFeedback);
+      if(!window.showDirectoryPicker){
+        setFeedback(projectFeedback, 'warn', 'Bitte Pfad manuell eingeben. Die Ordner-Auswahl steht nur in unterstuetzten Chromium-Browsern zur Verfuegung.');
+        return;
+      }
+      try {
+        const dirHandle = await window.showDirectoryPicker({ mode:'read' });
+        if(!projName.value.trim()) projName.value = dirHandle.name;
+        setFeedback(projectFeedback, 'warn', 'Der Browser liefert keinen absoluten Pfad. Bitte den Projektpfad manuell eintragen.');
+      } catch(error){
+        if(error.name !== 'AbortError'){
+          setFeedback(projectFeedback, 'warn', 'Bitte Pfad manuell eingeben.');
+        }
+      } finally {
+        syncProjectActionState();
+      }
+    });
+
+    reloadProjectsBtn.addEventListener('click', async () => {
+      reloadProjectsBtn.disabled = true;
+      await loadAllowedProjectsBaseDir();
+      reloadProjectsBtn.disabled = false;
+    });
+
+    recentProjects.addEventListener('click', event => {
+      const trigger = event.target.closest('.quickProject');
+      if(!trigger) return;
+      fillProjectForm(trigger.dataset.projectName || '', trigger.dataset.projectPath || '');
+    });
+
+    teamCards.addEventListener('click', event => {
+      const toggle = event.target.closest('[data-card-toggle]');
+      if(toggle){
+        const card = toggle.closest('.configCard');
+        const body = card.querySelector('.configCard__body');
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        body.classList.toggle('is-open', !expanded);
+        return;
+      }
+
+      const chip = event.target.closest('.toggleChip');
+      if(!chip) return;
+      chip.classList.toggle('on');
+      chip.setAttribute('aria-pressed', chip.classList.contains('on') ? 'true' : 'false');
+    });
+
+    teamCards.addEventListener('input', event => {
+      const field = event.target;
+      if(field.matches('[data-field="slot"], [data-field="name"], [data-field="teamAssignment"]')){
+        syncProfileSelectors();
+      }
+    });
+    teamCards.addEventListener('change', event => {
+      const field = event.target;
+      if(field.matches('[data-field="slot"], [data-field="name"], [data-field="teamAssignment"]')){
+        syncProfileSelectors();
+      }
+      if(field.matches('select[data-field="model"]')){
+        field.dataset.currentModel = field.value;
+      }
+    });
+
+    addAgentBtn.addEventListener('click', () => {
+      const nextIndex = dynamicAgentCount;
+      appendAgentCard(buildAgentDefaults(nextIndex));
+    });
+
+    scanBtn.addEventListener('click', async () => {
+      const path = projPath.value.trim();
+      if(!path) return;
+      clearFeedback(projectFeedback);
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Wird gescannt…';
+      try {
+        const response = await fetch(API_SERVER + '/api/context/scan?project_path=' + encodeURIComponent(path));
+        const data = await response.json();
+        renderScanResults(data);
+        setFeedback(projectFeedback, 'ok', 'Scan abgeschlossen. Die Ergebnisse sind direkt darunter sichtbar.');
+      } catch(error){
+        scanResults.classList.add('is-visible');
+        scanHeadline.textContent = 'Scan fehlgeschlagen.';
+        scanList.innerHTML = '<div class="scanItem"><span class="scanItem__icon" aria-hidden="true"></span><span class="scanItem__text">Server nicht erreichbar</span><span class="scanItem__status">error</span></div>';
+        setFeedback(projectFeedback, 'error', 'Server nicht erreichbar');
+      } finally {
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Scannen';
+      }
+    });
+
+    createBtn.addEventListener('click', async () => {
+      const name = projName.value.trim();
+      const path = projPath.value.trim();
+      if(!name || !path) return;
+      clearFeedback(projectFeedback);
+      if(!allowedProjectsBaseDir) await loadAllowedProjectsBaseDir();
+      const baseDirResolution = resolveCreateBaseDir(path, name);
+      if(!baseDirResolution.ok){
+        setFeedback(projectFeedback, 'error', baseDirResolution.error);
+        return;
+      }
+
+      const cards = Array.from(teamCards.querySelectorAll('.configCard'));
+      const leaderCard = cards.find(card => card.dataset.cardType === 'leader');
+      const agentCards = cards.filter(card => card.dataset.cardType === 'agent');
+      const payload = {
+        project_name:name,
+        base_dir:baseDirResolution.baseDir,
+        tags:(projTags.value || '').split(',').map(item => item.trim()).filter(Boolean),
+        project_notes:projNotes.value || '',
+        leader:leaderCard ? extractCardData(leaderCard) : defaultLeader,
+        agents:agentCards.map(extractCardData)
+      };
+
+      createBtn.disabled = true;
+      createBtn.textContent = 'Wird erstellt…';
+      try {
+        const response = await fetch(API_SERVER + '/api/projects/create', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body:JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if(data.ok){
+          setFeedback(projectFeedback, 'ok', 'Projekt erstellt: ' + data.project_path + ' (' + data.created.length + ' Dateien)');
+          await loadAllowedProjectsBaseDir();
+        } else {
+          setFeedback(projectFeedback, 'error', data.error || 'Unbekannter Fehler');
+        }
+      } catch(error){
+        setFeedback(projectFeedback, 'error', 'Server nicht erreichbar');
+      } finally {
+        createBtn.disabled = false;
+        createBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Erstellen';
+        syncProjectActionState();
+      }
+    });
+
+    startTeamBtn.addEventListener('click', async () => {
+      clearFeedback(teamFeedback);
+      const config = collectTeamConfig();
+      if(!config.project_path){
+        setFeedback(teamFeedback, 'error', 'Project Path fehlt');
+        return;
+      }
+      startTeamBtn.disabled = true;
+      startTeamBtn.textContent = 'Wird gestartet…';
+      try {
+        const response = await fetch(API_SERVER + '/runtime/configure', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body:JSON.stringify(config)
+        });
+        const data = await response.json();
+        if(data.ok){
+          const count = (data.started || []).length;
+          setFeedback(teamFeedback, 'ok', 'Team gestartet — ' + count + ' Agent' + (count !== 1 ? 's' : '') + ' aktiv');
+        } else {
+          setFeedback(teamFeedback, 'error', formatRuntimeConfigureError(data));
+        }
+      } catch(error){
+        setFeedback(teamFeedback, 'error', 'Server nicht erreichbar');
+      } finally {
+        startTeamBtn.disabled = false;
+        startTeamBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>Team starten';
+        syncProjectActionState();
+      }
+    });
+
+    exportBtn.addEventListener('click', () => {
+      const config = collectTeamConfig();
+      const blob = new Blob([JSON.stringify(config, null, 2)], { type:'application/json' });
+      const anchor = document.createElement('a');
+      anchor.href = URL.createObjectURL(blob);
+      anchor.download = (config.project_name || 'team-config') + '.json';
+      anchor.click();
+      URL.revokeObjectURL(anchor.href);
+    });
+
+    function applyUrlPrefill(){
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlProject = urlParams.get('project');
+      const urlPath = urlParams.get('path');
+      if(urlProject){
+        projName.value = decodeURIComponent(urlProject);
+      }
+      if(urlPath){
+        const decodedPath = decodeURIComponent(urlPath);
+        projPath.value = decodedPath;
+        if(!urlProject){
+          const parts = decodedPath.replace(/\/+$/, '').split('/');
+          if(parts.length > 0) projName.value = parts[parts.length - 1];
+        }
+      }
+    }
+
+    async function init(){
+      applyStoredTheme();
+      renderTeamCards();
+      applyUrlPrefill();
+      syncProjectActionState();
+      await Promise.all([
+        loadAllowedProjectsBaseDir(),
+        fetchEngineModels(),
+        pollPlatformStatus()
+      ]);
+      syncProfileSelectors();
+      syncProjectActionState();
+      setInterval(pollPlatformStatus, 10000);
+    }
+
+    init();
+  </script>
+  <script>
+    window.BRIDGE_BUDDY_WIDGET_CONFIG = {
+      autoOpenOnInit: false,
+      openOnIncoming: true,
+      mountSelector: '#shell',
+      cloudMode: true,
+      storageNamespace: 'mobile_projects_surface',
+      defaultPosition: {
+        right: 14,
+        top: 12
+      }
+    };
+  </script>
+  <script src="buddy_widget.js"></script>
+</body>
+</html>

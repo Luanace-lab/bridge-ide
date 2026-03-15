@@ -1,0 +1,43 @@
+{
+  "codex": {
+    "allowed_tools": [
+      "*"
+    ],
+    "denied_actions": [
+      "wipe disk",
+      "delete database",
+      "drop table",
+      "format drive",
+      "delete credentials"
+    ],
+    "rate_limits": {
+      "max_per_minute": 30
+    },
+    "output_schema": null,
+    "consequential_tools_mode": "explicit_allow",
+    "preset_name": "safe_default",
+    "preset_applied_at": "2026-03-14T23:16:10.773152+00:00"
+  },
+  "slice56-probe": {
+    "allowed_tools": [
+      "*",
+      "browser_write",
+      "desktop_control",
+      "communications"
+    ],
+    "denied_actions": [
+      "wipe disk",
+      "delete database",
+      "drop table",
+      "format drive",
+      "delete credentials"
+    ],
+    "rate_limits": {
+      "max_per_minute": 5
+    },
+    "output_schema": null,
+    "consequential_tools_mode": "explicit_allow",
+    "preset_name": "creator_operator",
+    "preset_applied_at": "2026-03-14T23:40:55.959944+00:00"
+  }
+}

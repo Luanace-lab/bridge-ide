@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "runtime_servers": {
+    "bridge": {
+      "owner": "bridge",
+      "tier": "core",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "include_in_all": true,
+      "command": "python3",
+      "args": [
+        "{backend_dir}/bridge_mcp.py"
+      ],
+      "env": {}
+    },
+    "playwright": {
+      "owner": "microsoft",
+      "tier": "core_optional",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "include_in_all": true,
+      "command": "npx",
+      "args": [
+        "{playwright_mcp_package}"
+      ],
+      "env": {}
+    },
+    "aase": {
+      "owner": "custom",
+      "tier": "legacy_custom",
+      "transport": "stdio",
+      "reproducible": false,
+      "production_ready": false,
+      "include_in_all": true,
+      "command": "python3",
+      "args": [
+        "{aase_mcp_path}"
+      ],
+      "env": {}
+    },
+    "ghost": {
+      "owner": "custom",
+      "tier": "legacy_custom",
+      "transport": "stdio",
+      "reproducible": false,
+      "production_ready": false,
+      "include_in_all": true,
+      "command": "python3",
+      "args": [
+        "{ghost_mcp_path}"
+      ],
+      "env": {}
+    },
+    "bridge-rag": {
+      "owner": "bridge",
+      "tier": "optional",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "include_in_all": false,
+      "command": "python3",
+      "args": [
+        "{backend_dir}/bridge_rag_mcp.py"
+      ],
+      "env": {}
+    },
+    "n8n": {
+      "owner": "bridge",
+      "tier": "optional",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "include_in_all": false,
+      "command": "python3",
+      "args": [
+        "{backend_dir}/n8n_mcp.py"
+      ],
+      "env": {}
+    }
+  },
+  "planned_servers": {
+    "openai-docs": {
+      "owner": "openai",
+      "tier": "optional",
+      "transport": "streamable_http",
+      "reproducible": true,
+      "production_ready": true,
+      "url": "https://mcp.openai.com/mcp",
+      "notes": "Official OpenAI documentation MCP."
+    },
+    "google-maps": {
+      "owner": "google",
+      "tier": "optional",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "source_repo": "https://github.com/googlemaps/google-maps-mcp-server",
+      "notes": "Official Google Maps Platform MCP server."
+    },
+    "google-genai-toolbox": {
+      "owner": "google",
+      "tier": "optional",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "source_repo": "https://github.com/googleapis/genai-toolbox",
+      "notes": "Official Google MCP toolbox for databases."
+    },
+    "claude-code": {
+      "owner": "anthropic",
+      "tier": "internal_orchestration",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "suggested_command": [
+        "claude",
+        "mcp",
+        "serve"
+      ],
+      "notes": "Official Claude Code MCP server mode."
+    },
+    "codex-mcp-server": {
+      "owner": "openai",
+      "tier": "internal_orchestration",
+      "transport": "stdio",
+      "reproducible": true,
+      "production_ready": true,
+      "suggested_command": [
+        "codex",
+        "mcp-server"
+      ],
+      "notes": "Official Codex MCP server mode."
+    }
+  }
+}
