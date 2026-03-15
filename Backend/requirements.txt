@@ -1,0 +1,22 @@
+# Bridge IDE Backend — Python Dependencies
+# Generated: 2026-03-15
+
+# === Core (required) ===
+cryptography>=46.0.0        # Fernet encryption (credential_store.py)
+httpx>=0.28.0               # HTTP client (bridge_mcp.py, various)
+mcp>=1.26.0                 # MCP protocol (bridge_mcp.py)
+numpy>=2.2.0                # Vector operations (semantic_memory.py)
+
+# === Database ===
+duckdb>=1.5.0               # Analytics queries (data_platform/)
+chromadb>=1.5.0             # RAG vector store (bridge_rag_mcp.py)
+
+# === NLP / AI ===
+sentence-transformers>=5.2.0  # Embeddings (semantic_memory.py)
+
+# === Browser Automation (optional — only if stealth/playwright used) ===
+patchright>=1.58.0          # Stealth browser (bridge_mcp.py stealth tools)
+playwright>=1.58.0          # Browser automation (Playwright MCP)
+
+# === Messaging (optional — only if nacl encryption used) ===
+PyNaCl>=1.5.0               # Encryption (federation_crypto.py)

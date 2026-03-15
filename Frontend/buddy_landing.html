@@ -1,0 +1,1708 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bridge IDE — Buddy</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%232ED1D0'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui' font-size='16' font-weight='700' fill='white'%3EB%3C/text%3E%3C/svg%3E">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e7edf5}
+
+/* dark background for corona phase — transitions to warm-dark after evolution */
+body{background:#080808}
+#matrix-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;opacity:0.45}
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;mix-blend-mode:screen}
+
+/* CSS fallback creature for weak devices */
+#css-buddy{
+  display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-65%);z-index:5;
+  width:180px;height:200px;pointer-events:none;
+}
+#css-buddy .body-glow{
+  width:140px;height:160px;margin:20px auto 0;border-radius:50% 50% 45% 45%;
+  background:radial-gradient(ellipse at 50% 40%, #2ED1D0 0%, #20F5E0 30%, #1A8E6B 70%, transparent 100%);
+  filter:blur(1px);animation:cssBreathe 3s ease-in-out infinite;position:relative;
+}
+#css-buddy .eye{
+  position:absolute;width:28px;height:32px;background:radial-gradient(#0A1628 40%, #0E9AA7 60%, #E8FFFC 80%);
+  border-radius:50%;top:35%;
+}
+#css-buddy .eye.l{left:28%}
+#css-buddy .eye.r{right:28%}
+#css-buddy .eye .glint{position:absolute;width:8px;height:8px;background:#fff;border-radius:50%;top:15%;left:55%}
+#css-buddy .ear{
+  position:absolute;width:24px;height:50px;background:linear-gradient(#20F5E0, #2ED1D0);
+  border-radius:50% 50% 30% 30%;top:-25px;
+}
+#css-buddy .ear.l{left:25%;transform:rotate(-15deg)}
+#css-buddy .ear.r{right:25%;transform:rotate(15deg)}
+#css-buddy .cheek{
+  position:absolute;width:20px;height:14px;background:rgba(255,143,160,.5);
+  border-radius:50%;top:52%;
+}
+#css-buddy .cheek.l{left:12%}
+#css-buddy .cheek.r{right:12%}
+@keyframes cssBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+body.css-fallback #css-buddy{display:block}
+body.css-fallback #canvas{display:none}
+
+/* subtitle — Buddy greeting (Nova fix #2) */
+/* side panel — invisible container, text floats on dark bg */
+#side-panel{
+  position:fixed;right:40px;top:50%;transform:translateY(-50%);
+  width:min(420px,38vw);z-index:100;
+  display:flex;flex-direction:column;
+  padding:12px 20px 20px;
+  background:none;
+  border:none;
+  border-radius:0;
+  cursor:default;
+  pointer-events:auto;
+}
+#side-panel .drag-handle{
+  cursor:grab;padding:6px 0 10px;text-align:center;
+  color:rgba(138,164,200,.0);font-size:10px;letter-spacing:2px;
+  user-select:none;-webkit-user-select:none;
+  position:relative;z-index:200;
+  touch-action:none;transition:color .3s;
+}
+#side-panel .drag-handle:hover{color:rgba(138,164,200,.35)}
+#side-panel .drag-handle:active{cursor:grabbing;color:rgba(46,209,208,.4)}
+#side-panel.dragging{opacity:.85}
+
+#subtitle{
+  font-size:14px;letter-spacing:3px;text-transform:none;
+  color:rgba(46,209,208,.7);
+  opacity:0;transition:opacity 1.5s ease;
+  font-weight:300;text-align:left;line-height:1.6;
+  margin-bottom:24px;
+}
+#subtitle.visible{opacity:1}
+
+/* chat area */
+#chat-container{
+  z-index:20;width:100%;pointer-events:auto;
+  opacity:0;transition:opacity 1s ease .5s;
+}
+#chat-container.visible{opacity:1}
+
+@media(max-width:900px){
+  #side-panel{
+    right:10px;left:10px;top:auto;bottom:20px;
+    transform:none;width:auto;
+  }
+  #subtitle{text-align:center}
+}
+
+#response-area{
+  max-height:220px;overflow-y:auto;padding:0 18px;
+  margin-bottom:8px;scrollbar-width:thin;
+  scrollbar-color:rgba(46,209,208,.12) transparent;
+}
+.buddy-msg{
+  font-size:14px;line-height:1.65;color:rgba(231,237,245,.85);
+  padding:12px 0;border-bottom:1px solid rgba(46,209,208,.06);
+  animation:msgIn .4s ease;
+}
+.buddy-msg:last-child{border-bottom:none}
+.buddy-msg.user-msg{color:rgba(46,209,208,.9);text-align:right;font-weight:400}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* intent buttons (Nova fix #3) */
+.intent-buttons{
+  display:flex;gap:8px;justify-content:center;padding:8px 18px;
+  animation:msgIn .4s ease;flex-wrap:wrap;
+}
+.intent-btn{
+  background:rgba(46,209,208,.08);border:1px solid rgba(46,209,208,.2);
+  color:rgba(231,237,245,.85);padding:10px 18px;border-radius:12px;
+  font-size:13px;font-family:inherit;cursor:pointer;
+  transition:all .3s ease;
+}
+.intent-btn:hover{
+  background:rgba(46,209,208,.15);border-color:rgba(46,209,208,.4);
+  transform:translateY(-1px);
+}
+
+/* chat box */
+#chat-box{
+  background:rgba(8,8,8,.35);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(46,209,208,.06);
+  border-radius:16px;padding:6px 6px 6px 18px;
+  display:flex;align-items:center;gap:8px;
+  box-shadow:0 0 60px rgba(40,149,229,.04);
+  transition:border-color .4s,box-shadow .4s;
+}
+#chat-box:focus-within{
+  border-color:rgba(46,209,208,.25);
+  box-shadow:0 0 60px rgba(40,149,229,.1);
+}
+#chat-input{
+  flex:1;background:none;border:none;outline:none;
+  color:#e7edf5;font-size:15px;font-family:inherit;
+  padding:12px 0;caret-color:#2ED1D0;
+}
+#chat-input::placeholder{color:rgba(138,164,200,.35);font-weight:300}
+
+/* mic button */
+#mic-btn{
+  width:40px;height:40px;border-radius:10px;border:none;
+  background:rgba(46,209,208,.1);color:rgba(46,209,208,.6);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .3s ease;flex-shrink:0;
+}
+#mic-btn:hover{background:rgba(46,209,208,.2);color:rgba(46,209,208,.9)}
+#mic-btn.recording{
+  background:rgba(239,68,68,.2);color:#ef4444;
+  animation:micPulse 1.5s ease infinite;
+}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+#mic-btn svg{width:18px;height:18px}
+
+/* send button */
+#send-btn{
+  width:40px;height:40px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,#2895E5,#2ED1D0);
+  color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,box-shadow .3s;flex-shrink:0;
+}
+#send-btn:hover{transform:scale(1.06);box-shadow:0 0 24px rgba(46,209,208,.35)}
+#send-btn svg{width:18px;height:18px}
+
+/* typing dots */
+.typing-dots{display:inline-flex;gap:4px;padding:12px 0}
+.typing-dots span{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(46,209,208,.6);
+  animation:dotPulse 1.4s ease infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+
+/* escape hatch (Nova: "Direkt loslegen" link) */
+#escape-hatch{
+  margin-top:16px;text-align:left;
+  z-index:25;opacity:0;transition:opacity 1s ease 3s;
+}
+#escape-hatch.visible{opacity:1}
+#escape-hatch a{
+  color:rgba(138,164,200,.3);font-size:11px;text-decoration:none;
+  letter-spacing:1px;transition:color .3s;
+}
+#escape-hatch a:hover{color:rgba(138,164,200,.6)}
+
+/* TTS indicator */
+#tts-indicator{
+  position:fixed;top:20px;right:20px;z-index:30;
+  display:flex;align-items:center;gap:6px;
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+#tts-indicator.active{opacity:1}
+#tts-indicator .bar{
+  width:3px;height:12px;background:rgba(46,209,208,.6);border-radius:2px;
+  animation:ttsBar 0.8s ease infinite alternate;
+}
+#tts-indicator .bar:nth-child(2){animation-delay:.15s;height:18px}
+#tts-indicator .bar:nth-child(3){animation-delay:.3s;height:14px}
+#tts-indicator .bar:nth-child(4){animation-delay:.45s;height:20px}
+#tts-indicator .bar:nth-child(5){animation-delay:.6s;height:10px}
+@keyframes ttsBar{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
+
+/* volume toggle */
+#vol-btn{
+  position:fixed;top:20px;left:20px;z-index:30;
+  width:36px;height:36px;border-radius:8px;border:none;
+  background:rgba(46,209,208,.08);color:rgba(46,209,208,.5);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .3s;
+}
+#vol-btn:hover{background:rgba(46,209,208,.15);color:rgba(46,209,208,.8)}
+#vol-btn.muted{color:rgba(239,68,68,.5)}
+#vol-btn svg{width:18px;height:18px}
+
+@media(max-width:600px){
+  #subtitle{font-size:12px;letter-spacing:2px}
+  #vol-btn{top:10px;left:10px;width:32px;height:32px}
+}
+</style>
+</head>
+<body>
+<canvas id="matrix-bg"></canvas>
+<script>
+/* ═══ MATRIX RAIN BACKGROUND ═══ */
+(function(){
+  const mc = document.getElementById('matrix-bg');
+  if(!mc) return;
+  const ctx = mc.getContext('2d');
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF<>{}[]|/\\';
+  const fontSize = 14;
+  let columns, drops;
+
+  function resize(){
+    mc.width = window.innerWidth;
+    mc.height = window.innerHeight;
+    columns = Math.floor(mc.width / fontSize);
+    drops = new Array(columns).fill(1).map(()=> Math.random() * mc.height / fontSize | 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function draw(){
+    ctx.fillStyle = 'rgba(8,8,8,0.06)';
+    ctx.fillRect(0, 0, mc.width, mc.height);
+    for(let i = 0; i < columns; i++){
+      const ch = chars[Math.random() * chars.length | 0];
+      const x = i * fontSize;
+      const y = drops[i] * fontSize;
+      /* color gradient: bright head, dim trail */
+      const brightness = 0.3 + Math.random() * 0.4;
+      const r = Math.round(30 * brightness);
+      const g = Math.round(200 * brightness + Math.random() * 55);
+      const b = Math.round(160 * brightness + Math.random() * 40);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.font = fontSize + 'px monospace';
+      ctx.fillText(ch, x, y);
+      if(y > mc.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+<canvas id="canvas"></canvas>
+
+<!-- CSS fallback buddy for weak devices -->
+<div id="css-buddy">
+  <div class="body-glow">
+    <div class="ear l"></div><div class="ear r"></div>
+    <div class="eye l"><div class="glint"></div></div>
+    <div class="eye r"><div class="glint"></div></div>
+    <div class="cheek l"></div><div class="cheek r"></div>
+  </div>
+</div>
+
+<div id="side-panel">
+  <div class="drag-handle">⠿ DRAG TO POSITION ⠿</div>
+  <div id="subtitle">Bridge IDE</div>
+
+  <div id="chat-container">
+    <div id="response-area"></div>
+    <div id="chat-box">
+      <input id="chat-input" type="text" placeholder="Sag hallo..." autocomplete="off"/>
+      <button id="mic-btn" aria-label="Mikrofon" title="Sprich mit Buddy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <button id="send-btn" aria-label="Senden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="escape-hatch"><a href="/chat.html?agent=buddy">Direkt loslegen &rarr;</a></div>
+</div>
+
+<!-- TTS speaking indicator -->
+<div id="tts-indicator">
+  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+</div>
+
+<!-- Volume toggle -->
+<button id="vol-btn" aria-label="Ton an/aus" title="Buddy-Stimme an/aus">
+  <svg id="vol-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+  <svg id="vol-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+</button>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script src="bridge_runtime_urls.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
+import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
+
+/* ═══════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════ */
+const API_BASE = window.BridgeRuntimeUrls.resolveConfig().apiBase;
+const BUDDY_ID = 'buddy';
+const USER_ID = 'user';
+const POLL_MS = 1500;
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+const BRIDGE_UI_TOKEN = typeof window.__BRIDGE_UI_TOKEN === 'string' ? window.__BRIDGE_UI_TOKEN : '';
+const ENGINE_LABELS = {
+  claude: 'Claude Code',
+  codex: 'Codex CLI',
+  gemini: 'Gemini CLI',
+  qwen: 'Qwen CLI'
+};
+
+function isBridgeHttpTarget(rawUrl) {
+  try {
+    return window.BridgeRuntimeUrls.isBridgeHttpTarget(rawUrl, API_BASE, window.location.href);
+  } catch(e) {
+    return false;
+  }
+}
+
+async function bridgeFetch(url, init = {}) {
+  const options = {...init};
+  const headers = new Headers(init.headers || {});
+  if (BRIDGE_UI_TOKEN && isBridgeHttpTarget(url) && !headers.has('X-Bridge-Token')) {
+    headers.set('X-Bridge-Token', BRIDGE_UI_TOKEN);
+  }
+  options.headers = headers;
+  return fetch(url, options);
+}
+
+/* shared state — used by TTS, UI, and Three.js animation */
+let speaking = false;
+let speakIntensity = 0;
+
+/* ═══════════════════════════════════════════
+   WEBGL CAPABILITY CHECK (Nova fix #4)
+   ═══════════════════════════════════════════ */
+let useWebGL = true;
+try {
+  const c = document.createElement('canvas');
+  const gl = c.getContext('webgl2') || c.getContext('webgl');
+  if (!gl) throw 'no webgl';
+  /* check for low-end: renderer string */
+  const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+  if (dbg) {
+    const renderer = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL).toLowerCase();
+    if (renderer.includes('swiftshader') || renderer.includes('llvmpipe')) useWebGL = false;
+  }
+  if (isMobile && devicePixelRatio < 2 && innerWidth < 400) useWebGL = false;
+} catch(e) { useWebGL = false; }
+
+if (!useWebGL) document.body.classList.add('css-fallback');
+
+/* ═══════════════════════════════════════════
+   TTS — Sweet child voice
+   ═══════════════════════════════════════════ */
+let ttsEnabled = true;
+let ttsVoice = null;
+const ttsIndicator = document.getElementById('tts-indicator');
+const volBtn = document.getElementById('vol-btn');
+const volOn = document.getElementById('vol-icon-on');
+const volOff = document.getElementById('vol-icon-off');
+
+function initTTS() {
+  if (!('speechSynthesis' in window)) return;
+  function pickVoice() {
+    const voices = speechSynthesis.getVoices();
+    /* prefer female/child German voices, then any German, then any high-pitch */
+    const de = voices.filter(v => v.lang.startsWith('de'));
+    const deF = de.filter(v => /female|frau|kind|child|anna|petra|marlene/i.test(v.name));
+    if (deF.length) return deF[0];
+    if (de.length) return de[0];
+    /* fallback: any female voice */
+    const anyF = voices.filter(v => /female|child/i.test(v.name));
+    if (anyF.length) return anyF[0];
+    return voices[0] || null;
+  }
+  ttsVoice = pickVoice();
+  if (!ttsVoice && speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = () => { ttsVoice = pickVoice(); };
+  }
+}
+initTTS();
+
+function speak(text) {
+  /* Browser-TTS DEAKTIVIERT (Leo-Direktive: nur ElevenLabs, kein Doppel-TTS) */
+  return Promise.resolve();
+}
+
+volBtn.addEventListener('click', () => {
+  ttsEnabled = !ttsEnabled;
+  volOn.style.display = ttsEnabled ? '' : 'none';
+  volOff.style.display = ttsEnabled ? 'none' : '';
+  volBtn.classList.toggle('muted', !ttsEnabled);
+  if (!ttsEnabled && 'speechSynthesis' in window) speechSynthesis.cancel();
+});
+
+/* ═══════════════════════════════════════════
+   STT — Speech Recognition
+   ═══════════════════════════════════════════ */
+const micBtn = document.getElementById('mic-btn');
+const chatInput = document.getElementById('chat-input');
+let recognition = null;
+let isRecording = false;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'de-DE';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+
+  recognition.onresult = (e) => {
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    chatInput.value = transcript;
+    if (e.results[e.results.length-1].isFinal) {
+      stopRecording();
+      sendMessage();
+    }
+  };
+  recognition.onend = () => stopRecording();
+  recognition.onerror = () => stopRecording();
+}
+
+function startRecording() {
+  if (!recognition || isRecording) return;
+  isRecording = true;
+  micBtn.classList.add('recording');
+  chatInput.placeholder = 'Ich hoere zu...';
+  recognition.start();
+}
+
+function stopRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  micBtn.classList.remove('recording');
+  chatInput.placeholder = 'Sag hallo...';
+  try { recognition.stop(); } catch(e) {}
+}
+
+micBtn.addEventListener('click', () => {
+  if (isRecording) stopRecording();
+  else startRecording();
+});
+
+/* ═══════════════════════════════════════════
+   BRIDGE API
+   ═══════════════════════════════════════════ */
+let buddyReady = false;
+let pollTimer = null;
+let lastMsgId = 0;
+let detectedCliState = null;
+let detectedBuddyState = null;
+let buddySetupComplete = false;
+let buddySetupBusy = false;
+let setupButtonsShown = false;
+
+function engineLabel(engine) {
+  return ENGINE_LABELS[engine] || engine;
+}
+
+function authLabel(entry) {
+  if (!entry) return 'Status unbekannt';
+  if (entry.runtime_status === 'ready') return 'bereit';
+  if (entry.runtime_status === 'usage_limit_reached') return 'Limit erreicht';
+  if (entry.runtime_status === 'login_required') return 'Login offen';
+  if (entry.runtime_status === 'degraded') return 'degradiert';
+  if (entry.auth_status === 'authenticated') return 'bereit';
+  if (entry.auth_status === 'unauthenticated') return 'Login offen';
+  if (entry.auth_status === 'unknown') return 'Auth nicht verifiziert';
+  return 'nicht verfuegbar';
+}
+
+async function detectCliState() {
+  if (detectedCliState) return detectedCliState;
+  try {
+    const detectInit = {};
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+      detectInit.signal = AbortSignal.timeout(3000);
+    }
+    const r = await bridgeFetch(`${API_BASE}/cli/detect?skip_runtime=1`, detectInit);
+    if (!r.ok) return null;
+    detectedCliState = await r.json();
+    return detectedCliState;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function fetchBuddyState(force = false) {
+  if (detectedBuddyState && !force) return detectedBuddyState;
+  try {
+    const r = await bridgeFetch(`${API_BASE}/agents/${BUDDY_ID}`);
+    if (!r.ok) return null;
+    detectedBuddyState = await r.json();
+    return detectedBuddyState;
+  } catch (e) {
+    return null;
+  }
+}
+
+function resolveExistingBuddyEngine(scan, buddyState) {
+  const available = Array.isArray(scan?.cli?.available) ? scan.cli.available : [];
+  const currentEngine = typeof buddyState?.engine === 'string' ? buddyState.engine.trim() : '';
+  if (!currentEngine) return '';
+  return available.includes(currentEngine) ? currentEngine : '';
+}
+
+async function configureBuddyHome(engine) {
+  const r = await bridgeFetch(`${API_BASE}/agents/${BUDDY_ID}/setup-home`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({engine, overwrite: true})
+  });
+  const d = await r.json();
+  if (!r.ok) {
+    throw new Error(d.error || 'Buddy-Setup fehlgeschlagen');
+  }
+  buddySetupComplete = true;
+  return d;
+}
+
+function showCliSetupButtons(scan) {
+  const entries = Array.isArray(scan?.cli?.entries)
+    ? scan.cli.entries.filter(entry => entry.available)
+    : [];
+  if (!entries.length || setupButtonsShown) return;
+  setupButtonsShown = true;
+  const wrap = document.createElement('div');
+  wrap.className = 'intent-buttons';
+  for (const entry of entries) {
+    const btn = document.createElement('button');
+    btn.className = 'intent-btn';
+    const recommended = scan?.cli?.recommended === entry.id ? ' (empfohlen)' : '';
+    btn.textContent = `${engineLabel(entry.id)} — ${authLabel(entry)}${recommended}`;
+    btn.addEventListener('click', async () => {
+      if (buddySetupBusy) return;
+      buddySetupBusy = true;
+      wrap.remove();
+      addMessage(engineLabel(entry.id), true);
+      showTyping();
+      try {
+        const setup = await configureBuddyHome(entry.id);
+        const dots = ra.querySelector('.typing-dots');
+        if (dots) dots.remove();
+        addMessage(
+          `${engineLabel(entry.id)} ist jetzt fuer Buddy vorbereitet. Guidance-Datei: ${setup.agent_md.split('/').pop()}.`,
+          false
+        );
+        await startBuddy();
+        addMessage('Hey! Ich bin Buddy. Schoen, dass du da bist! Was fuehrt dich her?', false);
+        speak('Hey! Ich bin Buddy. Schoen, dass du da bist! Was fuehrt dich her?');
+        showIntentButtons();
+      } catch (e) {
+        const dots = ra.querySelector('.typing-dots');
+        if (dots) dots.remove();
+        addMessage(`Das Setup fuer ${engineLabel(entry.id)} ist fehlgeschlagen: ${e.message}`, false);
+      } finally {
+        buddySetupBusy = false;
+      }
+    });
+    wrap.appendChild(btn);
+  }
+  ra.appendChild(wrap);
+  ra.scrollTop = ra.scrollHeight;
+}
+
+async function bootstrapBuddySetup() {
+  if (buddySetupComplete || buddySetupBusy) return buddySetupComplete;
+  const scan = await detectCliState();
+  const available = Array.isArray(scan?.cli?.available) ? scan.cli.available : [];
+  if (!available.length) {
+    buddySetupComplete = true;
+    return true;
+  }
+  if (available.length === 1) {
+    buddySetupBusy = true;
+    try {
+      await configureBuddyHome(available[0]);
+      return true;
+    } finally {
+      buddySetupBusy = false;
+    }
+  }
+  const existingEngine = resolveExistingBuddyEngine(scan, await fetchBuddyState());
+  const fallbackEngine = existingEngine || scan?.cli?.recommended || available[0];
+  if (!fallbackEngine) return false;
+  buddySetupBusy = true;
+  try {
+    await configureBuddyHome(fallbackEngine);
+    return true;
+  } finally {
+    buddySetupBusy = false;
+  }
+}
+
+async function startBuddy() {
+  try {
+    const r = await bridgeFetch(`${API_BASE}/agents/${BUDDY_ID}/start`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({from:'user'})});
+    const d = await r.json();
+    if (d.ok || d.status === 'nudged' || d.status === 'already_running') {
+      buddyReady = true;
+      startPolling();
+    } else {
+      console.warn('Buddy start response:', d);
+      /* try polling anyway — buddy might come online */
+      buddyReady = true;
+      startPolling();
+    }
+  } catch(e) {
+    console.warn('Buddy start failed, trying polling:', e.message);
+    /* backend might be unreachable but buddy could already be running */
+    buddyReady = true;
+    startPolling();
+  }
+}
+
+async function checkOnboardingStatus() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('skip_onboarding') === '1') return false;
+  try {
+    const r = await bridgeFetch(`${API_BASE}/onboarding/status?user_id=${USER_ID}`);
+    if (r.ok) {
+      const d = await r.json();
+      if (d.known_user && d.buddy_running && !d.should_auto_start) {
+        /* returning user — redirect to chat */
+        window.location.href = '/chat.html?agent=buddy';
+        return true;
+      }
+    }
+  } catch(e) { /* endpoint might not exist yet — continue with landing */ }
+  return false;
+}
+
+async function sendToAPI(text) {
+  try {
+    await bridgeFetch(`${API_BASE}/send`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({from: USER_ID, to: BUDDY_ID, content: text})
+    });
+  } catch(e) { console.warn('Bridge send failed:', e); }
+}
+
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(pollMessages, POLL_MS);
+}
+
+async function pollMessages() {
+  try {
+    const url = `${API_BASE}/receive/${USER_ID}?wait=0&limit=10`;
+    const r = await bridgeFetch(url);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.messages) return;
+    for (const msg of d.messages) {
+      if (msg.from === BUDDY_ID && msg.id > lastMsgId) {
+        lastMsgId = msg.id;
+        handleBuddyMessage(msg);
+      }
+    }
+  } catch(e) { /* silent */ }
+}
+
+function handleBuddyMessage(msg) {
+  /* remove typing indicator */
+  const dots = ra.querySelector('.typing-dots');
+  if (dots) dots.remove();
+
+  /* display message */
+  addMessage(msg.content, false);
+
+  /* speak it */
+  speak(msg.content);
+
+  /* check for action buttons in meta */
+  if (msg.meta && msg.meta.actions) {
+    showActionButtons(msg.meta.actions, msg);
+  }
+
+  /* check for onboarding complete — trigger Pokemon evolution! */
+  if (msg.meta && msg.meta.onboarding_phase === 'done') {
+    if (pollTimer) clearInterval(pollTimer);
+    /* trigger evolution animation before redirect */
+    if (typeof triggerEvolution === 'function') triggerEvolution();
+    /* wait for evolution animation (3s) + enjoy moment (2s) then redirect */
+    setTimeout(() => {
+      window.location.href = '/chat.html?agent=buddy';
+    }, 5500);
+  }
+
+  processing = false;
+}
+
+/* ═══════════════════════════════════════════
+   UI
+   ═══════════════════════════════════════════ */
+const ra = document.getElementById('response-area');
+const sendBtn = document.getElementById('send-btn');
+let processing = false;
+
+function addMessage(text, isUser) {
+  const m = document.createElement('div');
+  m.className = 'buddy-msg' + (isUser ? ' user-msg' : '');
+  m.textContent = text;
+  ra.appendChild(m);
+  ra.scrollTop = ra.scrollHeight;
+}
+
+function showTyping() {
+  const dots = document.createElement('div');
+  dots.className = 'typing-dots';
+  dots.innerHTML = '<span></span><span></span><span></span>';
+  ra.appendChild(dots);
+  ra.scrollTop = ra.scrollHeight;
+}
+
+function showActionButtons(actions, msg) {
+  const wrap = document.createElement('div');
+  wrap.className = 'intent-buttons';
+  for (const action of actions) {
+    const btn = document.createElement('button');
+    btn.className = 'intent-btn';
+    btn.textContent = action.label || action.value;
+    btn.addEventListener('click', () => {
+      wrap.remove();
+      addMessage(btn.textContent, true);
+      showTyping();
+      sendToAPI(action.value || btn.textContent);
+    });
+    wrap.appendChild(btn);
+  }
+  ra.appendChild(wrap);
+  ra.scrollTop = ra.scrollHeight;
+}
+
+/* Intent buttons for first interaction (Nova fix #3) */
+function showIntentButtons() {
+  const actions = [
+    {label: 'Etwas organisieren', value: 'Ich will etwas organisieren'},
+    {label: 'Etwas bauen', value: 'Ich will etwas bauen'},
+    {label: 'Einfach mal schauen', value: 'Ich bin einfach neugierig'}
+  ];
+  showActionButtons(actions, null);
+}
+
+async function sendMessage() {
+  const txt = chatInput.value.trim();
+  if (!txt || processing) return;
+  processing = true;
+  chatInput.value = '';
+
+  /* show user message */
+  addMessage(txt, true);
+
+  /* show typing immediately (<300ms — Nova fix #6) */
+  showTyping();
+
+  /* speaking animation trigger */
+  speaking = true;
+  setTimeout(() => { if (!('speaking' in speechSynthesis) || !speechSynthesis.speaking) speaking = false; }, 2000);
+
+  /* send to buddy via bridge API */
+  if (!buddyReady) {
+    await bootstrapBuddySetup();
+    if (buddySetupComplete) {
+      await startBuddy();
+    }
+  }
+  if (buddyReady) {
+    await sendToAPI(txt);
+    /* processing stays true — handleBuddyMessage sets it false on response */
+    /* safety timeout: if no response in 30s, unblock */
+    setTimeout(() => { processing = false; }, 30000);
+  } else {
+    /* fallback: static response while buddy starts */
+    setTimeout(() => {
+      const dots = ra.querySelector('.typing-dots');
+      if (dots) dots.remove();
+      const fallback = 'Einen Moment, ich werde gerade gestartet...';
+      addMessage(fallback, false);
+      speak(fallback);
+      processing = false;
+    }, 1500);
+  }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+/* ═══════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════ */
+(async function init() {
+  /* check if returning user */
+  const isReturning = await checkOnboardingStatus();
+  if (isReturning) return;
+  const cliStatePromise = detectCliState();
+  const buddyStatePromise = fetchBuddyState();
+
+  /* show UI */
+  setTimeout(() => document.getElementById('subtitle').classList.add('visible'), 600);
+  setTimeout(() => document.getElementById('chat-container').classList.add('visible'), 1200);
+  setTimeout(() => document.getElementById('escape-hatch').classList.add('visible'), 1200);
+
+  /* initial buddy greeting after a moment */
+  setTimeout(async () => {
+    const [cliState, buddyState] = await Promise.all([cliStatePromise, buddyStatePromise]);
+    const availableEntries = Array.isArray(cliState?.cli?.entries)
+      ? cliState.cli.entries.filter(entry => entry.available)
+      : [];
+    const existingEngine = resolveExistingBuddyEngine(cliState, buddyState);
+    if (existingEngine) {
+      showTyping();
+      try {
+        await configureBuddyHome(existingEngine);
+        const dots = ra.querySelector('.typing-dots');
+        if (dots) dots.remove();
+        addMessage(`${engineLabel(existingEngine)} wurde als vorhandenes Buddy-Profil uebernommen.`, false);
+      } catch (e) {
+        const dots = ra.querySelector('.typing-dots');
+        if (dots) dots.remove();
+        addMessage(`Das Buddy-Setup fuer ${engineLabel(existingEngine)} ist fehlgeschlagen: ${e.message}`, false);
+      }
+      await startBuddy();
+      addMessage('Hey! Ich bin Buddy. Schoen, dass du da bist! Was fuehrt dich her?', false);
+      speak('Hey! Ich bin Buddy. Schoen, dass du da bist! Was fuehrt dich her?');
+      showIntentButtons();
+      return;
+    }
+    if (availableEntries.length > 1) {
+      const summary = availableEntries
+        .map(entry => `${engineLabel(entry.id)} (${authLabel(entry)})`)
+        .join(', ');
+      addMessage(`Ich habe folgende CLIs gefunden: ${summary}. Womit soll Buddy initial laufen?`, false);
+      showCliSetupButtons(cliState);
+      return;
+    }
+    if (availableEntries.length === 1) {
+      const single = availableEntries[0];
+      showTyping();
+      try {
+        await configureBuddyHome(single.id);
+        const dots = ra.querySelector('.typing-dots');
+        if (dots) dots.remove();
+        addMessage(`${engineLabel(single.id)} wurde gefunden und als Buddy-Setup uebernommen.`, false);
+      } catch (e) {
+        const dots = ra.querySelector('.typing-dots');
+        if (dots) dots.remove();
+        addMessage(`Das Buddy-Setup fuer ${engineLabel(single.id)} ist fehlgeschlagen: ${e.message}`, false);
+      }
+    }
+    await startBuddy();
+    addMessage('Hey! Ich bin Buddy. Schoen, dass du da bist! Was fuehrt dich her?', false);
+    speak('Hey! Ich bin Buddy. Schoen, dass du da bist! Was fuehrt dich her?');
+    showIntentButtons();
+  }, 1200);
+})();
+
+/* ═══════════════════════════════════════════
+   THREE.JS — BUDDY CREATURE
+   ═══════════════════════════════════════════ */
+if (!useWebGL) {
+  /* CSS fallback — skip Three.js entirely */
+} else {
+
+/* Chromatic Aberration Shader */
+const ChromaticShader = {
+  uniforms: { tDiffuse:{value:null}, amount:{value:0.001} },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float amount; varying vec2 vUv;
+    void main(){
+      vec2 dir=vUv-0.5; float d=length(dir); float shift=amount*d*d;
+      float r=texture2D(tDiffuse,vUv+dir*shift).r;
+      float g=texture2D(tDiffuse,vUv).g;
+      float b=texture2D(tDiffuse,vUv-dir*shift).b;
+      gl_FragColor=vec4(r,g,b,texture2D(tDiffuse,vUv).a);
+    }`
+};
+
+/* Film Grain Shader */
+const GrainShader = {
+  uniforms: { tDiffuse:{value:null}, time:{value:0}, amount:{value:0.025} },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float time; uniform float amount; varying vec2 vUv;
+    float rand(vec2 co){ return fract(sin(dot(co,vec2(12.9898,78.233)))*43758.5453); }
+    void main(){
+      vec4 c=texture2D(tDiffuse,vUv);
+      float grain=(rand(vUv+vec2(time))-0.5)*amount;
+      gl_FragColor=vec4(c.rgb+grain,c.a);
+    }`
+};
+
+/* Sharpness Shader */
+const SharpenShader = {
+  uniforms: { tDiffuse:{value:null}, resolution:{value:new THREE.Vector2(1,1)}, strength:{value:0.7} },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform vec2 resolution; uniform float strength; varying vec2 vUv;
+    void main(){
+      vec2 px=1.0/resolution; vec4 c=texture2D(tDiffuse,vUv);
+      vec4 n=texture2D(tDiffuse,vUv+vec2(0.,px.y));
+      vec4 s=texture2D(tDiffuse,vUv-vec2(0.,px.y));
+      vec4 e=texture2D(tDiffuse,vUv+vec2(px.x,0.));
+      vec4 w=texture2D(tDiffuse,vUv-vec2(px.x,0.));
+      gl_FragColor=clamp(c*(1.0+4.0*strength)-(n+s+e+w)*strength,0.0,1.0);
+    }`
+};
+
+/* Contrast/Vibrance Shader */
+const ContrastShader = {
+  uniforms: { tDiffuse:{value:null}, contrast:{value:1.1}, vibrance:{value:0.15} },
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float contrast; uniform float vibrance; varying vec2 vUv;
+    void main(){
+      vec4 c=texture2D(tDiffuse,vUv);
+      vec3 col=(c.rgb-0.5)*contrast+0.5;
+      float avg=(col.r+col.g+col.b)/3.0;
+      float mx=max(col.r,max(col.g,col.b));
+      col=mix(vec3(avg),col,1.0+vibrance*(1.0-(mx-avg)));
+      gl_FragColor=vec4(clamp(col,0.0,1.0),c.a);
+    }`
+};
+
+/* textures */
+function radialTex(size, stops) {
+  const c=document.createElement('canvas'); c.width=c.height=size;
+  const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  stops.forEach(s=>g.addColorStop(s[0],s[1]));
+  ctx.fillStyle=g; ctx.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex=radialTex(512,[[0,'rgba(255,255,255,1)'],[.08,'rgba(255,255,255,.6)'],[.2,'rgba(255,255,255,.15)'],[.45,'rgba(255,255,255,.02)'],[1,'rgba(255,255,255,0)']]);
+const dotTex=radialTex(128,[[0,'rgba(255,255,255,.95)'],[.15,'rgba(255,255,255,.4)'],[.4,'rgba(255,255,255,.05)'],[1,'rgba(255,255,255,0)']]);
+
+/* renderer */
+const canvas=document.getElementById('canvas');
+const renderer=new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+const pixelRatio = isMobile ? Math.min(devicePixelRatio, 2) : Math.min(devicePixelRatio, 3);
+renderer.setPixelRatio(pixelRatio);
+renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.35;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+
+const scene=new THREE.Scene();
+/* warm dark background (Nova fix #1) */
+/* start dark (corona), transition to warm-dark (creature) */
+const bgCorona = new THREE.Color('#080808');
+const bgCreature = new THREE.Color('#1a1510');
+scene.background = bgCorona.clone();
+const camera=new THREE.PerspectiveCamera(36,innerWidth/innerHeight,0.1,200);
+/* shift camera left so creature appears on the left 60% of screen */
+camera.position.set(-4,1.5,22);
+
+/* post-processing — reduced on mobile */
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 0.3, 0.12, 0.5);
+composer.addPass(bloom);
+
+let sharpen, chroma, grain;
+if (!isMobile) {
+  sharpen=new ShaderPass(SharpenShader);
+  sharpen.uniforms.resolution.value.set(innerWidth*pixelRatio,innerHeight*pixelRatio);
+  composer.addPass(sharpen);
+
+  const contrastPass=new ShaderPass(ContrastShader);
+  composer.addPass(contrastPass);
+
+  chroma=new ShaderPass(ChromaticShader);
+  composer.addPass(chroma);
+
+  const fxaa=new ShaderPass(FXAAShader);
+  fxaa.uniforms.resolution.value.set(1/(innerWidth*pixelRatio),1/(innerHeight*pixelRatio));
+  composer.addPass(fxaa);
+
+  grain=new ShaderPass(GrainShader);
+  composer.addPass(grain);
+}
+
+composer.addPass(new OutputPass());
+
+/* colors */
+const C_CORE=new THREE.Color('#20F5E0');
+const C_INNER=new THREE.Color('#22E8C8');
+const C_MID1=new THREE.Color('#27DEDE');
+const C_MID2=new THREE.Color('#2895E5');
+const C_MID=new THREE.Color('#25B8A0');
+const C_OUTER=new THREE.Color('#1A8E6B');
+const C_DEEP=new THREE.Color('#1B7A55');
+const C_BLUE=new THREE.Color('#1F6EB4');
+const C_GLOW=new THREE.Color('#80FFD0');
+
+const logo=new THREE.Group();
+scene.add(logo);
+const allNodes=[];
+
+/* ═══ POKEMON EVOLUTION STATE ═══ */
+let evolutionProgress = 0; /* 0=corona, 1=creature */
+let evolutionActive = false;
+let evolutionStart = 0;
+const EVOLUTION_DURATION = 3.0; /* seconds */
+
+function easeInOutCubic(t){return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+
+function triggerEvolution(){
+  if(evolutionActive || evolutionProgress >= 1) return;
+  evolutionActive = true;
+  evolutionStart = clock.getElapsedTime();
+  /* flash effect */
+  if(bloom) bloom.strength = 1.2;
+}
+
+/* generate corona position — radial rays from center like sun corona */
+let coronaSeed = 7;
+function coronaRand(){coronaSeed=(coronaSeed*16807+0)%2147483647;return(coronaSeed&0x7fffffff)/0x7fffffff;}
+
+/* pre-generate ray directions for corona strahlen */
+const CORONA_RAYS = 24;
+const coronaRayDirs = [];
+for(let i=0;i<CORONA_RAYS;i++){
+  const theta = (i/CORONA_RAYS)*Math.PI*2 + 0.3;
+  const phi = Math.acos(2*(i%7)/7-1) * 0.6 + Math.PI*0.2;
+  coronaRayDirs.push(new THREE.Vector3(
+    Math.sin(phi)*Math.cos(theta),
+    Math.sin(phi)*Math.sin(theta),
+    Math.cos(phi)
+  ).normalize());
+}
+
+let coronaNodeIdx = 0;
+function coronaSpherePos(){
+  coronaNodeIdx++;
+  const totalNodes = 800; /* approximate total */
+  const coreRatio = 0.35; /* 35% in dense core */
+
+  if(coronaRand() < coreRatio){
+    /* dense core — tight cluster near center */
+    const r = coronaRand() * 1.2;
+    const theta = coronaRand()*Math.PI*2;
+    const phi = Math.acos(2*coronaRand()-1);
+    return new THREE.Vector3(
+      r*Math.sin(phi)*Math.cos(theta),
+      r*Math.sin(phi)*Math.sin(theta) + 1.0,
+      r*Math.cos(phi)
+    );
+  } else {
+    /* radial rays — particles along ray directions with scatter */
+    const ray = coronaRayDirs[Math.floor(coronaRand()*CORONA_RAYS)];
+    const dist = 1.0 + coronaRand()*3.5; /* ray length from center */
+    const scatter = 0.15 + dist*0.08; /* more scatter further out */
+    return new THREE.Vector3(
+      ray.x*dist + (coronaRand()-0.5)*scatter,
+      ray.y*dist + (coronaRand()-0.5)*scatter + 1.0,
+      ray.z*dist + (coronaRand()-0.5)*scatter
+    );
+  }
+}
+
+/* hex geometry */
+function hexGeo(r){
+  const s=new THREE.Shape();
+  for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6; i===0?s.moveTo(r*Math.cos(a),r*Math.sin(a)):s.lineTo(r*Math.cos(a),r*Math.sin(a));}
+  s.closePath();
+  return new THREE.ExtrudeGeometry(s,{depth:.08,bevelEnabled:true,bevelThickness:.02,bevelSize:.012,bevelSegments:4});
+}
+
+function node(x,y,z,size,color,ring,bodyPart){
+  const pos=new THREE.Vector3(x,y,z);
+  const coronaPos=coronaSpherePos();
+  const geo=hexGeo(size);
+  const bp=bodyPart||'body';
+  const isEyeDark=bp==='eye'&&(color.r<0.2||color.getHexString()==='0a1628');
+  const isEye=bp==='eye';
+  const isCheek=bp==='cheek';
+  const emI=isEyeDark?0.05:isEye?0.3:isCheek?0.5:0.7;
+  /* corona colors: everything starts teal (no eye/cheek distinction) */
+  /* corona particle color — blue/turquoise blend matching ACE logo */
+  const coronaBlue = new THREE.Color('#2895E5');
+  const coronaTeal = new THREE.Color('#27DEDE');
+  const coronaColor = new THREE.Color().lerpColors(coronaBlue, coronaTeal, coronaRand());
+  const mat=new THREE.MeshStandardMaterial({
+    color:coronaColor,emissive:coronaColor,
+    emissiveIntensity:0.7,metalness:0.85,roughness:0.1,
+    transparent:true,opacity:0.95
+  });
+  const mesh=new THREE.Mesh(geo,mat);
+  /* start at corona position */
+  mesh.position.copy(coronaPos);
+  mesh.rotation.set(coronaPos.x*2.1+size*3,coronaPos.y*1.7+size*5,coronaPos.z*3.3);
+  logo.add(mesh);
+  const gMat=new THREE.SpriteMaterial({map:glowTex,color:coronaColor,transparent:true,opacity:0.25,blending:THREE.AdditiveBlending,depthWrite:false});
+  const glow=new THREE.Sprite(gMat);
+  glow.position.copy(coronaPos);
+  glow.scale.setScalar(size*3.5);
+  logo.add(glow);
+  allNodes.push({mesh,glow,mat,gMat,color:color.clone(),coronaColor:coronaColor.clone(),
+    pos:pos.clone(),coronaPos:coronaPos.clone(),size,ring,bodyPart:bp,
+    /* target material properties for creature form */
+    targetEmI:emI, targetMetalness:isEye?0.3:0.85, targetRoughness:isEye?0.4:0.1,
+    targetOpacity:isEyeDark?0.98:0.95,
+    targetGlowOpacity:isEyeDark?0.02:isEye?0.1:isCheek?0.15:0.25,
+    targetGlowScale:size*(isEyeDark?1.5:3.5),
+    isEyeDark, isEye, isCheek
+  });
+  return pos;
+}
+
+/* seeded random */
+let seed=42;
+function sRand(){seed=(seed*16807+0)%2147483647;return(seed&0x7fffffff)/0x7fffffff;}
+
+function fillSphere(cx,cy,cz,radius,density,sizeRange,colors,bodyPart){
+  const[minS,maxS]=sizeRange;const step=radius*2/density;
+  for(let x=-radius;x<=radius;x+=step)for(let y=-radius;y<=radius;y+=step)for(let z=-radius;z<=radius;z+=step){
+    const d=Math.sqrt(x*x+y*y+z*z);if(d>radius)continue;
+    if(d<radius*0.4&&sRand()>0.5)continue;
+    const j=step*0.3;
+    node(cx+x+(sRand()-.5)*j,cy+y+(sRand()-.5)*j,cz+z+(sRand()-.5)*j,
+      minS+sRand()*(maxS-minS),colors[Math.floor(sRand()*colors.length)],0,bodyPart);
+  }
+}
+
+function fillEllipsoid(cx,cy,cz,rx,ry,rz,density,sizeRange,colors,bodyPart){
+  const[minS,maxS]=sizeRange;const maxR=Math.max(rx,ry,rz);const step=maxR*2/density;
+  for(let x=-rx;x<=rx;x+=step)for(let y=-ry;y<=ry;y+=step)for(let z=-rz;z<=rz;z+=step){
+    const d=(x/rx)**2+(y/ry)**2+(z/rz)**2;if(d>1)continue;
+    if(d<0.15&&sRand()>0.4)continue;
+    const j=step*0.25;
+    node(cx+x+(sRand()-.5)*j,cy+y+(sRand()-.5)*j,cz+z+(sRand()-.5)*j,
+      minS+sRand()*(maxS-minS),colors[Math.floor(sRand()*colors.length)],0,bodyPart);
+  }
+}
+
+function fillTube(points,radius,density,sizeRange,colors,bodyPart){
+  const[minS,maxS]=sizeRange;
+  for(let pi=0;pi<points.length;pi++){
+    const[cx,cy,cz]=points[pi];const t=pi/(points.length-1);
+    const r=radius*(1-t*0.5);const step=r*2/density;
+    for(let x=-r;x<=r;x+=step)for(let y=-r;y<=r;y+=step)for(let z=-r;z<=r;z+=step){
+      if(x*x+y*y+z*z>r*r)continue;
+      const j=step*0.3;
+      node(cx+x+(sRand()-.5)*j,cy+y+(sRand()-.5)*j,cz+z+(sRand()-.5)*j,
+        (minS+sRand()*(maxS-minS))*(1-t*0.3),colors[Math.floor(sRand()*colors.length)],0,bodyPart);
+    }
+  }
+}
+
+/* eye colors — bright for anime contrast */
+const C_EYE_WHITE=new THREE.Color('#FFFFFF');
+const C_EYE_PUPIL=new THREE.Color('#050E1A');
+const C_CHEEK=new THREE.Color('#FF8FA0');
+const C_BELLY=new THREE.Color('#FFB8C8'); /* rosa belly base */
+
+/* ═══ BUILD BUDDY CREATURE ═══ */
+/* reduce density on mobile */
+const D = isMobile ? 0.7 : 1;
+const dI = (v) => Math.max(4, Math.round(v * D));
+
+/* HEAD */
+fillSphere(0,2.8,0,2.6,dI(18),[0.05,0.1],[C_CORE,C_CORE,C_INNER,C_MID1],'head');
+fillSphere(0,2.8,0,2.55,dI(14),[0.06,0.1],[C_CORE,C_INNER],'head');
+fillSphere(0,2.8,0,2.3,dI(10),[0.07,0.11],[C_INNER,C_CORE,C_MID1],'head');
+
+/* NECK */
+fillEllipsoid(0,0.3,0,0.85,0.55,0.75,dI(8),[0.05,0.08],[C_INNER,C_MID1,C_CORE],'body');
+
+/* BODY */
+fillEllipsoid(0,-1.5,0,2.2,1.8,1.8,dI(16),[0.05,0.1],[C_CORE,C_INNER,C_MID1],'body');
+fillEllipsoid(0,-1.5,0,2.1,1.7,1.7,dI(12),[0.06,0.1],[C_INNER,C_CORE,C_MID],'body');
+
+/* EYES — dense bright whites for contrast */
+fillEllipsoid(-0.95,3.0,2.0,0.9,0.95,0.5,dI(16),[0.04,0.07],[C_EYE_WHITE,C_EYE_WHITE],'eye');
+fillEllipsoid(-0.95,3.0,2.0,0.85,0.9,0.45,dI(12),[0.05,0.07],[C_EYE_WHITE,C_EYE_WHITE],'eye');
+fillEllipsoid(0.95,3.0,2.0,0.9,0.95,0.5,dI(16),[0.04,0.07],[C_EYE_WHITE,C_EYE_WHITE],'eye');
+fillEllipsoid(0.95,3.0,2.0,0.85,0.9,0.45,dI(12),[0.05,0.07],[C_EYE_WHITE,C_EYE_WHITE],'eye');
+
+/* Iris — vivid anime colors */
+const C_IRIS=new THREE.Color('#0CBCC8');
+const C_IRIS2=new THREE.Color('#30FFE8');
+fillEllipsoid(-0.85,2.95,2.35,0.65,0.7,0.3,dI(12),[0.03,0.06],[C_IRIS,C_IRIS,C_IRIS2,C_MID2],'eye');
+fillEllipsoid(-0.85,2.95,2.35,0.6,0.65,0.25,dI(8),[0.03,0.05],[C_IRIS,C_IRIS2],'eye');
+fillEllipsoid(0.85,2.95,2.35,0.65,0.7,0.3,dI(12),[0.03,0.06],[C_IRIS,C_IRIS,C_IRIS2,C_MID2],'eye');
+fillEllipsoid(0.85,2.95,2.35,0.6,0.65,0.25,dI(8),[0.03,0.05],[C_IRIS,C_IRIS2],'eye');
+
+/* Pupils */
+fillEllipsoid(-0.8,2.95,2.55,0.35,0.42,0.2,dI(10),[0.03,0.05],[C_EYE_PUPIL,C_EYE_PUPIL],'eye');
+fillEllipsoid(-0.8,2.95,2.55,0.32,0.38,0.18,dI(7),[0.03,0.05],[C_EYE_PUPIL,C_EYE_PUPIL],'eye');
+fillEllipsoid(0.8,2.95,2.55,0.35,0.42,0.2,dI(10),[0.03,0.05],[C_EYE_PUPIL,C_EYE_PUPIL],'eye');
+fillEllipsoid(0.8,2.95,2.55,0.32,0.38,0.18,dI(7),[0.03,0.05],[C_EYE_PUPIL,C_EYE_PUPIL],'eye');
+
+/* Eye highlights — anime arc glint (upper eye) */
+/* Left eye — large primary glint (arc shape) */
+node(-0.55,3.40,2.68,0.22,C_EYE_WHITE,0,'eye');
+node(-0.60,3.38,2.67,0.18,C_EYE_WHITE,0,'eye');
+node(-0.50,3.38,2.67,0.18,C_EYE_WHITE,0,'eye');
+node(-0.65,3.34,2.66,0.14,C_EYE_WHITE,0,'eye');
+node(-0.45,3.34,2.66,0.14,C_EYE_WHITE,0,'eye');
+/* Left eye — small secondary glint (lower-right, anime style) */
+node(-0.72,3.10,2.65,0.10,C_EYE_WHITE,0,'eye');
+node(-0.70,3.08,2.66,0.08,C_EYE_WHITE,0,'eye');
+/* Right eye — large primary glint (arc shape) */
+node(0.55,3.40,2.68,0.22,C_EYE_WHITE,0,'eye');
+node(0.60,3.38,2.67,0.18,C_EYE_WHITE,0,'eye');
+node(0.50,3.38,2.67,0.18,C_EYE_WHITE,0,'eye');
+node(0.65,3.34,2.66,0.14,C_EYE_WHITE,0,'eye');
+node(0.45,3.34,2.66,0.14,C_EYE_WHITE,0,'eye');
+/* Right eye — small secondary glint (lower-left, anime style) */
+node(0.72,3.10,2.65,0.10,C_EYE_WHITE,0,'eye');
+node(0.70,3.08,2.66,0.08,C_EYE_WHITE,0,'eye');
+
+/* EARS */
+fillEllipsoid(-1.6,5.2,-0.2,0.5,1.5,0.38,dI(14),[0.03,0.07],[C_CORE,C_MID1,C_INNER],'ear');
+fillEllipsoid(-1.6,5.2,-0.2,0.48,1.45,0.35,dI(10),[0.04,0.07],[C_CORE,C_INNER],'ear');
+fillEllipsoid(-1.6,5.0,0.0,0.25,1.0,0.16,dI(8),[0.03,0.06],[C_CHEEK,C_CHEEK],'ear');
+node(-1.6,6.3,-0.2,0.09,C_GLOW,0,'ear');
+fillEllipsoid(1.6,5.2,-0.2,0.5,1.5,0.38,dI(14),[0.03,0.07],[C_CORE,C_MID1,C_INNER],'ear');
+fillEllipsoid(1.6,5.2,-0.2,0.48,1.45,0.35,dI(10),[0.04,0.07],[C_CORE,C_INNER],'ear');
+fillEllipsoid(1.6,5.0,0.0,0.25,1.0,0.16,dI(8),[0.03,0.06],[C_CHEEK,C_CHEEK],'ear');
+node(1.6,6.3,-0.2,0.09,C_GLOW,0,'ear');
+
+/* CHEEKS */
+/* cheeks — lower on face, below eyes */
+fillEllipsoid(-1.7,1.8,1.6,0.5,0.35,0.28,dI(7),[0.04,0.07],[C_CHEEK,C_CHEEK],'cheek');
+fillEllipsoid(1.7,1.8,1.6,0.5,0.35,0.28,dI(7),[0.04,0.07],[C_CHEEK,C_CHEEK],'cheek');
+
+/* NOSE + MOUTH */
+node(0,2.4,2.5,0.08,C_DEEP,0,'mouth');
+node(-0.05,2.35,2.48,0.05,C_DEEP,0,'mouth');
+node(0.05,2.35,2.48,0.05,C_DEEP,0,'mouth');
+for(let i=0;i<5;i++){const a=(i/4)*Math.PI*0.5;node(-0.15-Math.sin(a)*0.2,2.0-Math.cos(a)*0.12,2.4,0.035,C_DEEP,0,'mouth');}
+for(let i=0;i<5;i++){const a=(i/4)*Math.PI*0.5;node(0.15+Math.sin(a)*0.2,2.0-Math.cos(a)*0.12,2.4,0.035,C_DEEP,0,'mouth');}
+
+/* BELLY — rosa patch (Leo: "rosa Bauch") */
+const C_BELLY_ROSA=new THREE.Color('#FFB0C0');
+const C_BELLY_SOFT=new THREE.Color('#FFC0D0');
+fillEllipsoid(0,-0.8,2.0,1.2,1.3,0.4,dI(22),[0.06,0.11],[C_BELLY_ROSA,C_BELLY_SOFT,C_CHEEK],'belly');
+fillEllipsoid(0,-1.6,1.8,1.0,0.9,0.35,dI(14),[0.05,0.09],[C_BELLY_ROSA,C_BELLY_SOFT],'belly');
+
+/* ARMS */
+fillTube([[-1.9,-0.8,0.5],[-2.5,-0.5,0.9],[-3.0,-0.1,1.2],[-3.2,0.2,1.4]],0.55,dI(6),[0.05,0.1],[C_INNER,C_MID1,C_CORE],'arm');
+fillSphere(-3.3,0.3,1.5,0.4,dI(6),[0.04,0.08],[C_CORE,C_INNER,C_GLOW],'arm');
+fillTube([[1.9,-0.8,0.5],[2.5,-0.5,0.9],[3.0,-0.1,1.2],[3.2,0.2,1.4]],0.55,dI(6),[0.05,0.1],[C_INNER,C_MID1,C_CORE],'arm');
+fillSphere(3.3,0.3,1.5,0.4,dI(6),[0.04,0.08],[C_CORE,C_INNER,C_GLOW],'arm');
+
+/* FEET */
+fillEllipsoid(-1.0,-3.2,0.3,0.85,0.6,0.95,dI(8),[0.05,0.1],[C_MID1,C_MID,C_CORE],'foot');
+fillEllipsoid(1.0,-3.2,0.3,0.85,0.6,0.95,dI(8),[0.05,0.1],[C_MID1,C_MID,C_CORE],'foot');
+node(-1.2,-3.55,1.05,0.07,C_CHEEK,0,'foot');
+node(-0.95,-3.6,1.1,0.06,C_CHEEK,0,'foot');
+node(-0.7,-3.55,1.05,0.06,C_CHEEK,0,'foot');
+node(1.2,-3.55,1.05,0.07,C_CHEEK,0,'foot');
+node(0.95,-3.6,1.1,0.06,C_CHEEK,0,'foot');
+node(0.7,-3.55,1.05,0.06,C_CHEEK,0,'foot');
+
+/* TAIL */
+fillTube([[0,-2.2,-1.5],[0.3,-2.0,-2.1],[0.6,-1.5,-2.5],[0.8,-0.8,-2.6],[0.7,-0.2,-2.3],[0.4,0.2,-1.9]],0.4,dI(6),[0.05,0.09],[C_MID1,C_CORE,C_INNER],'tail');
+fillSphere(0.4,0.3,-1.8,0.5,dI(6),[0.04,0.08],[C_GLOW,C_CORE,C_GLOW,C_INNER],'tail');
+
+/* ANTENNA */
+node(0,5.3,0.2,0.07,C_GLOW,0,'ear');
+node(-0.1,5.5,0.15,0.06,C_CORE,0,'ear');
+node(0.1,5.5,0.15,0.06,C_CORE,0,'ear');
+node(0,5.7,0.1,0.05,C_GLOW,0,'ear');
+
+/* WISPS */
+for(let i=0;i<(isMobile?25:50);i++){
+  const theta=sRand()*Math.PI*2;const phi=Math.acos(2*sRand()-1);const r=5+sRand()*3;
+  node(r*Math.sin(phi)*Math.cos(theta),r*Math.sin(phi)*Math.sin(theta)+1.5,r*Math.cos(phi),
+    0.03+sRand()*0.05,[C_CORE,C_MID1,C_GLOW,C_INNER][Math.floor(sRand()*4)],4,'wisp');
+}
+
+/* CORONA — ACE Logo shape from extracted SVG hex positions */
+/* 606 unique hex tile positions from ace_logo.svg, normalized to [-1,1] */
+const ACE_LOGO_RAW=[[-1.0,0.0305],[-0.9778,0.0693],[-0.9723,-0.0914],[-0.9668,-0.0748],[-0.9391,0.0914],[-0.9391,0.3795],[-0.9335,0.0859],[-0.9224,-0.4183],[-0.9224,-0.3352],[-0.9169,-0.4127],[-0.9169,-0.3019],[-0.9114,-0.4017],[-0.9114,-0.2853],[-0.9114,-0.2742],[-0.8947,0.2244],[-0.8892,0.241],[-0.8892,0.374],[-0.8892,0.3961],[-0.8781,-0.2964],[-0.8726,-0.2632],[-0.8726,0.4294],[-0.867,0.4404],[-0.8615,-0.3019],[-0.8615,0.4127],[-0.856,-0.0083],[-0.8504,-0.3075],[-0.8449,-0.2798],[-0.8393,0.036],[-0.8283,-0.0471],[-0.8283,0.4127],[-0.8227,-0.3296],[-0.8227,0.4017],[-0.8061,-0.4127],[-0.8061,-0.3075],[-0.8006,-0.4127],[-0.795,0.374],[-0.7895,-0.3296],[-0.7895,-0.3186],[-0.7895,0.2465],[-0.7895,0.2964],[-0.7729,-0.6288],[-0.7729,0.3019],[-0.7673,-0.7452],[-0.7618,-0.3906],[-0.7618,0.2853],[-0.7618,0.2964],[-0.7618,0.3019],[-0.7562,-0.6288],[-0.7562,0.6842],[-0.7507,0.5512],[-0.7396,0.7175],[-0.7341,-0.723],[-0.7341,-0.2687],[-0.7119,0.6787],[-0.7064,-0.5956],[-0.7008,-0.2576],[-0.6898,0.2022],[-0.6842,0.7285],[-0.6842,0.7396],[-0.6787,-0.2022],[-0.6787,0.1745],[-0.6787,0.7008],[-0.6787,0.7507],[-0.6731,-0.2022],[-0.6565,-0.7562],[-0.6565,-0.6288],[-0.651,0.5734],[-0.6399,0.723],[-0.6343,0.1025],[-0.6288,-0.108],[-0.6288,-0.0471],[-0.6177,0.1136],[-0.6066,-0.7507],[-0.6066,-0.1856],[-0.6066,0.6676],[-0.6011,-0.5956],[-0.6011,0.5291],[-0.59,-0.169],[-0.59,0.5845],[-0.5845,-0.7452],[-0.5845,-0.1413],[-0.5845,0.6953],[-0.5789,-0.1136],[-0.5789,0.5568],[-0.5734,-0.1468],[-0.5568,0.4792],[-0.5457,-0.5402],[-0.5457,0.5235],[-0.5402,-0.5235],[-0.5402,-0.0028],[-0.5346,-0.0526],[-0.5235,-0.5069],[-0.5235,0.0249],[-0.5069,-0.2853],[-0.5069,0.097],[-0.5069,0.1357],[-0.5014,-0.4571],[-0.5014,0.2355],[-0.5014,0.3019],[-0.4958,0.0471],[-0.4958,0.0859],[-0.4903,-0.4848],[-0.4903,-0.4571],[-0.4903,0.4072],[-0.4848,-0.4183],[-0.4792,-0.3629],[-0.4737,0.0194],[-0.4737,0.1136],[-0.4681,0.4183],[-0.4626,-0.4958],[-0.4626,0.2576],[-0.4626,0.374],[-0.4571,-0.2742],[-0.4571,0.3906],[-0.4515,-0.4848],[-0.4515,-0.1468],[-0.446,-0.0526],[-0.446,0.867],[-0.4404,-0.2465],[-0.4349,-0.795],[-0.4349,-0.2964],[-0.4349,-0.108],[-0.4294,0.4183],[-0.4294,0.8449],[-0.4183,-0.241],[-0.4127,-0.3296],[-0.4127,0.0693],[-0.4072,-0.4626],[-0.4072,-0.4183],[-0.4072,-0.241],[-0.4017,0.4571],[-0.3961,-0.9169],[-0.3961,-0.2576],[-0.3961,0.8504],[-0.3906,-0.7895],[-0.3906,0.4571],[-0.3906,0.4792],[-0.385,-0.4127],[-0.385,-0.2355],[-0.385,0.8726],[-0.3795,-0.7618],[-0.3795,-0.2078],[-0.3795,0.8947],[-0.374,-0.3075],[-0.374,-0.2133],[-0.3684,0.9114],[-0.3629,-0.7839],[-0.3629,-0.7396],[-0.3629,-0.2964],[-0.3629,-0.1136],[-0.3629,0.385],[-0.3629,0.3906],[-0.3629,0.4681],[-0.3629,0.867],[-0.3629,0.9224],[-0.3573,-0.0471],[-0.3518,-0.9335],[-0.3518,-0.0526],[-0.3518,-0.0471],[-0.3518,-0.0083],[-0.3463,-0.0582],[-0.3463,0.374],[-0.3407,-0.108],[-0.3407,0.446],[-0.3352,0.7452],[-0.3296,0.2299],[-0.3296,0.2742],[-0.3296,0.7008],[-0.3241,-0.2742],[-0.3241,0.7396],[-0.3186,0.7008],[-0.3186,0.8947],[-0.313,-0.9114],[-0.313,0.8837],[-0.3075,-0.446],[-0.3075,-0.2909],[-0.3075,0.3961],[-0.3019,0.4349],[-0.2964,-0.8892],[-0.2964,-0.4626],[-0.2909,-0.8006],[-0.2909,0.2133],[-0.2909,0.4349],[-0.2909,0.7562],[-0.2853,0.7175],[-0.2798,-0.7175],[-0.2798,0.4183],[-0.2742,-0.9114],[-0.2742,0.2078],[-0.2742,0.4072],[-0.2742,0.6565],[-0.2742,0.7341],[-0.2521,-0.4681],[-0.2521,0.3906],[-0.2465,-0.3961],[-0.2465,-0.3296],[-0.2465,0.2355],[-0.2355,-0.2465],[-0.2355,0.651],[-0.2299,-0.6787],[-0.2299,0.4072],[-0.2244,-0.2909],[-0.2244,-0.2521],[-0.2188,0.2078],[-0.2078,-0.0471],[-0.2078,0.1801],[-0.2022,0.2188],[-0.2022,0.6066],[-0.1967,-0.1413],[-0.1967,0.1025],[-0.1967,0.1302],[-0.1856,-0.1856],[-0.1856,-0.0582],[-0.1856,0.6177],[-0.1801,-0.2244],[-0.1745,0.6066],[-0.1634,0.1634],[-0.1634,0.5734],[-0.1579,0.0471],[-0.1579,0.0914],[-0.1524,-0.4238],[-0.1524,0.1302],[-0.1524,0.5346],[-0.1468,-0.5845],[-0.1468,0.3684],[-0.1357,-0.4349],[-0.1357,-0.1247],[-0.1357,0.4238],[-0.1302,-0.0637],[-0.1247,0.0803],[-0.1247,0.1136],[-0.1191,-0.6066],[-0.1191,-0.1634],[-0.1136,-0.6066],[-0.1136,-0.1801],[-0.108,-1.0],[-0.108,-0.8947],[-0.1025,-0.446],[-0.1025,-0.0471],[-0.1025,0.8338],[-0.097,-0.3961],[-0.097,-0.1413],[-0.097,0.0305],[-0.0914,-0.8837],[-0.0914,0.0416],[-0.0859,0.9668],[-0.0803,-0.9003],[-0.0748,0.8006],[-0.0693,-0.6399],[-0.0693,0.0139],[-0.0693,0.8338],[-0.0693,0.8449],[-0.0637,-0.8449],[-0.0637,-0.1302],[-0.0637,0.5402],[-0.0637,0.9612],[-0.0582,0.3241],[-0.0582,0.5734],[-0.0582,0.59],[-0.0526,-0.6399],[-0.0526,-0.5402],[-0.0526,-0.1579],[-0.0526,0.2355],[-0.0526,0.5568],[-0.0471,0.1247],[-0.0471,0.4183],[-0.0471,0.9778],[-0.036,-0.2964],[-0.036,-0.241],[-0.036,0.0526],[-0.036,0.1745],[-0.0305,-0.3906],[-0.0305,0.0471],[-0.0305,0.3075],[-0.0305,0.9557],[-0.0305,1.0],[-0.0249,-0.2521],[-0.0249,0.0139],[-0.0249,0.2355],[-0.0249,0.6011],[-0.0249,0.9834],[-0.0194,-0.8615],[-0.0194,-0.6343],[-0.0194,-0.4792],[-0.0194,-0.4349],[-0.0194,0.0859],[-0.0194,0.2521],[-0.0194,0.5291],[-0.0194,0.8006],[-0.0139,-0.7507],[-0.0139,-0.4404],[-0.0139,-0.3407],[-0.0139,-0.2798],[-0.0139,-0.2188],[-0.0139,0.0028],[-0.0139,0.0914],[-0.0139,0.5235],[-0.0139,0.9501],[-0.0139,0.9778],[-0.0083,0.0416],[-0.0028,0.3075],[-0.0028,0.9501],[0.0028,0.1911],[0.0083,0.3019],[0.0139,-0.2687],[0.0139,0.4958],[0.0194,-0.8504],[0.0194,0.2742],[0.0249,0.1413],[0.0305,0.4737],[0.0305,0.59],[0.036,-0.6399],[0.036,-0.5512],[0.036,-0.374],[0.036,0.3684],[0.0416,0.3352],[0.0471,-0.9945],[0.0471,-0.867],[0.0471,0.4958],[0.0471,0.8006],[0.0526,-0.0083],[0.0526,0.5845],[0.0582,0.8504],[0.0637,-1.0],[0.0637,-0.8726],[0.0693,-0.1413],[0.0693,0.0803],[0.0693,0.9224],[0.0748,-0.6066],[0.0748,-0.5789],[0.0748,-0.1524],[0.0748,-0.0471],[0.0748,0.518],[0.0748,0.8338],[0.0803,-0.5679],[0.0914,0.5235],[0.097,-0.6066],[0.1025,-0.1634],[0.1025,-0.0582],[0.1025,0.374],[0.108,-0.1247],[0.108,0.0028],[0.108,0.4349],[0.1136,-0.1413],[0.1191,-0.59],[0.1191,-0.1856],[0.1247,-0.6288],[0.1247,-0.108],[0.1247,0.5235],[0.1302,-0.5845],[0.1302,-0.4238],[0.1302,-0.0471],[0.1302,-0.0139],[0.1302,0.0526],[0.1302,0.5679],[0.1357,-0.2465],[0.1357,-0.2299],[0.1357,0.0914],[0.1357,0.1468],[0.1413,-0.1524],[0.1468,-0.0637],[0.1524,-0.6288],[0.1524,-0.2133],[0.1524,0.1801],[0.1579,-0.1856],[0.1579,-0.1634],[0.1634,-0.2299],[0.1634,0.6011],[0.169,-0.2687],[0.169,0.2355],[0.1745,0.1468],[0.1801,-0.2022],[0.1801,0.6343],[0.1967,-0.2355],[0.1967,-0.2022],[0.1967,-0.0582],[0.1967,-0.0526],[0.1967,0.1524],[0.1967,0.2355],[0.2022,-0.6787],[0.2022,-0.4294],[0.2022,-0.2909],[0.2022,0.3961],[0.2078,-0.0637],[0.2078,0.1967],[0.2133,-0.2853],[0.2133,-0.2521],[0.2133,-0.0083],[0.2133,0.036],[0.2133,0.1579],[0.2133,0.662],[0.2188,0.3906],[0.2299,-0.6842],[0.2299,-0.4626],[0.241,0.3906],[0.2465,-0.4515],[0.2465,0.7341],[0.2465,0.867],[0.2521,0.2078],[0.2521,0.2687],[0.2521,0.8393],[0.2576,0.7008],[0.2632,-0.9058],[0.2632,-0.8061],[0.2632,-0.795],[0.2632,0.7175],[0.2687,0.2244],[0.2687,0.3906],[0.2742,-0.8172],[0.2742,0.7396],[0.2798,-0.9335],[0.2798,-0.3296],[0.2798,0.7396],[0.2909,-0.3407],[0.2909,-0.2742],[0.2909,0.9003],[0.3019,0.4571],[0.3019,0.7008],[0.3075,-0.3352],[0.313,-0.7839],[0.313,0.4848],[0.313,0.8892],[0.3186,0.6731],[0.3186,0.8726],[0.3241,-0.0526],[0.3296,0.3795],[0.3296,0.9058],[0.3296,0.9224],[0.3352,-0.7839],[0.3352,-0.2576],[0.3352,-0.2299],[0.3352,-0.2133],[0.3352,0.3518],[0.3352,0.374],[0.3352,0.4294],[0.3352,0.9003],[0.3407,-0.7285],[0.3407,-0.2964],[0.3407,0.3906],[0.3407,0.4681],[0.3463,-0.7839],[0.3463,0.867],[0.3518,-0.518],[0.3518,-0.0914],[0.3518,0.6953],[0.3573,-0.3352],[0.3573,-0.1191],[0.3573,0.0305],[0.3573,0.374],[0.3573,0.5069],[0.3573,0.6898],[0.3573,0.9003],[0.3629,-0.7618],[0.3629,0.2853],[0.3629,0.4238],[0.3629,0.7396],[0.3795,0.0693],[0.3961,-0.241],[0.4017,-0.795],[0.4017,-0.4515],[0.4017,-0.2853],[0.4017,0.4294],[0.4017,0.8393],[0.4127,-0.2742],[0.4127,0.0914],[0.4127,0.2078],[0.4127,0.8116],[0.4127,0.8504],[0.4183,0.0194],[0.4183,0.0693],[0.4238,-0.7839],[0.4238,-0.4848],[0.4238,-0.0637],[0.4238,0.7729],[0.4294,0.0194],[0.4349,0.1136],[0.4349,0.2576],[0.4349,0.374],[0.4349,0.4127],[0.4349,0.8615],[0.4404,0.1247],[0.4571,-0.4072],[0.4571,0.2687],[0.4571,0.3684],[0.4626,-0.4626],[0.4626,-0.2798],[0.4626,0.1136],[0.4626,0.1302],[0.4626,0.3352],[0.4626,0.4127],[0.4681,0.036],[0.4681,0.0471],[0.4737,-0.5069],[0.4792,-0.4515],[0.4792,-0.3795],[0.4792,0.4238],[0.4848,-0.3906],[0.4848,0.2964],[0.4958,0.4848],[0.5014,-0.5069],[0.5014,0.0139],[0.5125,-0.5734],[0.5125,-0.5402],[0.5125,0.0914],[0.5235,0.4681],[0.5235,0.518],[0.5291,-0.1247],[0.5346,-0.1357],[0.5457,0.0416],[0.5568,-0.0914],[0.5679,-0.1634],[0.5679,0.7008],[0.5734,-0.7507],[0.5734,0.1025],[0.5734,0.518],[0.5734,0.6842],[0.5789,0.5457],[0.59,0.0416],[0.59,0.0914],[0.5956,0.662],[0.6011,-0.6343],[0.6011,-0.6122],[0.6011,0.0471],[0.6066,-0.0416],[0.6066,0.097],[0.6066,0.1524],[0.6122,-0.1856],[0.6122,-0.0471],[0.6122,-0.0194],[0.6122,-0.0139],[0.6177,0.5679],[0.6288,0.7285],[0.6399,-0.0471],[0.6399,0.7285],[0.6399,0.7452],[0.6454,-0.6122],[0.6454,-0.5789],[0.6454,-0.5734],[0.6454,0.1745],[0.651,-0.5845],[0.651,-0.2521],[0.651,0.7396],[0.6565,0.7008],[0.6676,0.5568],[0.6787,-0.7562],[0.6898,-0.0194],[0.6898,0.2188],[0.6953,0.5679],[0.7064,-0.2687],[0.7119,0.7119],[0.7175,0.2632],[0.7175,0.6842],[0.723,-0.6454],[0.723,-0.6288],[0.723,-0.6066],[0.7285,-0.0139],[0.7396,0.3352],[0.7452,-0.3961],[0.7452,-0.3518],[0.7452,-0.2909],[0.7452,0.3075],[0.7507,-0.6177],[0.7507,-0.313],[0.7507,0.6953],[0.7562,-0.4404],[0.7562,0.2465],[0.7618,-0.0471],[0.7784,0.2355],[0.7784,0.3573],[0.7839,0.3906],[0.8006,-0.4626],[0.8006,0.2521],[0.8006,0.4127],[0.8227,-0.2798],[0.8227,-0.2576],[0.8227,-0.097],[0.8283,-0.2798],[0.8338,-0.2521],[0.8338,0.0083],[0.8338,0.385],[0.8338,0.3961],[0.8338,0.4183],[0.8338,0.4404],[0.8393,0.036],[0.8393,0.4349],[0.8504,0.0582],[0.8504,0.4349],[0.856,0.0249],[0.8615,0.0748],[0.867,-0.4737],[0.8781,-0.0803],[0.8837,-0.4183],[0.8837,0.0526],[0.8947,0.0914],[0.8947,0.2798],[0.9003,0.0416],[0.9114,-0.3241],[0.928,-0.4404],[0.9335,0.2576],[0.9335,0.3795],[0.9501,0.0637],[0.9557,-0.0748],[0.9612,-0.0637],[0.9612,0.0471],[0.9778,0.0249],[1.0,-0.0637]];
+/* on mobile, sample every 3rd point */
+const ACE_PTS = isMobile ? ACE_LOGO_RAW.filter((_,i)=>i%3===0) : ACE_LOGO_RAW;
+const ACE_SCALE = 3.5; /* compact — logo spans ~7 units across */
+const ACE_Y_OFF = 1.0; /* vertical center offset */
+const coronaCoreNodes = [];
+/* ACE Logo color palette — blue/turquoise/green with heavy white */
+const aceColors = [
+  new THREE.Color('#2895E5'), /* ACE blue */
+  new THREE.Color('#2593E4'), /* ACE blue variant */
+  new THREE.Color('#27DEDE'), /* turquoise */
+  new THREE.Color('#20C8E8'), /* cyan-blue */
+  new THREE.Color('#20F5E0'), /* bright teal */
+  new THREE.Color('#22E8C8'), /* green-teal */
+  new THREE.Color('#22E8C8'), /* green-teal x2 */
+  new THREE.Color('#1A8E6B'), /* deep green */
+  new THREE.Color('#80FFD0'), /* bright green */
+  new THREE.Color('#80FFD0'), /* bright green x2 */
+  new THREE.Color('#50E8A0'), /* medium green */
+  new THREE.Color('#B8E8FF'), /* soft white-blue */
+  new THREE.Color('#B8E8FF'), /* soft white-blue x2 */
+  new THREE.Color('#E0F4FF'), /* near-white icy */
+  new THREE.Color('#E0F4FF'), /* near-white icy x2 */
+  new THREE.Color('#F0FAFF'), /* almost white */
+  new THREE.Color('#F0FAFF'), /* almost white x2 */
+  new THREE.Color('#FFFFFF'), /* pure white */
+  new THREE.Color('#FFFFFF'), /* pure white x2 */
+  new THREE.Color('#D4F0FF'), /* white-cyan */
+];
+for(let i=0;i<ACE_PTS.length;i++){
+  const [lx, ly] = ACE_PTS[i];
+  const x = lx * ACE_SCALE;
+  const y = ly * ACE_SCALE + ACE_Y_OFF;
+  const z = (coronaRand()-0.5) * 0.8; /* z scatter for 3D depth */
+  const s = 0.09 + coronaRand()*0.12; /* 2-3x bigger hex stones */
+  const col = aceColors[Math.floor(coronaRand()*aceColors.length)];
+  const geo = hexGeo(s);
+  const mat = new THREE.MeshStandardMaterial({
+    color:col, emissive:col, emissiveIntensity:1.0,
+    metalness:0.85, roughness:0.1, transparent:true, opacity:0.95
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x,y,z);
+  mesh.rotation.set(coronaRand()*6, coronaRand()*6, coronaRand()*6);
+  logo.add(mesh);
+  /* glow sprites — visible but not overpowering */
+  const gMat = new THREE.SpriteMaterial({map:glowTex, color:col, transparent:true, opacity:0.35, blending:THREE.AdditiveBlending, depthWrite:false});
+  const glow = new THREE.Sprite(gMat);
+  glow.position.set(x,y,z);
+  glow.scale.setScalar(s*7); /* massive glow halos */
+  logo.add(glow);
+  coronaCoreNodes.push({mesh, glow, mat, gMat, x, y, z, s, col:col.clone()});
+}
+
+/* environment map */
+{
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  const envScene=new THREE.Scene();
+  const el1=new THREE.PointLight(0x20F5E0,12,60);el1.position.set(0,5,0);envScene.add(el1);
+  const el2=new THREE.PointLight(0x2895E5,8,60);el2.position.set(5,-3,5);envScene.add(el2);
+  const el3=new THREE.PointLight(0x1A8E6B,6,50);el3.position.set(-5,0,-5);envScene.add(el3);
+  const el4=new THREE.PointLight(0xFFFFFF,3,40);el4.position.set(3,3,-4);envScene.add(el4);
+  const el5=new THREE.PointLight(0x80FFD0,5,50);el5.position.set(-4,-4,3);envScene.add(el5);
+  envScene.add(new THREE.AmbientLight(0x0a2218,0.6));
+  scene.environment=pmrem.fromScene(envScene,0,0.1,100).texture;
+  pmrem.dispose();
+}
+
+/* particles */
+const PCOUNT=isMobile?250:500;
+const pGeo=new THREE.BufferGeometry();
+const pp=new Float32Array(PCOUNT*3);
+for(let i=0;i<PCOUNT;i++){
+  const t=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),r=8+Math.random()*20;
+  pp[i*3]=r*Math.sin(ph)*Math.cos(t);pp[i*3+1]=r*Math.sin(ph)*Math.sin(t);pp[i*3+2]=r*Math.cos(ph)-5;
+}
+pGeo.setAttribute('position',new THREE.BufferAttribute(pp,3));
+const pMat=new THREE.PointsMaterial({map:dotTex,color:0x22E8C8,size:.12,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,sizeAttenuation:true,depthWrite:false});
+scene.add(new THREE.Points(pGeo,pMat));
+
+/* lights */
+scene.add(new THREE.AmbientLight(0x0a2218,1.0));
+const kl=new THREE.PointLight(0x20F5E0,3,50);kl.position.set(0,0,8);scene.add(kl);
+const rl=new THREE.PointLight(0x22E8C8,1.5,40);rl.position.set(-6,4,5);scene.add(rl);
+const fl=new THREE.PointLight(0x2895E5,1.0,40);fl.position.set(5,-3,5);scene.add(fl);
+const gl=new THREE.PointLight(0x1A8E6B,1.2,40);gl.position.set(4,5,3);scene.add(gl);
+const bl=new THREE.PointLight(0x22E8C8,1.5,40);bl.position.set(0,0,-8);scene.add(bl);
+const rl2=new THREE.PointLight(0x20F5E0,0.8,35);rl2.position.set(-8,-5,3);scene.add(rl2);
+const rl3=new THREE.PointLight(0x2895E5,0.8,35);rl3.position.set(8,5,-3);scene.add(rl3);
+
+/* animation */
+const clock=new THREE.Clock();
+(function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+
+  /* update evolution progress */
+  if(evolutionActive){
+    const elapsed = t - evolutionStart;
+    evolutionProgress = Math.min(1, easeInOutCubic(elapsed / EVOLUTION_DURATION));
+    if(evolutionProgress >= 1){ evolutionActive = false; }
+    /* bloom: high during corona (0.9), flash on evolution start, settle to creature level (0.35) */
+    if(bloom){
+      const evoFlash = evolutionActive ? (1 - evolutionProgress) * 1.0 : 0;
+      bloom.strength = 0.35 + evoFlash + (1 - ep) * 0.2; /* corona=0.55, creature=0.35 */
+    }
+  }
+
+  const ep = evolutionProgress; /* shorthand — MUST be before any ep usage */
+
+  /* transition background: dark → warm-dark */
+  scene.background.lerpColors(bgCorona, bgCreature, ep);
+
+  /* animate corona core hex particles — idle vs interact */
+  /* speakIntensity is updated below but we read prev frame value here (smooth 0→1) */
+  const si = speakIntensity; /* 0=idle, 1=speaking/interacting */
+  if(coronaCoreNodes.length > 0){
+    /* idle: subdued glow; interact: full brightness (current "sehr gut" level) */
+    const idleEmI = 0.35;   const interactEmI = 1.0;
+    const idleCoreOp = 0.5; const interactCoreOp = 0.95;
+    const idleGlowOp = 0.1; const interactGlowOp = 0.35;
+    const idleGlowSc = 0.5; const interactGlowSc = 1.0; /* scale multiplier for glow */
+    for(let ci=0;ci<coronaCoreNodes.length;ci++){
+      const cn = coronaCoreNodes[ci];
+      const evoFade = 1 - ep;
+      /* lerp between idle and interact based on speakIntensity */
+      const emI = (idleEmI + (interactEmI - idleEmI) * si) * evoFade;
+      const coreOp = (idleCoreOp + (interactCoreOp - idleCoreOp) * si) * evoFade;
+      const glowOp = (idleGlowOp + (interactGlowOp - idleGlowOp) * si) * evoFade;
+      const glowSc = idleGlowSc + (interactGlowSc - idleGlowSc) * si;
+      cn.mat.opacity = coreOp;
+      cn.gMat.opacity = glowOp;
+      cn.mesh.visible = ep < 0.95;
+      cn.glow.visible = ep < 0.95;
+      /* corona mode: shimmer + gentle float */
+      if(ep < 0.95){
+        const shimmer = Math.sin(t * 2.0 + ci * 0.7) * 0.3 + 0.7;
+        cn.mat.emissiveIntensity = emI * shimmer;
+        /* gentle float — more active when interacting */
+        const floatAmp = 0.04 + si * 0.08;
+        const fx = cn.x + Math.sin(t * 0.5 + ci * 1.1) * floatAmp;
+        const fy = cn.y + Math.sin(t * 0.7 + ci * 0.8) * floatAmp;
+        const fz = cn.z + Math.sin(t * 0.3 + ci * 1.3) * floatAmp * 0.7;
+        cn.mesh.position.set(fx, fy, fz);
+        cn.glow.position.set(fx, fy, fz);
+        cn.glow.scale.setScalar(cn.s * 7 * glowSc);
+        /* lively rotation — each particle spins individually */
+        cn.mesh.rotation.x += 0.006 + si * 0.008 + Math.sin(ci * 0.3) * 0.003;
+        cn.mesh.rotation.y += 0.004 + si * 0.006 + Math.cos(ci * 0.5) * 0.002;
+        cn.mesh.rotation.z += 0.003 + si * 0.005;
+      }
+    }
+  }
+
+  speakIntensity+=((speaking?1:0)-speakIntensity)*0.1;
+
+  /* corona: lively rotation, creature: subtle sway */
+  const coronaRotSpeed = 0.6;
+  const creatureRotSpeed = 0.15;
+  const rotSpeed = coronaRotSpeed + (creatureRotSpeed - coronaRotSpeed) * ep;
+  /* corona: continuous clockwise spin + wobble; creature: subtle sway */
+  const coronaSpin = -t * 0.15 * (1 - ep); /* clockwise continuous rotation (negative = clockwise from front) */
+  logo.rotation.y = coronaSpin + Math.sin(t * rotSpeed) * (0.3 - ep * 0.18);
+  logo.rotation.x = Math.sin(t * 0.18) * (0.08 - ep * 0.05);
+  logo.rotation.z = Math.sin(t * 0.12) * (0.06 - ep * 0.035);
+
+  const breath=1+Math.sin(t*.7)*.012+speakIntensity*Math.sin(t*5)*.015;
+  logo.scale.setScalar(breath);
+  logo.position.y=0.5+Math.sin(t*.4)*.15+Math.sin(t*0.9)*.05;
+
+  for(let i=0;i<allNodes.length;i++){
+    const n=allNodes[i];
+    const freq=1.5+(i%7)*0.3;
+    const phase=t*freq+i*0.97+n.pos.x*1.3+n.pos.y*0.9;
+    const shimmer=Math.sin(phase);
+    const shimNorm=shimmer*.5+.5;
+    const bp=n.bodyPart;
+
+    /* interpolate base position: corona → creature */
+    const baseX = n.coronaPos.x + (n.pos.x - n.coronaPos.x) * ep;
+    const baseY = n.coronaPos.y + (n.pos.y - n.coronaPos.y) * ep;
+    const baseZ = n.coronaPos.z + (n.pos.z - n.coronaPos.z) * ep;
+
+    /* corona mode: radial pulsing + gentle drift */
+    if(ep < 1){
+      const coronaFade = 1 - ep;
+      /* radial pulse — particles breathe in/out along their ray direction */
+      const cLen = n.coronaPos.length();
+      const dir = cLen > 0.01 ? n.coronaPos.clone().normalize() : new THREE.Vector3(0,1,0);
+      const radialPulse = Math.sin(t * 1.2 + i * 0.5) * 0.3 * coronaFade;
+      /* gentle orbital drift */
+      const cAngle = t * 0.4 + i * 0.37;
+      const drift = coronaFade * 0.15;
+      n.mesh.position.x = baseX + dir.x * radialPulse + Math.sin(cAngle) * drift;
+      n.mesh.position.y = baseY + dir.y * radialPulse + Math.cos(cAngle * 0.7) * drift * 0.5;
+      n.mesh.position.z = baseZ + dir.z * radialPulse + Math.cos(cAngle * 1.1) * drift;
+    }
+
+    /* creature animations (fade in with evolution) */
+    if(ep > 0){
+      if(bp==='wisp'){
+        const angle=t*0.3+i*0.5;const orbitR=0.15;
+        n.mesh.position.x=baseX+Math.sin(angle)*orbitR*ep;
+        n.mesh.position.y=baseY+Math.cos(angle*0.7)*orbitR*0.5*ep;
+        n.mesh.position.z=baseZ+Math.cos(angle)*orbitR*ep;
+      } else if(bp==='ear' && ep > 0.5){
+        const earEp = (ep - 0.5) * 2; /* 0→1 in second half */
+        const perk=speakIntensity*0.12*earEp;
+        const twitch=(Math.sin(t*2.5+i)*0.02+speakIntensity*Math.sin(t*7+i)*0.06)*earEp;
+        n.mesh.position.y=baseY+twitch+perk;
+      } else if(bp==='arm' && ep > 0.5){
+        const armEp = (ep - 0.5) * 2;
+        const side=n.pos.x<0?-1:1;
+        const idleSway=Math.sin(t*1.2+side*1.5)*0.05*armEp;
+        const speakWave=speakIntensity*Math.sin(t*5+side*2.0)*0.35*armEp;
+        const speakLift=speakIntensity*0.25*armEp;
+        const speakOut=speakIntensity*Math.sin(t*4+side*1.5)*0.15*side*armEp;
+        n.mesh.position.x=baseX+idleSway*side+speakOut;
+        n.mesh.position.y=baseY+speakLift+speakWave;
+        n.mesh.position.z=baseZ+Math.sin(t*3+i*0.5)*0.02*armEp;
+      } else if(bp==='tail' && ep > 0.5){
+        const tailEp = (ep - 0.5) * 2;
+        const speed=3+speakIntensity*5;const amp=(0.06+speakIntensity*0.12)*tailEp;
+        n.mesh.position.x=baseX+Math.sin(t*speed+i*0.2)*amp;
+        n.mesh.position.z=baseZ+Math.sin(t*speed*0.8+i*0.3)*amp*0.5;
+      } else if(bp!=='cheek' && bp!=='wisp' && bp!=='ear' && bp!=='arm' && bp!=='tail'){
+        n.mesh.position.x=baseX+Math.sin(t*1.5+i*1.3)*0.008*ep;
+        n.mesh.position.y=baseY+Math.cos(t*1.2+i*0.9)*0.008*ep;
+      }
+    }
+
+    /* if still in corona or early evolution, ensure position is set */
+    if(ep < 0.01){
+      /* pure corona — position already set above */
+    } else if(ep >= 1 && bp!=='wisp' && bp!=='ear' && bp!=='arm' && bp!=='tail' && bp!=='cheek'){
+      /* fully evolved — use original creature animation */
+      n.mesh.position.x=n.pos.x+Math.sin(t*1.5+i*1.3)*0.008;
+      n.mesh.position.y=n.pos.y+Math.cos(t*1.2+i*0.9)*0.008;
+    }
+
+    n.glow.position.copy(n.mesh.position);
+
+    /* morph colors: corona → creature */
+    const currentColor = new THREE.Color().lerpColors(n.coronaColor, n.color, ep);
+    n.mat.color.copy(currentColor);
+    n.mat.metalness = 0.85 + (n.targetMetalness - 0.85) * ep;
+    n.mat.roughness = 0.1 + (n.targetRoughness - 0.1) * ep;
+    n.gMat.color.copy(currentColor);
+
+    const nodeDist=n.pos.length();
+    const wave=Math.sin(t*8-nodeDist*0.8)*.5+.5;
+    const spk=speakIntensity*wave;
+
+    if(n.isEyeDark && ep > 0.7){
+      const eyeEp = (ep - 0.7) / 0.3;
+      n.mat.emissiveIntensity=(0.02+shimNorm*0.03)*eyeEp + 0.7*(1-eyeEp);
+      n.mat.opacity=0.95+shimNorm*0.05;
+      n.gMat.opacity=0.01*eyeEp + 0.25*(1-eyeEp);
+      n.glow.scale.setScalar(n.size*(1.2*eyeEp + 3.5*(1-eyeEp)));
+    } else if(n.isEye && ep > 0.5){
+      const eyeEp = (ep - 0.5) * 2;
+      n.mat.emissiveIntensity=(.2+shimNorm*.2+spk*0.1)*eyeEp + (.2+shimNorm*.8+spk*0.4)*(1-eyeEp);
+      n.mat.opacity=(.9+shimNorm*.1)*eyeEp + (.7+shimNorm*.28)*(1-eyeEp);
+      n.gMat.opacity=(.05+shimNorm*.08)*eyeEp + (.08+shimNorm*.3+spk*0.15)*(1-eyeEp);
+      n.glow.scale.setScalar(n.size*((2.0+shimNorm*1.0)*eyeEp + (2.5+shimNorm*2.5+spk*1.5)*(1-eyeEp)));
+    } else {
+      n.mat.emissiveIntensity=.2+shimNorm*.8+spk*0.4;
+      n.mat.opacity=.7+shimNorm*.28;
+      n.gMat.opacity=.08+shimNorm*.3+spk*0.15;
+      n.glow.scale.setScalar(n.size*(2.5+shimNorm*2.5+spk*1.5));
+    }
+
+    n.mesh.rotation.z+=Math.sin(t*0.5+i*0.3)*0.002;
+
+    if(speakIntensity>0.01){
+      n.mat.emissive.lerpColors(currentColor,C_GLOW,spk*0.25);
+    } else {
+      n.mat.emissive.copy(currentColor);
+    }
+  }
+
+  const pa=pGeo.attributes.position.array;
+  for(let i=0;i<PCOUNT;i++){pa[i*3+1]+=Math.sin(t*.2+i)*.0008;pa[i*3]+=Math.cos(t*.1+i*.3)*.0004;}
+  pGeo.attributes.position.needsUpdate=true;
+  pMat.opacity=.16+speakIntensity*.1;
+
+  /* bloom: idle=0.3 corona / 0.25 creature, interact=0.55 corona / 0.35 creature */
+  if(!evolutionActive){
+    const idleBloom = 0.25 + (1-ep)*0.05; /* 0.3 corona, 0.25 creature */
+    const interactBloom = 0.35 + (1-ep)*0.2; /* 0.55 corona, 0.35 creature */
+    bloom.strength = idleBloom + (interactBloom - idleBloom) * speakIntensity;
+  }
+  kl.intensity=1.8+speakIntensity*(1.2+Math.sin(t*6)*0.3);
+
+  if(grain) grain.uniforms.time.value=t;
+  if(chroma) chroma.uniforms.amount.value=0.001+Math.sin(t*0.3)*0.0005+speakIntensity*0.001;
+
+  composer.render();
+})();
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
+  if(sharpen){
+    const pr=renderer.getPixelRatio();
+    sharpen.uniforms.resolution.value.set(innerWidth*pr,innerHeight*pr);
+  }
+});
+
+/* debug: press 'E' to trigger evolution manually */
+document.addEventListener('keydown', e => {
+  if(e.key === 'e' || e.key === 'E') triggerEvolution();
+});
+
+} /* end useWebGL block */
+</script>
+
+<!-- Drag & Drop for side panel -->
+<script>
+(function(){
+  const panel = document.getElementById('side-panel');
+  const handle = panel.querySelector('.drag-handle');
+  if(!panel || !handle) return;
+
+  let isDragging = false;
+  let startX, startY, startLeft, startTop;
+  const STORAGE_KEY = 'buddy_panel_pos';
+
+  /* restore saved position */
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved){
+    try {
+      const pos = JSON.parse(saved);
+      panel.style.right = 'auto';
+      panel.style.top = pos.top + 'px';
+      panel.style.left = pos.left + 'px';
+      panel.style.transform = 'none';
+    } catch(e){}
+  }
+
+  function onStart(x, y){
+    isDragging = true;
+    const rect = panel.getBoundingClientRect();
+    startX = x;
+    startY = y;
+    startLeft = rect.left;
+    startTop = rect.top;
+    panel.classList.add('dragging');
+    panel.style.right = 'auto';
+    panel.style.transform = 'none';
+  }
+
+  function onMove(x, y){
+    if(!isDragging) return;
+    const dx = x - startX;
+    const dy = y - startY;
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+    /* clamp to viewport */
+    newLeft = Math.max(0, Math.min(newLeft, innerWidth - panel.offsetWidth));
+    newTop = Math.max(0, Math.min(newTop, innerHeight - panel.offsetHeight));
+    panel.style.left = newLeft + 'px';
+    panel.style.top = newTop + 'px';
+  }
+
+  function onEnd(){
+    if(!isDragging) return;
+    isDragging = false;
+    panel.classList.remove('dragging');
+    /* save position */
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      left: parseInt(panel.style.left),
+      top: parseInt(panel.style.top)
+    }));
+  }
+
+  /* mouse events */
+  handle.addEventListener('mousedown', e => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+  document.addEventListener('mousemove', e => { if(isDragging){ e.preventDefault(); onMove(e.clientX, e.clientY); }});
+  document.addEventListener('mouseup', onEnd);
+
+  /* touch events */
+  handle.addEventListener('touchstart', e => { const t=e.touches[0]; onStart(t.clientX, t.clientY); }, {passive:true});
+  document.addEventListener('touchmove', e => { if(isDragging){ const t=e.touches[0]; onMove(t.clientX, t.clientY); }}, {passive:false});
+  document.addEventListener('touchend', onEnd);
+})();
+</script>
+</body>
+</html>

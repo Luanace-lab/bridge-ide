@@ -1,0 +1,15 @@
+{
+  "name": "simple_clip",
+  "description": "Einfacher Clip mit optionalem Titel-Overlay und Fade-Effekt",
+  "render_type": "clip_with_title",
+  "defaults": {
+    "font_size": 48,
+    "font_color": "white",
+    "bg_opacity": 0.6,
+    "title_duration_s": 3.0,
+    "fade_in_s": 0.5,
+    "fade_out_s": 0.5,
+    "width": 1080,
+    "height": 1920
+  }
+}

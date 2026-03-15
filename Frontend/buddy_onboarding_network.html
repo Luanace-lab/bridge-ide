@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bridge IDE</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%236366f1'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui' font-size='18' font-weight='700' fill='white'%3EB%3C/text%3E%3C/svg%3E">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#050a18;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e7edf5}
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+
+#subtitle{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:120px;z-index:15;
+  font-size:14px;letter-spacing:4px;text-transform:uppercase;
+  color:rgba(46,209,208,.55);
+  opacity:0;transition:opacity 1.5s ease, bottom 1.5s ease;
+  font-weight:300;pointer-events:none;
+}
+#subtitle.visible{opacity:1}
+
+#chat-container{
+  position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+  z-index:20;width:min(520px,90vw);pointer-events:auto;
+  opacity:0;transition:opacity 1s ease .5s;
+}
+#chat-container.visible{opacity:1}
+#chat-box{
+  background:rgba(10,16,34,.55);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(46,209,208,.1);
+  border-radius:16px;padding:6px 6px 6px 18px;
+  display:flex;align-items:center;gap:8px;
+  box-shadow:0 0 60px rgba(40,149,229,.06),0 0 120px rgba(46,209,208,.03);
+  transition:border-color .4s,box-shadow .4s;
+}
+#chat-box:focus-within{
+  border-color:rgba(46,209,208,.25);
+  box-shadow:0 0 60px rgba(40,149,229,.12),0 0 120px rgba(46,209,208,.06);
+}
+#chat-input{
+  flex:1;background:none;border:none;outline:none;
+  color:#e7edf5;font-size:15px;font-family:inherit;
+  padding:12px 0;caret-color:#2ED1D0;
+}
+#chat-input::placeholder{color:rgba(138,164,200,.35);font-weight:300}
+#send-btn{
+  width:40px;height:40px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,#2895E5,#2ED1D0);
+  color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,box-shadow .3s;flex-shrink:0;
+}
+#send-btn:hover{transform:scale(1.06);box-shadow:0 0 24px rgba(46,209,208,.35)}
+#send-btn svg{width:18px;height:18px}
+
+#response-area{
+  max-height:200px;overflow-y:auto;padding:0 18px;
+  margin-bottom:8px;scrollbar-width:thin;
+  scrollbar-color:rgba(46,209,208,.15) transparent;
+}
+.buddy-msg{
+  font-size:14px;line-height:1.65;color:rgba(231,237,245,.85);
+  padding:12px 0;border-bottom:1px solid rgba(46,209,208,.06);
+  animation:msgIn .4s ease;
+}
+.buddy-msg:last-child{border-bottom:none}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.typing-dots{display:inline-flex;gap:4px;padding:12px 0}
+.typing-dots span{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(46,209,208,.6);
+  animation:dotPulse 1.4s ease infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+
+@media(max-width:600px){
+  #subtitle{font-size:11px;letter-spacing:2.5px;bottom:100px}
+  #chat-container{bottom:20px}
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="subtitle">Welcome to Bridge</div>
+<div id="chat-container">
+  <div id="response-area"></div>
+  <div id="chat-box">
+    <input id="chat-input" type="text" placeholder="Say hello..." autocomplete="off"/>
+    <button id="send-btn" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+/* ── state ── */
+let speaking = false;
+let speakIntensity = 0;
+
+/* ── glow texture (radial gradient — no ugly rectangles) ── */
+function makeGlowTexture() {
+  const size = 128;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.15, 'rgba(255,255,255,.6)');
+  g.addColorStop(0.4, 'rgba(255,255,255,.15)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  return tex;
+}
+
+function makeParticleTexture() {
+  const size = 32;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  g.addColorStop(0, 'rgba(255,255,255,.9)');
+  g.addColorStop(0.5, 'rgba(255,255,255,.2)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(c);
+}
+
+const glowTex = makeGlowTexture();
+const particleTex = makeParticleTexture();
+
+/* ── renderer ── */
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(0, 0, 22);
+
+/* ── post-processing ── */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.4, 0.5, 0.12);
+composer.addPass(bloom);
+
+/* ── colors ── */
+const C_CORE  = new THREE.Color('#40F0F0');
+const C_INNER = new THREE.Color('#2ED1D0');
+const C_MID   = new THREE.Color('#2895E5');
+const C_OUTER = new THREE.Color('#1F6EB4');
+const C_GLOW  = new THREE.Color('#80FFFF');
+
+/* ── logo group ── */
+const logoGroup = new THREE.Group();
+scene.add(logoGroup);
+const nodes = [];
+const beams = [];
+
+/* ── hex geometry (flat, thin, elegant) ── */
+function hexGeo(radius) {
+  const shape = new THREE.Shape();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 6;
+    const x = radius * Math.cos(a), y = radius * Math.sin(a);
+    i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y);
+  }
+  shape.closePath();
+  return new THREE.ExtrudeGeometry(shape, {
+    depth: 0.08, bevelEnabled: true, bevelThickness: 0.015,
+    bevelSize: 0.015, bevelSegments: 1
+  });
+}
+
+function createNode(pos, size, color, ring) {
+  const geo = hexGeo(size);
+  const mat = new THREE.MeshStandardMaterial({
+    color, emissive: color, emissiveIntensity: 0.35,
+    metalness: 0.8, roughness: 0.2,
+    transparent: true, opacity: 0.95,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  mesh.lookAt(camera.position);
+  logoGroup.add(mesh);
+
+  /* soft glow sprite */
+  const glowMat = new THREE.SpriteMaterial({
+    map: glowTex, color, transparent: true, opacity: 0.18,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const glow = new THREE.Sprite(glowMat);
+  glow.position.copy(pos);
+  glow.scale.setScalar(size * 6);
+  logoGroup.add(glow);
+
+  nodes.push({mesh, glow, mat, glowMat, baseEmissive: 0.35, baseGlow: 0.18, size, ring, pos: pos.clone(), color: color.clone()});
+}
+
+function createBeam(from, to, width) {
+  const dir = new THREE.Vector3().subVectors(to, from);
+  const len = dir.length();
+  const geo = new THREE.CylinderGeometry(width, width, len, 6, 1);
+  geo.rotateX(Math.PI / 2);
+  const mat = new THREE.MeshStandardMaterial({
+    color: C_MID, emissive: C_MID, emissiveIntensity: 0.15,
+    metalness: 0.9, roughness: 0.3,
+    transparent: true, opacity: 0.4,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
+  mesh.position.copy(mid);
+  mesh.lookAt(to);
+  logoGroup.add(mesh);
+  beams.push({mesh, mat});
+}
+
+/* ── build network ── */
+const O = new THREE.Vector3(0, 0, 0);
+
+/* center */
+createNode(O, 0.5, C_CORE, 0);
+
+/* ring 1 — 6 nodes */
+const R1 = 2.0;
+const ring1 = [];
+for (let i = 0; i < 6; i++) {
+  const a = (Math.PI / 3) * i - Math.PI / 2;
+  const p = new THREE.Vector3(R1 * Math.cos(a), R1 * Math.sin(a), 0);
+  ring1.push(p);
+  createNode(p, 0.32, C_INNER, 1);
+  createBeam(O, p, 0.04);
+}
+
+/* ring 2 — 6 nodes (between ring1) */
+const R2 = 3.8;
+const ring2 = [];
+for (let i = 0; i < 6; i++) {
+  const a = (Math.PI / 3) * i - Math.PI / 6;
+  const p = new THREE.Vector3(R2 * Math.cos(a), R2 * Math.sin(a), 0);
+  ring2.push(p);
+  createNode(p, 0.38, C_MID, 2);
+  createBeam(ring1[i], p, 0.035);
+  createBeam(ring1[(i + 1) % 6], p, 0.035);
+}
+
+/* ring 3 — 12 nodes */
+const R3 = 5.8;
+const ring3 = [];
+for (let i = 0; i < 12; i++) {
+  const a = (Math.PI / 6) * i - Math.PI / 2;
+  const p = new THREE.Vector3(R3 * Math.cos(a), R3 * Math.sin(a), 0);
+  ring3.push(p);
+  createNode(p, 0.26, C_MID, 3);
+  const parent = i % 2 === 0 ? ring1[Math.floor(i / 2) % 6] : ring2[Math.floor(i / 2)];
+  createBeam(parent, p, 0.03);
+}
+
+/* ring 4 — 6 tip nodes */
+const R4 = 7.5;
+for (let i = 0; i < 6; i++) {
+  const a = (Math.PI / 3) * i - Math.PI / 2;
+  const p = new THREE.Vector3(R4 * Math.cos(a), R4 * Math.sin(a), 0);
+  createNode(p, 0.22, C_OUTER, 4);
+  createBeam(ring3[i * 2], p, 0.025);
+}
+
+/* ring 4b — 6 diagonal tips */
+const R4b = 7.0;
+for (let i = 0; i < 6; i++) {
+  const a = (Math.PI / 3) * i - Math.PI / 6;
+  const p = new THREE.Vector3(R4b * Math.cos(a), R4b * Math.sin(a), 0);
+  createNode(p, 0.19, C_OUTER, 4);
+  createBeam(ring3[i * 2 + 1], p, 0.022);
+}
+
+/* ── ambient particles ── */
+const PCOUNT = 500;
+const pGeo = new THREE.BufferGeometry();
+const pPositions = new Float32Array(PCOUNT * 3);
+for (let i = 0; i < PCOUNT; i++) {
+  pPositions[i*3]   = (Math.random() - 0.5) * 50;
+  pPositions[i*3+1] = (Math.random() - 0.5) * 50;
+  pPositions[i*3+2] = (Math.random() - 0.5) * 25 - 8;
+}
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+const pMat = new THREE.PointsMaterial({
+  map: particleTex, color: 0x2895E5,
+  size: 0.25, transparent: true, opacity: 0.3,
+  blending: THREE.AdditiveBlending, sizeAttenuation: true,
+  depthWrite: false,
+});
+scene.add(new THREE.Points(pGeo, pMat));
+
+/* ── lights ── */
+scene.add(new THREE.AmbientLight(0x0a1530, 0.5));
+const keyLight = new THREE.PointLight(0x2ED1D0, 2.5, 35);
+keyLight.position.set(0, 0, 10);
+scene.add(keyLight);
+const rimLight = new THREE.PointLight(0x2895E5, 1.2, 25);
+rimLight.position.set(-6, 5, 6);
+scene.add(rimLight);
+const fillLight = new THREE.PointLight(0x1F6EB4, 0.8, 20);
+fillLight.position.set(6, -4, 6);
+scene.add(fillLight);
+
+/* ── animation loop ── */
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  /* speak intensity smooth lerp */
+  const target = speaking ? 1 : 0;
+  speakIntensity += (target - speakIntensity) * 0.07;
+
+  /* gentle float */
+  logoGroup.rotation.z = Math.sin(t * 0.12) * 0.03;
+  logoGroup.rotation.x = Math.sin(t * 0.08) * 0.02;
+  logoGroup.rotation.y = Math.sin(t * 0.1) * 0.025;
+  logoGroup.position.y = 1.5 + Math.sin(t * 0.2) * 0.15;
+
+  /* nodes shimmer + speak pulse */
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    const phase = t * 1.0 + i * 0.8;
+    const shimmer = 0.5 + 0.5 * Math.sin(phase);
+
+    /* ripple from center when speaking */
+    const dist = n.pos.length();
+    const wave = Math.sin(t * 7 - dist * 0.9) * 0.5 + 0.5;
+    const speak = speakIntensity * wave;
+
+    n.mat.emissiveIntensity = n.baseEmissive + shimmer * 0.12 + speak * 0.9;
+    n.glowMat.opacity = n.baseGlow + shimmer * 0.05 + speak * 0.35;
+    n.glow.scale.setScalar(n.size * (6 + speak * 3));
+
+    /* color shift to bright cyan */
+    if (speakIntensity > 0.01) {
+      n.mat.emissive.lerpColors(n.color, C_GLOW, speak * 0.5);
+    } else {
+      n.mat.emissive.copy(n.color);
+    }
+
+    /* z-breathing */
+    n.mesh.position.z = n.pos.z + Math.sin(phase * 0.4) * 0.06;
+  }
+
+  /* beams */
+  for (let i = 0; i < beams.length; i++) {
+    const b = beams[i];
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.2 + i * 1.3);
+    b.mat.opacity = 0.35 + pulse * 0.08 + speakIntensity * 0.35;
+    b.mat.emissiveIntensity = 0.15 + speakIntensity * pulse * 0.5;
+  }
+
+  /* particles gentle drift */
+  const pa = pGeo.attributes.position.array;
+  for (let i = 0; i < PCOUNT; i++) {
+    pa[i*3+1] += Math.sin(t * 0.25 + i) * 0.0015;
+    pa[i*3]   += Math.cos(t * 0.15 + i * 0.5) * 0.0008;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  pMat.opacity = 0.25 + speakIntensity * 0.1;
+
+  /* bloom + light dynamics */
+  bloom.strength = 1.3 + speakIntensity * 1.0;
+  keyLight.intensity = 2.5 + speakIntensity * Math.sin(t * 5) * 2;
+
+  composer.render();
+}
+animate();
+
+/* ── resize ── */
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+
+/* ── intro ── */
+setTimeout(() => document.getElementById('subtitle').classList.add('visible'), 1000);
+setTimeout(() => document.getElementById('chat-container').classList.add('visible'), 2500);
+
+/* ── chat ── */
+const chatInput = document.getElementById('chat-input');
+const sendBtn = document.getElementById('send-btn');
+const responseArea = document.getElementById('response-area');
+let processing = false;
+
+function setSpeaking(v) { speaking = v; }
+
+async function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text || processing) return;
+  processing = true;
+  chatInput.value = '';
+  setSpeaking(true);
+
+  const dots = document.createElement('div');
+  dots.className = 'typing-dots';
+  dots.innerHTML = '<span></span><span></span><span></span>';
+  responseArea.appendChild(dots);
+  responseArea.scrollTop = responseArea.scrollHeight;
+
+  await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
+  dots.remove();
+
+  const msg = document.createElement('div');
+  msg.className = 'buddy-msg';
+  msg.textContent = respond(text);
+  responseArea.appendChild(msg);
+  responseArea.scrollTop = responseArea.scrollHeight;
+
+  setSpeaking(false);
+  processing = false;
+}
+
+function respond(input) {
+  const l = input.toLowerCase();
+  if (l.match(/hall?o|hey|hi|moin|servus|guten/))
+    return 'Hey! Ich bin Buddy \u2014 dein Guide f\u00fcr Bridge IDE. Ich zeig dir wie alles funktioniert. Das dauert nur 2 Minuten. Arbeitest du eher mit Code oder mit Menschen?';
+  if (l.match(/code|entwickl|program|terminal|cli|tech/))
+    return 'Alles klar. Bridge IDE ist eine Multi-Agent-Plattform. Mehrere AI-Agents arbeiten als Team \u2014 du steuerst sie von hier aus. Soll ich dir das Team vorstellen?';
+  if (l.match(/mensch|manage|menschen|team|chef|lead/))
+    return 'Perfekt. Stell dir Bridge IDE vor wie ein B\u00fcro mit deinem AI-Team. Du bist der Chef \u2014 deine Agents arbeiten f\u00fcr dich. Soll ich dir zeigen wie du Aufgaben verteilst?';
+  if (l.match(/ja|klar|gerne|zeig|los|ok/))
+    return 'Links siehst du den Management Chat. Rechts das Team Board mit deinen Teams. Oben rechts das Control Center f\u00fcr Tasks und Einstellungen. Schreib einfach was du brauchst!';
+  return 'Verstanden. Ich k\u00fcmmere mich drum. Wenn du Fragen hast, schreib einfach \u2014 ich bin immer da.';
+}
+
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+chatInput.addEventListener('focus', () => setSpeaking(true));
+chatInput.addEventListener('blur', () => { if (!processing) setSpeaking(false); });
+</script>
+</body>
+</html>

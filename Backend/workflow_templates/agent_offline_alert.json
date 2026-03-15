@@ -1,0 +1,97 @@
+{
+  "template_id": "tpl_agent_offline",
+  "name": "Agent-Ausfall Alarm",
+  "description": "Benachrichtigt sofort wenn ein Agent offline geht. Wichtig fuer Team-Leads und Susi: Kein Ausfall bleibt unbemerkt.",
+  "category": "monitoring",
+  "difficulty": "einfach",
+  "icon": "alert",
+  "variables": [
+    {
+      "key": "ignore_agents",
+      "label": "Agents ignorieren (kommagetrennt)",
+      "type": "string",
+      "default": "",
+      "placeholder": "test1,test2"
+    },
+    {
+      "key": "bridge_url",
+      "label": "Bridge Server URL",
+      "type": "url",
+      "default": "http://localhost:9111"
+    },
+    {
+      "key": "webhook_path",
+      "label": "Webhook-Pfad",
+      "type": "string",
+      "default": "bridge-agent-offline"
+    }
+  ],
+  "n8n_workflow": {
+    "name": "Bridge: Agent Offline Alert",
+    "active": true,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "{{webhook_path}}",
+          "responseMode": "onReceived",
+          "responseCode": 200
+        },
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300],
+        "webhookId": "{{webhook_path}}"
+      },
+      {
+        "parameters": {
+          "jsCode": "const raw = String('{{ignore_agents}}').trim();\nconst ignored = raw ? raw.split(',').map((entry) => entry.trim()).filter(Boolean) : [];\nconst payload = $input.first().json.body || $input.first().json;\nconst agentId = String(payload.data?.agent_id || '').trim();\nif (agentId && ignored.includes(agentId)) {\n  return [];\n}\nreturn [{ json: payload }];"
+        },
+        "name": "Filter Ignored",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [470, 300]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "{{bridge_url}}/send",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {"name": "from", "value": "system"},
+              {"name": "to", "value": "user"},
+              {"name": "content", "value": "=ALERT: Agent {{$json.data.agent_id}} ist offline!\nGrund: {{$json.data.reason}}\nZeitpunkt: {{$json.timestamp}}"}
+            ]
+          },
+          "options": {}
+        },
+        "name": "Bridge Alert",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [690, 300]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [{"node": "Filter Ignored", "type": "main", "index": 0}]
+        ]
+      },
+      "Filter Ignored": {
+        "main": [
+          [{"node": "Bridge Alert", "type": "main", "index": 0}]
+        ]
+      }
+    }
+  },
+  "setup_steps": [
+    "Template deployen (1-Klick im Workflow-Wizard)",
+    "Optional: Bestimmte Agents ausschliessen",
+    "Alerts erscheinen im Bridge Chat"
+  ],
+  "bridge_subscription": {
+    "event_type": "agent.offline",
+    "filter": {}
+  }
+}

@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""
+output_forwarder.py — Stream Manager Terminal Output → Bridge
+
+Uses tmux pipe-pane to stream terminal output line-by-line.
+No polling, no delta detection — every line arrives immediately.
+
+Sends only meta.type="status" (typing indicator) to avoid
+prose duplication with manager's own bridge_send messages.
+
+Usage:
+    python3 output_forwarder.py
+    FORWARDER_SESSION=acw_manager python3 output_forwarder.py
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import signal
+import subprocess
+import stat
+import sys
+import time
+import urllib.request
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+TMUX_SESSION = os.environ.get("FORWARDER_SESSION", "acw_manager")
+BRIDGE_URL = os.environ.get("BRIDGE_URL", "http://127.0.0.1:9111")
+STATUS_COOLDOWN = float(os.environ.get("STATUS_COOLDOWN", "10.0"))
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PID_DIR = os.path.join(_SCRIPT_DIR, "pids")
+PID_FILE = os.path.join(PID_DIR, "output_forwarder.pid")
+FIFO_PATH = os.environ.get("FORWARDER_FIFO", f"/tmp/bridge_forwarder_{TMUX_SESSION}.fifo")
+
+# ---------------------------------------------------------------------------
+# ANSI / terminal escape stripping
+# ---------------------------------------------------------------------------
+
+_ANSI_RE = re.compile(
+    r"\x1b\[[0-9;]*[a-zA-Z]"   # CSI sequences
+    r"|\x1b\].*?\x07"           # OSC sequences
+    r"|\x1b[()][AB012]"         # charset switching
+    r"|\x1b\[[\?]?\d*[hl]"     # mode set/reset
+    r"|\r"                       # carriage returns
+)
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_RE.sub("", text)
+
+
+# ---------------------------------------------------------------------------
+# Spinner words (Claude Code thinking/processing status)
+# ---------------------------------------------------------------------------
+
+_SPINNER_WORDS = {
+    "Fermenting", "Brewing", "Actualizing", "Thinking", "Reasoning",
+    "Orbiting", "Pondering", "Computing", "Leavening", "Wandering",
+    "Brewed", "Crunched",
+}
+
+_SPINNER_RE = re.compile(
+    r"^(?:" + "|".join(_SPINNER_WORDS) + r")"
+)
+
+_SPINNER_DURATION_RE = re.compile(
+    r"(?:" + "|".join(_SPINNER_WORDS) + r") for \d"
+)
+
+
+# ---------------------------------------------------------------------------
+# Line classification
+# ---------------------------------------------------------------------------
+
+def _is_spinner(stripped: str) -> bool:
+    """True if line is a Claude Code spinner/thinking status."""
+    if not stripped:
+        return False
+    # Special spinner prefix chars: ✻ ✽ ✦ ✶
+    if stripped[0] in ("✻", "✽", "✦", "✶"):
+        return True
+    # Regular asterisk: "* Orbiting…", "* Brewing…"
+    if stripped.startswith("*") and not stripped.startswith("**"):
+        rest = stripped.lstrip("* ").rstrip("…. ")
+        if rest and rest.split()[0] in _SPINNER_WORDS:
+            return True
+    # Bare spinner word at start: "Brewing for 3s", "Orbiting…"
+    if _SPINNER_RE.match(stripped):
+        return True
+    if _SPINNER_DURATION_RE.search(stripped):
+        return True
+    # "(thought for Xs)" pattern
+    if re.search(r"\(thought for \d+s?\)", stripped):
+        return True
+    # Token counter: "(39s · ↑ 552 tokens)" — always chrome
+    if re.search(r"\d+s\s*·\s*↑\s*[\d,]+ tokens", stripped):
+        return True
+    # Generic catch-all: Line is ONLY a capitalized word (possibly hyphenated) + …
+    # Must be the entire line to avoid false positives on German prose
+    if re.match(r"^[A-Z][a-z]+(?:-[A-Za-z]+)*…\.{0,3}$", stripped):
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# FIFO management
+# ---------------------------------------------------------------------------
+
+def _create_fifo() -> None:
+    """Create named pipe (FIFO) if it doesn't exist."""
+    if os.path.exists(FIFO_PATH):
+        # Check if it's actually a FIFO
+        if stat.S_ISFIFO(os.stat(FIFO_PATH).st_mode):
+            return
+        # Not a FIFO — remove and recreate
+        os.remove(FIFO_PATH)
+    os.mkfifo(FIFO_PATH)
+    _log(f"Created FIFO: {FIFO_PATH}")
+
+
+def _remove_fifo() -> None:
+    """Remove the FIFO."""
+    try:
+        os.remove(FIFO_PATH)
+    except OSError:
+        pass
+
+
+def _start_pipe_pane() -> None:
+    """Attach tmux pipe-pane to stream output to our FIFO."""
+    # First stop any existing pipe-pane on this session
+    subprocess.run(
+        ["tmux", "pipe-pane", "-t", TMUX_SESSION],
+        capture_output=True, timeout=5,
+    )
+    # Start pipe-pane writing to our FIFO
+    # -o flag: only output (not input)
+    result = subprocess.run(
+        ["tmux", "pipe-pane", "-t", TMUX_SESSION, "-o",
+         f"cat >> {FIFO_PATH}"],
+        capture_output=True, text=True, timeout=5,
+    )
+    if result.returncode != 0:
+        _log(f"pipe-pane failed: {result.stderr}")
+        sys.exit(1)
+    _log(f"pipe-pane attached to {TMUX_SESSION} → {FIFO_PATH}")
+
+
+def _stop_pipe_pane() -> None:
+    """Detach tmux pipe-pane."""
+    try:
+        subprocess.run(
+            ["tmux", "pipe-pane", "-t", TMUX_SESSION],
+            capture_output=True, timeout=5,
+        )
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Bridge HTTP sender
+# ---------------------------------------------------------------------------
+
+def send_to_bridge(content: str, msg_type: str = "status") -> bool:
+    """Send message via Bridge HTTP API.
+
+    msg_type: "status" for spinner/thinking indicator.
+    """
+    payload = json.dumps(
+        {
+            "from": "manager",
+            "to": "user",
+            "content": content,
+            "meta": {
+                "source": "output_forwarder",
+                "auto_capture": True,
+                "type": msg_type,
+            },
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{BRIDGE_URL}/send",
+        data=payload,
+        headers={"Content-Type": "application/json; charset=utf-8"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status in (200, 201)
+    except Exception as exc:
+        _log(f"send failed: {exc}")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# PID management
+# ---------------------------------------------------------------------------
+
+def _write_pid() -> None:
+    os.makedirs(PID_DIR, exist_ok=True)
+    with open(PID_FILE, "w") as fh:
+        fh.write(str(os.getpid()))
+
+
+def _cleanup(*_args: object) -> None:
+    _log("Shutting down...")
+    _stop_pipe_pane()
+    _remove_fifo()
+    try:
+        os.remove(PID_FILE)
+    except OSError:
+        pass
+    sys.exit(0)
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+def _log(msg: str) -> None:
+    ts = time.strftime("%H:%M:%S")
+    print(f"[forwarder {ts}] {msg}", flush=True)
+
+
+# ---------------------------------------------------------------------------
+# Main loop — reads FIFO line by line
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    _write_pid()
+    signal.signal(signal.SIGTERM, _cleanup)
+    signal.signal(signal.SIGINT, _cleanup)
+
+    _log(f"Started PID={os.getpid()} session={TMUX_SESSION}")
+
+    # Setup FIFO and pipe-pane
+    _create_fifo()
+    _start_pipe_pane()
+
+    last_status_sent: float = 0.0
+
+    _log(f"Reading from FIFO (blocking): {FIFO_PATH}")
+
+    while True:
+        try:
+            # Open FIFO for reading (blocks until writer connects)
+            # Re-open in loop because writer (pipe-pane) may disconnect
+            with open(FIFO_PATH, "r") as fifo:
+                for raw_line in fifo:
+                    line = _strip_ansi(raw_line)
+                    stripped = line.strip()
+
+                    if not stripped:
+                        continue
+
+                    # Only care about spinner lines
+                    if _is_spinner(stripped):
+                        now = time.time()
+                        if now - last_status_sent >= STATUS_COOLDOWN:
+                            send_to_bridge("typing", msg_type="status")
+                            last_status_sent = now
+                            _log("Sent status: typing")
+
+            # FIFO EOF — writer disconnected, wait briefly and reopen
+            _log("FIFO EOF — writer disconnected, reopening...")
+            time.sleep(1.0)
+
+        except OSError as exc:
+            _log(f"FIFO read error: {exc}, retrying in 2s...")
+            time.sleep(2.0)
+            # Recreate FIFO + pipe-pane in case something broke
+            _create_fifo()
+            _start_pipe_pane()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bridge Browser Fixture - Modal Flow</title>
+  </head>
+  <body>
+    <main>
+      <h1>Creator Modal Fixture</h1>
+      <button id="open-modal">Open Creator Modal</button>
+      <section id="creator-modal" data-modal-state="closed" hidden>
+        <h2>Creator modal open</h2>
+        <label for="clip-title">Clip Title</label>
+        <input id="clip-title" name="clip_title" type="text" placeholder="Clip title">
+        <button id="close-modal">Close Modal</button>
+      </section>
+    </main>
+    <script>
+      const openButton = document.getElementById("open-modal");
+      const closeButton = document.getElementById("close-modal");
+      const modal = document.getElementById("creator-modal");
+
+      openButton.addEventListener("click", () => {
+        modal.hidden = false;
+        modal.dataset.modalState = "open";
+      });
+
+      closeButton.addEventListener("click", () => {
+        modal.hidden = true;
+        modal.dataset.modalState = "closed";
+      });
+    </script>
+  </body>
+</html>

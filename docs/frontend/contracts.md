@@ -1,0 +1,215 @@
+# Frontend -> Backend Contracts
+
+## Transport
+
+- Runtime URL resolution is centralized in `Frontend/bridge_runtime_urls.js`.
+- Verified local dev mapping:
+  - pages on `127.0.0.1:8787`, `127.0.0.1:9111`, or `127.0.0.1:9112` resolve API `http://127.0.0.1:9111` and WebSocket `ws://127.0.0.1:9112`
+  - pages on `localhost:8787`, `localhost:9111`, or `localhost:9112` resolve API `http://localhost:9111` and WebSocket `ws://localhost:9112`
+- Verified non-local mapping:
+  - other hosts default to same-origin HTTP and same-host WebSocket (`wss` when `https`)
+- `chat.html`, `control_center.html`, `project_config.html`, and `task_tracker.html` still override `window.fetch` to attach `X-Bridge-Token` from `window.__BRIDGE_UI_TOKEN` for resolved Bridge HTTP targets.
+- `chat.html`, `control_center.html`, and `buddy_widget.js` build Bridge WebSocket URLs through the same runtime resolver and append the UI token when present.
+- Workflow/n8n reads are optional integration paths, not core messaging/runtime paths.
+- Verified current-state note on 2026-03-12 after the workflow integration slice:
+  - `GET /workflows` returned `200` with `count=20`
+  - `GET /n8n/executions?limit=5` returned `200`
+  - `GET /events/subscriptions` returned `{"count": 1}`
+  - `POST /send` without `X-Bridge-Token` returned `401 {"error":"authentication required"}`
+  - `python3 Backend/repair_n8n_bridge_auth.py --dry-run --limit 250` returned `repaired_count=0`
+  - `Frontend/control_center_n8n_degradation.spec.js` passed for both degraded and healthy workflow read paths
+  - `Frontend/chat_workflow_buttons.spec.js` passed against the live backend for workflow panel deploy, toggle/delete, and workflow-suggestion deploy
+  - consequence: the live n8n read path is healthy, active Bridge write workflows currently carry Bridge auth headers, and the Bridge-managed workflow set is now a four-workflow canonical set of daily report, weekly report, chat summary, and task notification
+- Verified current-state note on 2026-03-13 after the read-surface hardening slice:
+  - unauthenticated `GET /history?limit=1` returned `401 {"error":"authentication required"}`
+  - unauthenticated `GET /messages?agent_id=codex&limit=1` returned `401 {"error":"authentication required"}`
+  - unauthenticated `GET /n8n/executions?limit=1` returned `401 {"error":"authentication required"}`
+  - unauthenticated `GET /n8n/workflows` returned `401 {"error":"authentication required"}`
+  - unauthenticated `GET /logs`, `GET /automations`, `GET /workflows/tools`, `GET /events/subscriptions` and `GET /agent/config?...` returned `401`
+  - authenticated `GET /history?limit=1` still returned `200`
+  - authenticated `GET /n8n/executions?limit=1` still returned `200`
+  - `Frontend/control_center_n8n_degradation.spec.js` still passed against the live backend
+  - `Frontend/chat_workflow_buttons.spec.js` still passed against the live backend
+  - consequence: sensitive UI read paths are no longer public, while the token-injected browser surfaces remain operational
+
+## chat.html
+
+- Platform controls:
+  - `GET /platform/status`
+  - `POST /platform/start`
+  - `POST /platform/stop`
+- Subscriptions:
+  - `GET /subscriptions`
+  - `POST /subscriptions`
+  - `PUT /subscriptions/{id}`
+  - `DELETE /subscriptions/{id}`
+- Agent operations:
+  - `GET /agents`
+  - `GET /agents?source=team`
+  - `GET /agents/{id}`
+  - `GET /engines/models`
+  - `PATCH /agents/{id}`
+  - `PATCH /agents/{id}/mode`
+  - `PATCH /agents/{id}/active`
+  - `POST /agents/{id}/start`
+  - `POST /agents/{id}/restart`
+  - `PUT /agents/{id}/subscription`
+- Management-board runtime contract:
+  - `chat.html` liest Agent-Projektionen ueber `GET /agents` und `GET /agents?source=team`
+  - der Dot kodiert Laufzeitwahrheit, nicht Konfigurationsaktivierung:
+    - gruen = laufend/aktiv verbunden
+    - orange = wartend oder idle
+    - rot = offline/disconnected
+  - Konfigurationszustand bleibt separat ueber `active`/`auto_start` sichtbar
+- Messaging and onboarding:
+  - `POST /send`
+  - `GET /history?since=...&limit=500`
+  - `POST /messages/{id}/reaction`
+  - `GET /activity`
+  - `GET /onboarding/status?user_id=...`
+  - `POST /onboarding/start`
+- Teams, boards, tasks:
+  - `GET /board/projects`
+  - `GET /task/queue`
+  - `GET /task/queue?team=...`
+  - `POST /task/create`
+  - `GET /teams`
+  - `GET /teams/{id}`
+  - `POST /teams`
+  - `GET /team/orgchart`
+- Workflows, approvals, utilities:
+  - `GET /workflows`
+  - `GET /workflows/templates`
+  - `GET /workflows/suggest?message=...`
+  - `PATCH /workflows/{id}/toggle`
+  - `DELETE /workflows/{id}`
+  - `POST /workflows/deploy-template`
+  - `GET /approval/pending`
+  - `POST /approval/{request_id}/edit`
+  - `POST /approval/respond`
+  - `GET /n8n/executions?limit=5`
+  - `GET /pick-directory`
+  - `POST /chat/upload`
+
+## control_center.html
+
+- Agent projection contract for `GET /agents`, `GET /agents?source=team`, `GET /agents/{id}` and `GET /team/orgchart`:
+  - `active` = Team-/Konfigurationszustand
+  - `online` = beobachteter Laufzeitzustand
+  - `auto_start` = Startpolitik
+  - `tmux_alive` = technischer Unterbau
+- Overview and live status:
+  - `GET /agents`
+  - `GET /agents/{id}`
+  - `GET /agents/{id}/persistence`
+  - `GET /status`
+  - `GET /health`
+  - `GET /activity`
+  - `GET /history?limit=50`
+  - `GET /metrics/costs?period=...`
+  - `GET /n8n/executions?limit=5`
+- Project/team board and liveboard:
+  - `GET /team/projects`
+  - `GET /board/projects`
+  - `POST /board/projects`
+  - `POST /board/projects/{project}/teams/{team}/members`
+  - `DELETE /board/projects/{project}/teams/{team}/members/{agent}`
+  - `GET /whiteboard?limit=50`
+  - `GET /whiteboard?type=alert`
+  - `GET /scope/locks`
+  - `POST /escalation/{task_id}/resolve`
+- Task board and maintenance:
+  - `GET /tasks/summary`
+  - `GET /task/queue`
+  - `GET /task/queue?view=board&include_blockers=true`
+  - `POST /task/create`
+  - `PATCH /task/{id}`
+  - `DELETE /task/{id}`
+  - `GET /task/{id}/history`
+  - `POST /chat/upload`
+- Org chart and agent editing:
+  - `GET /team/orgchart`
+  - `PATCH /agents/{id}/parent`
+  - `PATCH /agents/{id}`
+  - `POST /agents/{id}/avatar`
+  - `GET /engines/models`
+- Workflows and automations:
+  - `GET /workflows`
+  - `GET /workflows/templates`
+  - `GET /workflows/capabilities`
+  - `POST /workflows/compile`
+  - `POST /workflows/deploy`
+  - `GET /workflows/{id}/definition`
+  - `PUT /workflows/{id}/definition`
+  - `PATCH /workflows/{id}/toggle`
+  - `DELETE /workflows/{id}`
+  - `POST /workflows/deploy-template`
+  - `GET /automations`
+  - `POST /automations`
+  - `PATCH /automations/{id}/active`
+  - `POST /automations/{id}/run`
+  - `PATCH /automations/{id}/pause`
+  - `DELETE /automations/{id}`
+
+## project_config.html
+
+- `GET /engines/models`
+- `GET /api/context/scan?project_path=...`
+- `POST /api/projects/create`
+- `POST /runtime/configure`
+- `GET /status`
+- Runtime-configure feedback contract:
+  - Erfolg zeigt weiterhin die gestartete Agentenzahl
+  - Fehler bevorzugen jetzt den ersten `failed[].error_detail` oder `failed[].error_reason` aus `/runtime/configure`
+  - der aktuelle Live-Fail-Closed-Pfad zeigt dadurch im UI direkt `claude: You've hit your limit ...` statt nur eines generischen Runtime-Fehlers
+
+## buddy_landing.html
+
+- Uses token-aware `bridgeFetch(...)` for:
+  - `GET /cli/detect?skip_runtime=1`
+  - `POST /agents/{BUDDY_ID}/setup-home`
+  - `POST /agents/{BUDDY_ID}/start`
+  - `GET /onboarding/status?user_id=...`
+  - `POST /send`
+  - `GET /receive/{USER_ID}?wait=0&limit=10`
+- `GET /cli/detect` is now the canonical setup scan endpoint:
+  - the landing uses the fast frontdoor form `skip_runtime=1`
+  - the backend keeps a short TTL cache plus single-flight guard so repeated landing/widget scans do not fan out into conflicting runtime probes
+  - the same endpoint can still serve runtime-aware results via `include_runtime=1` or `force=1`
+- Setup contract:
+  - if Buddy already has a configured engine that is still available, the page reuses that engine instead of prompting again
+  - if multiple CLIs are available and no reusable Buddy engine exists, the visible landing flow asks which engine Buddy should use
+  - if exactly one CLI is available, the page materializes Buddy's engine-specific home automatically before start
+  - if Buddy is triggered programmatically before a visible engine choice was made, the bootstrap path currently falls back deterministically to `existingEngine || recommended || available[0]`
+  - `POST /agents/{BUDDY_ID}/setup-home` currently uses `{ engine, overwrite: true }`
+  - the live setup response contains at least `{ ok, agent_id, engine, agent_md, guide_path, created }`
+- Start contract:
+  - `POST /agents/{BUDDY_ID}/start` can now return `status:"already_running"` when the tmux session becomes active during a concurrent start race; the landing treats that as success
+- Returning-user redirect happens only when `known_user && buddy_running && !should_auto_start`.
+- A successful landing-page start can pass through a short boot window where `GET /agents/buddy` still reports `phantom:true`; the latest live check then converged back to `phantom:false` with `cli_identity_source=cli_register`.
+
+## Payload patterns
+
+- Message payload:
+  - `{ from, to, content, meta? }`
+- Agent start payload:
+  - `{ from: "user" }`
+- Agent mode patch:
+  - `{ mode }`
+- Agent model patch:
+  - `{ model }`
+- Agent active patch:
+  - `{ active }`
+- Agent parent patch:
+  - `{ new_parent }`
+- Agent subscription patch:
+  - `{ subscription_id }`
+- Task create payload:
+  - `chat.html`: `{ title, description, assigned_to, priority, ... }`
+  - `control_center.html`: board/task form payload with attachments and optional blocker metadata
+- Workflow builder payload:
+  - `{ definition }`
+- Workflow template deploy:
+  - `{ template_id, variables }`
+- Approval response:
+  - `{ request_id, decision, decided_by: "user" }`

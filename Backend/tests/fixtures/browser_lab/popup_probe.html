@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Browser Lab Popup Probe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: monospace; margin: 16px; background: #fff; color: #111; }
+    pre { white-space: pre-wrap; word-break: break-word; border: 1px solid #ccc; padding: 12px; }
+    button { font-family: monospace; padding: 8px 12px; }
+  </style>
+</head>
+<body>
+  <h1>Popup Probe</h1>
+  <button id="open-popup" type="button">Open Popup</button>
+  <pre id="result">idle</pre>
+  <script>
+    (function () {
+      var output = {
+        probe: "popup",
+        popupOpened: false,
+        popupBlocked: false,
+        popupResult: null,
+        errors: []
+      };
+
+      function render() {
+        window.__browserLabResult = output;
+        document.getElementById("result").textContent = JSON.stringify(output, null, 2);
+        document.body.setAttribute("data-ready", output.popupResult ? "1" : "0");
+      }
+
+      window.addEventListener("message", function (event) {
+        if (event.data && event.data.type === "browser-lab-result") {
+          output.popupResult = event.data.result;
+          render();
+        }
+      });
+
+      function openPopup() {
+        try {
+          var popup = window.open(
+            "./navigator_header_storage.html?child=popup",
+            "browser_lab_popup",
+            "width=640,height=480"
+          );
+          output.popupOpened = !!popup;
+          output.popupBlocked = !popup;
+        } catch (err) {
+          output.popupBlocked = true;
+          output.errors.push(String(err));
+        }
+        render();
+      }
+
+      document.getElementById("open-popup").addEventListener("click", openPopup);
+      render();
+    }());
+  </script>
+</body>
+</html>

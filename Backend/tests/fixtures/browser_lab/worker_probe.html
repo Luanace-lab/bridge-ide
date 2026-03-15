@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Browser Lab Worker Probe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: monospace; margin: 16px; background: #fff; color: #111; }
+    pre { white-space: pre-wrap; word-break: break-word; border: 1px solid #ccc; padding: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Worker Probe</h1>
+  <pre id="result">loading...</pre>
+  <script>
+    (function () {
+      var output = {
+        probe: "worker",
+        worker: null,
+        sharedWorker: null,
+        errors: []
+      };
+
+      function render() {
+        window.__browserLabResult = output;
+        document.getElementById("result").textContent = JSON.stringify(output, null, 2);
+        var ready = output.worker !== null && output.sharedWorker !== null;
+        document.body.setAttribute("data-ready", ready ? "1" : "0");
+      }
+
+      function setWorkerError(label, err) {
+        output.errors.push(label + ": " + String(err));
+        if (label === "worker" && output.worker === null) {
+          output.worker = { available: false, error: String(err) };
+        }
+        if (label === "shared-worker" && output.sharedWorker === null) {
+          output.sharedWorker = { available: false, error: String(err) };
+        }
+        render();
+      }
+
+      try {
+        var worker = new Worker("./worker_probe.worker.js");
+        worker.onmessage = function (event) {
+          output.worker = event.data;
+          render();
+        };
+        worker.onerror = function (event) {
+          setWorkerError("worker", event.message || "unknown worker error");
+        };
+        worker.postMessage({ type: "probe" });
+      } catch (err) {
+        setWorkerError("worker", err);
+      }
+
+      try {
+        var shared = new SharedWorker("./shared_worker_probe.shared.js");
+        shared.port.onmessage = function (event) {
+          output.sharedWorker = event.data;
+          render();
+        };
+        shared.port.onmessageerror = function () {
+          setWorkerError("shared-worker", "message error");
+        };
+        shared.port.start();
+        shared.port.postMessage({ type: "probe" });
+      } catch (err) {
+        setWorkerError("shared-worker", err);
+      }
+
+      render();
+    }());
+  </script>
+</body>
+</html>

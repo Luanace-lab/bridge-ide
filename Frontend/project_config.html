@@ -1,0 +1,2187 @@
+<!doctype html>
+<html lang="de" data-theme="warm">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bridge – Projekt Konfigurator</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%236366f1'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui' font-size='18' font-weight='700' fill='white'%3EB%3C/text%3E%3C/svg%3E">
+  <style>
+    /* ─── Themes (identisch mit chat.html) ─── */
+    html[data-theme="warm"]{
+      --bg:#fbf8f1; --bgFlat:#fbf8f1;
+      --sidebar:#c8bfa8; --sbThumb:#b8af98; --sbDark:#8a7f6a;
+    }
+    html[data-theme="light"]{
+      --bg:#ffffff; --bgFlat:#ffffff;
+      --sidebar:#d6e8f7; --sbThumb:#b8d4ed; --sbDark:#5a9ac7;
+    }
+    html[data-theme="rose"]{
+      --bg:#fdf2f4; --bgFlat:#fdf2f4;
+      --sidebar:#e8c4cc; --sbThumb:#d9adb7; --sbDark:#a3707e;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]){
+      --bg:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);
+      --bgFlat:#161e3a;
+      --sidebar:#1e2a42; --sbThumb:#2d3f5e; --sbDark:#8aa4c8;
+    }
+    html[data-theme="black"]{
+      --bg:#000000; --bgFlat:#000000;
+      --sidebar:#111111; --sbThumb:#222222; --sbDark:#7a8fa8;
+      color-scheme:dark;
+    }
+
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    html,body{ height:100%; }
+    html{ background:var(--bgFlat); }
+    body{
+      background:var(--bg);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      color:#3d3d3a;
+      overflow-y:auto;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) body{ color:#e7edf5; }
+
+    /* ─── Global Scrollbar Baseline ─── */
+    html, body{
+      scrollbar-width:thin;
+      scrollbar-color:color-mix(in srgb, var(--sbDark) 22%, var(--bgFlat)) transparent;
+    }
+    html::-webkit-scrollbar, body::-webkit-scrollbar{ width:6px; height:6px; }
+    html::-webkit-scrollbar-track, body::-webkit-scrollbar-track{
+      background:color-mix(in srgb, var(--sidebar) 12%, var(--bgFlat));
+    }
+    html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb{
+      background:color-mix(in srgb, var(--sbDark) 22%, var(--bgFlat));
+      border-radius:999px;
+    }
+    html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover{
+      background:color-mix(in srgb, var(--sbDark) 32%, var(--bgFlat));
+    }
+    html:is([data-theme="dark"],[data-theme="black"]){
+      color-scheme:dark;
+    }
+
+    /* ─── Top Bar ─── */
+    .topBar{
+      position:sticky; top:0; z-index:10;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 24px;
+      background:color-mix(in srgb, var(--sidebar) 18%, var(--bgFlat));
+      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 25%, transparent);
+      backdrop-filter:blur(12px);
+    }
+    .topBar__left{
+      display:flex; align-items:center; gap:8px;
+    }
+    .topBar__logo{ height:28px; width:auto; }
+    .topBar__leftText{ display:flex; flex-direction:column; gap:2px; }
+    .topBar__back{
+      background:none; border:none; cursor:pointer; color:var(--sbDark);
+      padding:4px; border-radius:6px; display:flex; align-items:center;
+    }
+    .topBar__back:hover{ background:color-mix(in srgb, var(--sidebar) 30%, transparent); }
+    .topBar__title{
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.6px; color:var(--sbDark);
+    }
+    .topBar__sub{
+      font-size:10px; color:#8f8f8f;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .topBar__sub{ color:#6b7a8f; }
+    .topBar__right{
+      display:flex; align-items:center; gap:8px;
+    }
+
+    /* ─── Page Navigation ─── */
+    .topBar__nav{ display:flex; gap:2px; background:color-mix(in srgb, var(--sidebar) 15%, transparent); border-radius:6px; padding:2px; }
+    .topBar__navLink{
+      font-size:10px; font-weight:500; text-decoration:none;
+      padding:4px 10px; border-radius:4px; color:#8f8f8f;
+      transition:background .15s, color .15s;
+    }
+    .topBar__navLink:hover{ background:color-mix(in srgb, var(--sidebar) 25%, transparent); color:#3d3d3a; }
+    .topBar__navLink--active{ background:color-mix(in srgb, var(--sidebar) 30%, transparent); color:var(--sbDark); font-weight:600; }
+    html:is([data-theme="dark"],[data-theme="black"]) .topBar__navLink{ color:#6b7a8f; }
+    html:is([data-theme="dark"],[data-theme="black"]) .topBar__navLink:hover{ color:#e7edf5; }
+    html:is([data-theme="dark"],[data-theme="black"]) .topBar__navLink--active{ color:#8aa4c8; }
+
+    /* ─── Theme Switcher ─── */
+    .pcThemeWrap{ position:relative; }
+    .pcThemeBtn{
+      background:none; border:1px solid color-mix(in srgb, var(--sbDark) 25%, transparent);
+      border-radius:6px; padding:4px 10px; cursor:pointer; font-size:10px; font-weight:500;
+      color:var(--sbDark); display:flex; align-items:center; gap:5px; transition:background .15s;
+    }
+    .pcThemeBtn:hover{ background:color-mix(in srgb, var(--sidebar) 20%, transparent); }
+    .pcThemeBtn__dot{
+      width:10px; height:10px; border-radius:50%; border:1px solid rgba(0,0,0,.1);
+    }
+    .pcThemeMenu{
+      display:none; position:absolute; top:calc(100% + 4px); right:0; z-index:100;
+      background:var(--bgFlat,#fff); border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      border-radius:8px; padding:4px; min-width:120px;
+      box-shadow:0 4px 12px rgba(0,0,0,.1);
+    }
+    .pcThemeMenu.open{ display:block; }
+    .pcThemeMenu button{
+      display:flex; align-items:center; gap:8px; width:100%; padding:6px 10px;
+      border:none; border-radius:5px; background:none; cursor:pointer;
+      font-size:11px; font-family:inherit; color:inherit; transition:background .12s;
+    }
+    .pcThemeMenu button:hover{ background:color-mix(in srgb, var(--sidebar) 15%, transparent); }
+    .pcThemeMenu button .dot{
+      width:10px; height:10px; border-radius:50%; border:1px solid rgba(0,0,0,.1); flex-shrink:0;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .pcThemeMenu{ background:#1a2336; border-color:rgba(255,255,255,.08); }
+
+    /* ─── Status Dots ─── */
+    .statusDots{
+      display:flex; align-items:center; gap:6px;
+    }
+    .statusDot{
+      width:8px; height:8px; border-radius:50%;
+      background:#ef4444;
+    }
+    .statusDot--live{ background:#22c55e; }
+    .statusDot--connecting{ background:#f59e0b; }
+    .statusDot--disconnected{ background:#ef4444; }
+    .statusLabel{
+      font-size:10px; font-weight:500; color:#8f8f8f;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .statusLabel{ color:#6b7a8f; }
+
+    /* ─── Layout: Single Column ─── */
+    .configLayout{
+      max-width:780px;
+      margin:0 auto;
+      padding:20px 24px;
+      min-height:calc(100vh - 49px);
+    }
+
+    /* ─── Shared Form Styles ─── */
+    .section{
+      font-size:9px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:#8f8f8f;
+      padding:16px 0 6px; display:flex; align-items:center; gap:6px;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .section{ color:#6b7a8f; }
+    .section:first-child{ padding-top:0; }
+
+    .fieldLabel{
+      font-size:10px; font-weight:600; color:var(--sbDark);
+      margin-bottom:3px; display:block;
+    }
+    .fieldGroup{ margin-bottom:10px; }
+
+    /* Field Icons (inline with label) */
+    .fieldIcon{
+      width:12px; height:12px; display:inline-block; vertical-align:-1px;
+      fill:none; stroke:var(--sbDark); stroke-width:2;
+      stroke-linecap:round; stroke-linejoin:round; margin-right:3px;
+    }
+
+    /* Button Icons */
+    .btnIcon{
+      width:14px; height:14px; display:inline-block; vertical-align:-2px;
+      fill:none; stroke:currentColor; stroke-width:2;
+      stroke-linecap:round; stroke-linejoin:round; margin-right:4px;
+    }
+
+    /* Scan Results */
+    .scanResults{ display:none; }
+    .scanResults.visible{ display:block; }
+    .scanItem{
+      display:flex; align-items:center; gap:8px;
+      padding:7px 10px; font-size:11px;
+      border-radius:6px; margin-bottom:2px;
+    }
+    .scanItemIcon{
+      width:14px; height:14px; flex-shrink:0;
+      fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;
+    }
+    .scanItem--found .scanItemIcon{ stroke:#22c55e; }
+    .scanItem--missing .scanItemIcon{ stroke:#ef4444; }
+    .scanItemText{
+      flex:1; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      color:#3d3d3a;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .scanItemText{ color:#e7edf5; }
+    .scanItemStatus{
+      font-size:9px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.3px; color:#8f8f8f;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .scanItemStatus{ color:#6b7a8f; }
+    .scanItem--found .scanItemStatus{ color:#22c55e; }
+    .scanItem--missing .scanItemStatus{ color:#ef4444; }
+
+    /* Advanced Toggle */
+    .advancedToggle{
+      display:flex; align-items:center; gap:4px;
+      background:none; border:none; cursor:pointer;
+      font-size:11px; font-weight:600; color:#8f8f8f;
+      font-family:inherit; padding:4px 0;
+      transition:color .15s ease;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .advancedToggle{ color:#6b7a8f; }
+    .advancedToggle:hover{ color:var(--sbDark); }
+    .advancedArrow{
+      width:12px; height:12px;
+      fill:none; stroke:currentColor; stroke-width:2;
+      stroke-linecap:round; stroke-linejoin:round;
+      transition:transform .2s ease;
+    }
+    .advancedToggle.open .advancedArrow{ transform:rotate(90deg); }
+    .advancedPanel{
+      display:none; padding-top:8px;
+    }
+    .advancedPanel.open{ display:block; }
+
+    /* ─── Collapsible Card (Team Leader, Agent) ─── */
+    .cardToggle{
+      display:flex; align-items:center; gap:8px;
+      width:100%; background:none; border:none; cursor:pointer;
+      font-family:inherit; padding:10px 12px;
+      border-radius:10px;
+      transition:background .12s ease, border-color .12s ease, box-shadow .12s ease;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      background:color-mix(in srgb, var(--sidebar) 8%, transparent);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .cardToggle:hover{
+      background:color-mix(in srgb, var(--sidebar) 12%, transparent);
+      border-color:color-mix(in srgb, var(--sidebar) 30%, transparent);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .cardToggle{
+      border-color:rgba(255,255,255,.05);
+      background:linear-gradient(180deg, rgba(255,255,255,.025) 0%, rgba(255,255,255,.015) 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .cardToggle:hover{
+      background:linear-gradient(180deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.02) 100%);
+      border-color:rgba(255,255,255,.09);
+    }
+    .cardToggle.open{
+      border-bottom-left-radius:0;
+      border-bottom-right-radius:0;
+      border-bottom-color:transparent;
+      margin-bottom:0;
+    }
+    .cardToggle__arrow{
+      width:14px; height:14px; flex-shrink:0;
+      fill:none; stroke:#8f8f8f; stroke-width:2;
+      stroke-linecap:round; stroke-linejoin:round;
+      transition:transform .2s ease;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .cardToggle__arrow{ stroke:#6b7a8f; }
+    .cardToggle.open .cardToggle__arrow{ transform:rotate(90deg); }
+    .cardToggle__icon{
+      width:18px; height:18px; flex-shrink:0;
+      fill:none; stroke:var(--sbDark); stroke-width:1.8;
+      stroke-linecap:round; stroke-linejoin:round;
+    }
+    .cardToggle__name{
+      font-size:14px; font-weight:700; color:#3d3d3a; flex:1; text-align:left;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .cardToggle__name{ color:#e7edf5; }
+    .cardToggle__badge{
+      font-size:9px; font-weight:600; text-transform:uppercase;
+      letter-spacing:.3px; padding:2px 8px; border-radius:4px;
+    }
+    .cardToggle__badge--leader,
+    .cardToggle__badge--agent{
+      background:color-mix(in srgb, var(--sidebar) 25%, transparent);
+      color:var(--sbDark);
+    }
+    .cardBody{
+      display:none;
+      padding:4px 12px 12px 34px;
+      margin-bottom:10px;
+    }
+    .cardBody.open{
+      display:block;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      border-top:none;
+      border-radius:0 0 12px 12px;
+      background:color-mix(in srgb, var(--sidebar) 8%, transparent);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .cardBody.open{
+      border-color:rgba(255,255,255,.05);
+      background:linear-gradient(180deg, rgba(255,255,255,.02) 0%, rgba(255,255,255,.01) 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    .fieldRow{
+      display:flex; gap:10px;
+    }
+    .fieldRow > .fieldGroup{ flex:1; }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select{
+      width:100%;
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.7);
+      font-size:12px; font-family:inherit;
+      color:#3d3d3a;
+      outline:none;
+      transition:border-color .15s ease, box-shadow .15s ease;
+    }
+    select{
+      cursor:pointer;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      appearance:none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #8f8f8f 50%),
+        linear-gradient(135deg, #8f8f8f 50%, transparent 50%);
+      background-position:
+        calc(100% - 14px) calc(50% - 1px),
+        calc(100% - 9px) calc(50% - 1px);
+      background-size:5px 5px, 5px 5px;
+      background-repeat:no-repeat;
+      padding-right:30px;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) input[type="text"],
+    html:is([data-theme="dark"],[data-theme="black"]) input[type="number"],
+    html:is([data-theme="dark"],[data-theme="black"]) textarea,
+    html:is([data-theme="dark"],[data-theme="black"]) select{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.08);
+      color:#e7edf5;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) select{
+      background-color:rgba(255,255,255,.06);
+      background-image:
+        linear-gradient(45deg, transparent 50%, #8aa4c8 50%),
+        linear-gradient(135deg, #8aa4c8 50%, transparent 50%);
+    }
+    input:focus, textarea:focus, select:focus{
+      border-color:color-mix(in srgb, var(--sidebar) 60%, transparent);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--sidebar) 12%, transparent);
+    }
+    textarea{ resize:vertical; min-height:60px; line-height:1.5; }
+    select option{
+      background:var(--bgFlat);
+      color:inherit;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) select option{
+      background:#1e2a42;
+      color:#e7edf5;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) select optgroup{
+      background:#1e2a42;
+      color:#8aa4c8;
+    }
+
+    .pcNativeSelect{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      opacity:0;
+      pointer-events:none;
+    }
+    .pcSelect{
+      position:relative;
+      width:100%;
+    }
+    .pcSelect__trigger{
+      width:100%;
+      min-height:34px;
+      padding:8px 30px 8px 10px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.7);
+      color:#3d3d3a;
+      font-size:12px;
+      font-family:inherit;
+      text-align:left;
+      cursor:pointer;
+      position:relative;
+      transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .pcSelect__trigger::after{
+      content:'';
+      position:absolute;
+      right:11px;
+      top:50%;
+      width:7px;
+      height:7px;
+      border-right:1.5px solid #8f8f8f;
+      border-bottom:1.5px solid #8f8f8f;
+      transform:translateY(-65%) rotate(45deg);
+      pointer-events:none;
+    }
+    .pcSelect.open .pcSelect__trigger{
+      border-color:color-mix(in srgb, var(--sidebar) 60%, transparent);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--sidebar) 12%, transparent);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .pcSelect__trigger{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.08);
+      color:#e7edf5;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .pcSelect__trigger::after{
+      border-color:#8aa4c8;
+    }
+    .pcSelect__list{
+      display:none;
+      position:absolute;
+      top:calc(100% + 4px);
+      left:0;
+      right:0;
+      z-index:40;
+      max-height:240px;
+      overflow:auto;
+      padding:4px;
+      border-radius:10px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      background:color-mix(in srgb, var(--sidebar) 20%, var(--bgFlat));
+      background-image:linear-gradient(180deg, rgba(255,255,255,.08) 0%, transparent 60%);
+      box-shadow:0 8px 24px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.05);
+      scrollbar-width:thin;
+    }
+    .pcSelect.open .pcSelect__list{ display:block; }
+    html:is([data-theme="dark"],[data-theme="black"]) .pcSelect__list{
+      background:color-mix(in srgb, var(--sidebar) 26%, var(--bgFlat));
+      background-image:linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(89,125,214,.06) 38%, transparent 80%);
+      border-color:rgba(138,164,200,.18);
+      box-shadow:0 10px 24px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .pcSelect__item{
+      padding:7px 10px;
+      border-radius:6px;
+      font-size:11px;
+      color:inherit;
+      cursor:pointer;
+      transition:background .12s ease;
+      white-space:normal;
+      line-height:1.35;
+    }
+    .pcSelect__item:hover{
+      background:color-mix(in srgb, var(--sidebar) 15%, transparent);
+    }
+    .pcSelect__item.active{
+      background:color-mix(in srgb, var(--sidebar) 22%, transparent);
+      color:var(--sbDark);
+      font-weight:600;
+    }
+    .pcSelect__item.disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .pcSelect__item:hover{
+      background:rgba(138,164,200,.12);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .pcSelect__item.active{
+      background:rgba(138,164,200,.18);
+      color:#e7edf5;
+    }
+
+    ::placeholder{ color:#8f8f8f; }
+    html:is([data-theme="dark"],[data-theme="black"]) ::placeholder{ color:#6b7a8f; }
+
+    /* ─── Buttons ─── */
+    .btnRow{
+      display:flex; gap:8px; margin-top:12px;
+    }
+    .btn{
+      flex:1; padding:9px 16px; border-radius:8px;
+      font-size:12px; font-weight:600; font-family:inherit;
+      cursor:pointer; text-align:center;
+      transition:all .15s ease;
+    }
+    .btn--secondary{
+      background:color-mix(in srgb, var(--sidebar) 20%, var(--bgFlat));
+      background-image:linear-gradient(180deg, rgba(255,255,255,.08) 0%, transparent 60%);
+      box-shadow:0 1px 3px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.06);
+      border:1px solid color-mix(in srgb, var(--sidebar) 30%, transparent);
+      color:var(--sbDark);
+    }
+    .btn--secondary:hover{
+      background:color-mix(in srgb, var(--sidebar) 35%, var(--bgFlat));
+      background-image:linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 60%);
+    }
+    .btn--primary{
+      background:color-mix(in srgb, var(--sidebar) 20%, var(--bgFlat));
+      background-image:linear-gradient(180deg, rgba(255,255,255,.08) 0%, transparent 60%);
+      box-shadow:0 1px 3px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.06);
+      border:1px solid color-mix(in srgb, var(--sidebar) 30%, transparent);
+      color:var(--sbDark);
+    }
+    .btn--primary:hover{
+      background:color-mix(in srgb, var(--sidebar) 35%, var(--bgFlat));
+      background-image:linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 60%);
+    }
+
+    /* ─── Divider ─── */
+    .divider{
+      height:1px;
+      background:color-mix(in srgb, var(--sidebar) 20%, transparent);
+      margin:14px 0;
+    }
+
+
+    /* Tools Checkbox Row */
+    .toolsRow{
+      display:flex; flex-wrap:wrap; gap:4px; margin-top:3px;
+    }
+    .toolChip{
+      display:flex; align-items:center; gap:3px;
+      padding:3px 8px; border-radius:5px;
+      font-size:10px; font-weight:500;
+      border:1px solid rgba(0,0,0,.08);
+      background:transparent; color:#3d3d3a;
+      cursor:pointer; user-select:none;
+      transition:all .12s ease;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .toolChip{
+      border-color:rgba(255,255,255,.08);
+      color:#e7edf5;
+    }
+    .toolChip.on{
+      background:color-mix(in srgb, var(--sidebar) 25%, transparent);
+      border-color:color-mix(in srgb, var(--sidebar) 50%, transparent);
+      color:var(--sbDark); font-weight:600;
+    }
+
+    /* ─── Add Agent Button ─── */
+    .addAgent{
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      padding:10px; border-radius:10px;
+      border:1px dashed color-mix(in srgb, var(--sidebar) 35%, transparent);
+      background:transparent; color:var(--sbDark);
+      font-size:12px; font-weight:600; font-family:inherit;
+      cursor:pointer; width:100%;
+      transition:all .15s ease;
+      margin-bottom:12px;
+    }
+    .addAgent:hover{
+      background:color-mix(in srgb, var(--sidebar) 8%, transparent);
+      border-color:color-mix(in srgb, var(--sidebar) 55%, transparent);
+    }
+    .addAgent svg{
+      width:16px; height:16px;
+      stroke:var(--sbDark); fill:none; stroke-width:2; stroke-linecap:round;
+    }
+
+    /* ─── Checkbox (Plan Approval) ─── */
+    .checkRow{
+      display:flex; align-items:center; gap:6px;
+      margin-top:6px;
+    }
+    .checkRow input[type="checkbox"]{
+      -webkit-appearance:none;
+      appearance:none;
+      width:15px;
+      height:15px;
+      margin:0;
+      border-radius:4px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 38%, transparent);
+      background:rgba(255,255,255,.72);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+      cursor:pointer;
+      position:relative;
+      transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+      flex-shrink:0;
+    }
+    .checkRow input[type="checkbox"]::after{
+      content:'';
+      position:absolute;
+      left:4px;
+      top:1px;
+      width:4px;
+      height:8px;
+      border-right:2px solid transparent;
+      border-bottom:2px solid transparent;
+      transform:rotate(45deg);
+      transition:border-color .15s ease;
+    }
+    .checkRow input[type="checkbox"]:checked{
+      background:color-mix(in srgb, var(--sidebar) 26%, transparent);
+      border-color:color-mix(in srgb, var(--sidebar) 65%, transparent);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--sidebar) 10%, transparent);
+    }
+    .checkRow input[type="checkbox"]:checked::after{
+      border-color:var(--sbDark);
+    }
+    .checkRow input[type="checkbox"]:focus-visible{
+      outline:none;
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--sidebar) 12%, transparent);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .checkRow input[type="checkbox"]{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.12);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .checkRow input[type="checkbox"]:checked{
+      background:rgba(138,164,200,.2);
+      border-color:rgba(138,164,200,.55);
+      box-shadow:0 0 0 3px rgba(138,164,200,.14);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .checkRow input[type="checkbox"]:checked::after{
+      border-color:#e7edf5;
+    }
+    .checkRow label{
+      font-size:11px; color:#3d3d3a; cursor:pointer;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .checkRow label{ color:#e7edf5; }
+
+    /* ─── Profile Section (Agent Profile Extension) ─── */
+    .profileToggle{
+      display:flex; align-items:center; gap:4px;
+      background:none; border:none; cursor:pointer;
+      font-size:11px; font-weight:600; color:#8f8f8f;
+      font-family:inherit; padding:4px 0; margin-top:6px;
+      transition:color .15s ease;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .profileToggle{ color:#6b7a8f; }
+    .profileToggle:hover{ color:var(--sbDark); }
+    .profileToggle.open .advancedArrow{ transform:rotate(90deg); }
+    .profilePanel{
+      display:none; padding-top:8px;
+    }
+    .profilePanel.open{ display:block; }
+    .permChipsRow{
+      display:flex; flex-wrap:wrap; gap:4px; margin-top:3px;
+    }
+    .permChip{
+      display:flex; align-items:center; gap:3px;
+      padding:3px 8px; border-radius:5px;
+      font-size:10px; font-weight:500;
+      border:1px solid rgba(0,0,0,.08);
+      background:transparent; color:#3d3d3a;
+      cursor:pointer; user-select:none;
+      transition:all .12s ease;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .permChip{
+      border-color:rgba(255,255,255,.08);
+      color:#e7edf5;
+    }
+    .permChip.on{
+      background:color-mix(in srgb, var(--sidebar) 25%, transparent);
+      border-color:color-mix(in srgb, var(--sidebar) 50%, transparent);
+      color:var(--sbDark); font-weight:600;
+    }
+
+    /* ─── Inline field pairs ─── */
+    .fieldTriple{
+      display:flex; gap:10px;
+    }
+    .fieldTriple > .fieldGroup:first-child{ flex:0 0 38%; }
+    .fieldTriple > .fieldGroup:nth-child(2){ flex:1; }
+    .fieldTriple > .fieldGroup:last-child{ flex:0 0 25%; }
+
+    /* ─── Column sub-headers ─── */
+    .colHeader{
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:14px;
+    }
+    .colHeader__title{
+      font-size:14px; font-weight:700; color:#3d3d3a;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .colHeader__title{ color:#e7edf5; }
+
+    /* ─── Loading & Feedback ─── */
+    .btn[disabled]{
+      opacity:.55; cursor:not-allowed; pointer-events:none;
+    }
+    .feedback{
+      font-size:11px; font-weight:600; padding:6px 12px;
+      border-radius:6px; margin-top:8px; text-align:center;
+    }
+    .feedback--ok{
+      background:rgba(34,197,94,.10); color:#16a34a;
+      border:1px solid rgba(34,197,94,.25);
+    }
+    .feedback--error{
+      background:rgba(239,68,68,.10); color:#dc2626;
+      border:1px solid rgba(239,68,68,.20);
+    }
+    .feedback--warn{
+      background:rgba(245,158,11,.10); color:#b45309;
+      border:1px solid rgba(245,158,11,.22);
+    }
+    html[data-theme="warm"] .feedback--error{ color:#b91c1c; }
+    html[data-theme="rose"] .feedback--error{ color:#be123c; }
+    html[data-theme="warm"] .feedback--warn{ color:#b45309; }
+    html[data-theme="rose"] .feedback--warn{ color:#b45309; }
+    html:is([data-theme="dark"],[data-theme="black"]) .feedback--ok{ background:rgba(34,197,94,.15); color:#4ade80; border-color:rgba(34,197,94,.3); }
+    html:is([data-theme="dark"],[data-theme="black"]) .feedback--error{ background:rgba(239,68,68,.15); color:#fca5a5; border-color:rgba(239,68,68,.3); }
+    html:is([data-theme="dark"],[data-theme="black"]) .feedback--warn{ background:rgba(245,158,11,.15); color:#fcd34d; border-color:rgba(245,158,11,.28); }
+
+    /* ─── Status dot pulse ─── */
+    @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+    .statusDot--connecting{ animation:pulse 1.5s ease infinite; }
+
+    /* ─── Accessibility: Focus + Skip-Link ─── */
+    *:focus-visible{
+      outline:2px solid #3b82f6;
+      outline-offset:2px;
+    }
+    .skipLink{
+      position:fixed;
+      top:-100%;
+      left:16px;
+      z-index:10000;
+      padding:8px 16px;
+      background:var(--bgFlat);
+      color:var(--sbDark);
+      border:2px solid #3b82f6;
+      border-radius:8px;
+      font-size:14px;
+      text-decoration:none;
+      transition:top .2s;
+    }
+    .skipLink:focus{
+      top:8px;
+    }
+
+    /* ─── Responsive: Mobile (<768px) ─── */
+    @media (max-width:767px){
+      .configLayout{
+        padding:16px 12px;
+      }
+      .topBar{
+        padding:10px 12px;
+      }
+      .topBar__sub{
+        display:none;
+      }
+      .fieldRow{
+        flex-direction:column;
+        gap:10px;
+      }
+      .fieldTriple{
+        flex-direction:column;
+        gap:10px;
+      }
+      .fieldTriple > .fieldGroup{
+        flex:1 1 auto !important;
+      }
+      .cardBody{
+        padding-left:12px;
+      }
+      .cardToggle__name{
+        font-size:12px;
+      }
+      input[type="text"],
+      input[type="number"],
+      textarea,
+      select{
+        font-size:16px; /* prevent iOS zoom */
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skipLink" href="#configLayout">Skip to content</a>
+
+  <!-- ─── Top Bar ─── -->
+  <header class="topBar" role="banner">
+    <div class="topBar__left">
+      <img class="topBar__logo" src="ace_logo.svg" alt="ACE Logo">
+      <button class="topBar__back" aria-label="Zurueck" onclick="if(history.length>1)history.back();else window.location.href='chat.html';">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="topBar__leftText">
+        <div class="topBar__title">Neues Projekt</div>
+        <div class="topBar__sub">Schritt 1: Projekt definieren · Schritt 2: Team zusammenstellen</div>
+      </div>
+    </div>
+    <nav class="topBar__nav" aria-label="Seitennavigation">
+      <a class="topBar__navLink" href="chat.html">Chat</a>
+      <a class="topBar__navLink" href="control_center.html">Control Center</a>
+      <a class="topBar__navLink" href="task_tracker.html">Task Tracker</a>
+      <a class="topBar__navLink topBar__navLink--active" href="project_config.html">Neues Projekt</a>
+    </nav>
+    <div class="topBar__right">
+      <div class="statusDots" id="statusDots" aria-label="Verbindungsstatus" aria-live="polite">
+        <span class="statusDot statusDot--disconnected" id="statusDot"></span>
+        <span class="statusLabel" id="statusLabel">Offline</span>
+      </div>
+      <button class="helpBtn" title="Hilfe & Einfuehrung" aria-label="Hilfe oeffnen" style="background:none;border:1px solid color-mix(in srgb, var(--sbDark) 30%, transparent);border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--sbDark);opacity:.7;transition:opacity .2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'" onclick="window.location.href='control_center.html?help=1'">?</button>
+      <div class="pcThemeWrap">
+        <button class="pcThemeBtn" id="pcThemeBtn" title="Theme" aria-label="Theme wechseln" aria-expanded="false">
+          <span class="pcThemeBtn__dot" id="pcThemeDot"></span><span>Theme</span>
+        </button>
+        <div class="pcThemeMenu" id="pcThemeMenu" role="menu" aria-label="Theme selection">
+          <button data-theme="warm" role="menuitem"><span class="dot" style="background:#c8bfa8"></span>Warm</button>
+          <button data-theme="light" role="menuitem"><span class="dot" style="background:#d6e8f7"></span>Hell</button>
+          <button data-theme="rose" role="menuitem"><span class="dot" style="background:#e8c4cc"></span>Rose</button>
+          <button data-theme="dark" role="menuitem"><span class="dot" style="background:#1e2a42"></span>Dunkel</button>
+          <button data-theme="black" role="menuitem"><span class="dot" style="background:#000000;border:1px solid #7a8fa8"></span>Black</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="configLayout" id="configLayout">
+
+    <!-- ═══ LINKE SPALTE: PROJEKT ═══ -->
+    <div class="colLeft">
+      <div class="colHeader">
+        <div class="colHeader__title">Projekt</div>
+      </div>
+
+      <!-- Name -->
+      <div class="fieldGroup">
+        <label class="fieldLabel">
+          <svg class="fieldIcon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+          Projektname
+        </label>
+        <input type="text" id="projName" value="bridge-ide-demo" />
+      </div>
+
+      <!-- Path -->
+      <div class="fieldGroup">
+        <label class="fieldLabel">
+          <svg class="fieldIcon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Projektpfad / Basisordner
+        </label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="projPath" value="" placeholder="/path/to/project-or-base" style="flex:1" />
+          <button class="btn btn--secondary" id="browsePathBtn" type="button" style="white-space:nowrap;padding:6px 10px;font-size:10px" title="Ordner auswaehlen">
+            <svg style="width:12px;height:12px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2;margin-right:4px" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Durchsuchen
+          </button>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="btnRow">
+        <button class="btn btn--secondary" id="scanBtn" aria-label="Projektpfad scannen" title="Analysiert den Projektordner und schlaegt eine passende Team-Konfiguration vor">
+          <svg class="btnIcon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Scannen
+        </button>
+        <button class="btn btn--primary" id="createBtn" aria-label="Projekt erstellen">
+          <svg class="btnIcon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Erstellen
+        </button>
+      </div>
+
+      <!-- Scan Results (hidden until scan) -->
+      <div class="scanResults" id="scanResults" aria-live="polite" aria-label="Scan-Ergebnisse">
+        <div class="divider"></div>
+        <div class="section">Scan-Ergebnisse</div>
+        <div class="scanItem scanItem--found">
+          <svg class="scanItemIcon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <span class="scanItemText">PROJECT.md</span>
+          <span class="scanItemStatus">erstellt</span>
+        </div>
+        <div class="scanItem scanItem--found">
+          <svg class="scanItemIcon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <span class="scanItemText">Git-Repository</span>
+          <span class="scanItemStatus">erkannt</span>
+        </div>
+        <div class="scanItem scanItem--found">
+          <svg class="scanItemIcon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <span class="scanItemText">package.json</span>
+          <span class="scanItemStatus">erkannt</span>
+        </div>
+        <div class="scanItem scanItem--missing">
+          <svg class="scanItemIcon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          <span class="scanItemText">.claude/settings.json</span>
+          <span class="scanItemStatus">nicht gefunden</span>
+        </div>
+      </div>
+
+      <!-- Advanced (collapsed) -->
+      <div class="divider"></div>
+      <button class="advancedToggle" id="advancedToggle" aria-expanded="false" aria-controls="advancedPanel">
+        <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Erweitert
+      </button>
+      <div class="advancedPanel" id="advancedPanel" role="region" aria-label="Erweiterte Einstellungen">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Tags</label>
+          <input type="text" id="projTags" placeholder="z.B. trading, ace, infra" />
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Notizen</label>
+          <textarea id="projNotes" rows="3" placeholder="Ziele, Einschraenkungen, Arbeitsbereich..."></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ TEAM ═══ -->
+    <div class="divider" style="margin-top:20px"></div>
+    <div class="colHeader" style="margin-top:12px">
+      <div class="colHeader__title">Team</div>
+    </div>
+
+    <!-- Team Leader (collapsible) -->
+    <button class="cardToggle open" data-target="leaderBody" aria-expanded="true" aria-controls="leaderBody" aria-label="Team-Leiter Einstellungen">
+      <svg class="cardToggle__arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="cardToggle__icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/><path d="M16 3l2 2 4-4"/></svg>
+      <span class="cardToggle__name">Team-Leiter</span>
+      <span class="cardToggle__badge cardToggle__badge--leader">Leiter</span>
+    </button>
+    <div class="cardBody open" id="leaderBody" role="region" aria-label="Team-Leiter Konfiguration">
+      <div class="fieldRow">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Modell</label>
+          <select data-field="model">
+            <option value="claude-opus-4-6">Opus 4.6 — Maximale Qualitaet</option>
+            <option value="claude-sonnet-4-6" selected>Sonnet 4.6 — Ausgewogen (empfohlen)</option>
+            <option value="claude-haiku-4-5-20251001">Haiku 4.5 — Schnell &amp; guenstig</option>
+          </select>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Name</label>
+          <input type="text" data-field="name" value="teamlead" />
+        </div>
+      </div>
+      <div class="fieldGroup">
+        <label class="fieldLabel">Prompt</label>
+        <textarea data-field="prompt" rows="3">Du koordinierst Agents, priorisierst Aufgaben, meldest STOP nur direkt an Leo. Keine Rundenbegrenzung.</textarea>
+      </div>
+      <div class="fieldRow">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Berechtigung</label>
+          <select data-field="permission">
+            <option value="default" selected>Standard (fragt bei wichtigen Aktionen)</option>
+            <option value="acceptEdits">Editiert selbststaendig</option>
+            <option value="dontAsk">Arbeitet autonom (schnell)</option>
+            <option value="bypassPermissions">Volle Kontrolle (Experten)</option>
+            <option value="plan">Nur planen (liest, aendert nichts)</option>
+          </select>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel" title="Wie viele Aktionen der Agent ausfuehren darf bevor er pausiert">Max. Arbeitsschritte</label>
+          <input type="number" data-field="maxTurns" placeholder="unlimited" />
+        </div>
+      </div>
+      <div class="checkRow">
+        <input type="checkbox" id="planApproval" data-field="planApproval" checked />
+        <label for="planApproval">Plan-Freigabe erforderlich</label>
+      </div>
+      <button class="profileToggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Agenten-Profil
+      </button>
+      <div class="profilePanel">
+        <div class="fieldRow">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Rolle</label>
+            <input type="text" data-field="position" placeholder="z.B. Koordinator, Strategin" />
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Hierarchie-Level</label>
+            <select data-field="hierarchyLevel">
+              <option value="">— waehlen —</option>
+              <option value="owner">Owner</option>
+              <option value="lead" selected>Lead</option>
+              <option value="senior">Senior</option>
+              <option value="worker">Worker</option>
+            </select>
+          </div>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Zustaendigkeitsbereich</label>
+          <input type="text" data-field="scope" placeholder="z.B. Orchestrierung, Strategie-Dokumente" />
+        </div>
+        <div class="fieldRow">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Team-Zuordnung</label>
+            <select data-field="teamAssignment">
+              <option value="">— kein Team —</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Reports-to</label>
+            <select data-field="reportsTo">
+              <option value="">— niemand —</option>
+            </select>
+          </div>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Berechtigungen</label>
+          <div class="permChipsRow">
+            <button class="permChip on" data-perm="code" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">code</button>
+            <button class="permChip on" data-perm="review" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">review</button>
+            <button class="permChip on" data-perm="strategy" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">strategy</button>
+            <button class="permChip" data-perm="marketing" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">marketing</button>
+            <button class="permChip" data-perm="finance" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">finance</button>
+            <button class="permChip" data-perm="ops" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">ops</button>
+            <button class="permChip" data-perm="design" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">design</button>
+            <button class="permChip" data-perm="qa" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">qa</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent A (collapsible) -->
+    <button class="cardToggle" data-target="agentABody" aria-expanded="false" aria-controls="agentABody" aria-label="Agent A Einstellungen">
+      <svg class="cardToggle__arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="cardToggle__icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+      <span class="cardToggle__name">Agent A</span>
+      <span class="cardToggle__badge cardToggle__badge--agent">agent</span>
+    </button>
+    <div class="cardBody" id="agentABody" role="region" aria-label="Agent A Konfiguration">
+      <div class="fieldTriple">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Modell</label>
+          <select data-field="model">
+            <option value="claude-opus-4-6">Opus 4.6 — Maximale Qualitaet</option>
+            <option value="claude-sonnet-4-6" selected>Sonnet 4.6 — Ausgewogen (empfohlen)</option>
+            <option value="claude-haiku-4-5-20251001">Haiku 4.5 — Schnell &amp; guenstig</option>
+          </select>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Rolle</label>
+          <input type="text" data-field="position" value="Implementer" />
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">ID</label>
+          <input type="text" data-field="slot" value="agent_a" />
+        </div>
+      </div>
+      <div class="fieldGroup">
+        <label class="fieldLabel">Prompt</label>
+        <textarea data-field="prompt" rows="2">Implementiere präzise. Keine UI-Entscheidungen ohne Spec. Liefere Diffs.</textarea>
+      </div>
+      <button class="advancedToggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Erweiterte Optionen
+      </button>
+      <div class="advancedPanel">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Werkzeuge</label>
+          <div class="toolsRow">
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Read</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Write</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Edit</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Glob</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Grep</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Bash</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">WebFetch</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">WebSearch</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Task</button>
+          </div>
+        </div>
+        <div class="fieldRow">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Berechtigung</label>
+            <select data-field="permission">
+              <option value="default">Standard (fragt bei wichtigen Aktionen)</option>
+              <option value="acceptEdits" selected>Editiert selbststaendig</option>
+              <option value="dontAsk">Arbeitet autonom (schnell)</option>
+              <option value="bypassPermissions">Volle Kontrolle (Experten)</option>
+              <option value="plan">Nur planen (liest, aendert nichts)</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Isolierung</label>
+            <select data-field="isolation">
+              <option value="none" selected>none</option>
+              <option value="worktree">worktree</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel" title="Wie viele Aktionen der Agent ausfuehren darf bevor er pausiert">Max. Arbeitsschritte</label>
+            <input type="number" data-field="maxTurns" value="50" />
+          </div>
+        </div>
+      </div>
+      <button class="profileToggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Agenten-Profil
+      </button>
+      <div class="profilePanel">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Zustaendigkeitsbereich</label>
+          <input type="text" data-field="scope" placeholder="z.B. Frontend/CSS, API-Endpunkte" />
+        </div>
+        <div class="fieldRow">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Hierarchie-Level</label>
+            <select data-field="hierarchyLevel">
+              <option value="">— waehlen —</option>
+              <option value="owner">Owner</option>
+              <option value="lead">Lead</option>
+              <option value="senior">Senior</option>
+              <option value="worker" selected>Worker</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Team-Zuordnung</label>
+            <select data-field="teamAssignment">
+              <option value="">— kein Team —</option>
+            </select>
+          </div>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Reports-to</label>
+          <select data-field="reportsTo">
+            <option value="">— niemand —</option>
+          </select>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Berechtigungen</label>
+          <div class="permChipsRow">
+            <button class="permChip on" data-perm="code" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">code</button>
+            <button class="permChip" data-perm="review" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">review</button>
+            <button class="permChip" data-perm="strategy" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">strategy</button>
+            <button class="permChip" data-perm="marketing" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">marketing</button>
+            <button class="permChip" data-perm="finance" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">finance</button>
+            <button class="permChip" data-perm="ops" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">ops</button>
+            <button class="permChip" data-perm="design" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">design</button>
+            <button class="permChip" data-perm="qa" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">qa</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent B (collapsible) -->
+    <button class="cardToggle" data-target="agentBBody" aria-expanded="false" aria-controls="agentBBody" aria-label="Agent B Einstellungen">
+      <svg class="cardToggle__arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="cardToggle__icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+      <span class="cardToggle__name">Agent B</span>
+      <span class="cardToggle__badge cardToggle__badge--agent">agent</span>
+    </button>
+    <div class="cardBody" id="agentBBody" role="region" aria-label="Agent B Konfiguration">
+      <div class="fieldTriple">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Modell</label>
+          <select data-field="model">
+            <option value="claude-opus-4-6">Opus 4.6 — Maximale Qualitaet</option>
+            <option value="claude-sonnet-4-6" selected>Sonnet 4.6 — Ausgewogen (empfohlen)</option>
+            <option value="claude-haiku-4-5-20251001">Haiku 4.5 — Schnell &amp; guenstig</option>
+          </select>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Rolle</label>
+          <input type="text" data-field="position" value="Reviewer" />
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">ID</label>
+          <input type="text" data-field="slot" value="agent_b" />
+        </div>
+      </div>
+      <div class="fieldGroup">
+        <label class="fieldLabel">Prompt</label>
+        <textarea data-field="prompt" rows="2">Review. Finde Widersprüche. Gib konkrete Fixes. Keine Prosa.</textarea>
+      </div>
+      <button class="advancedToggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Erweiterte Optionen
+      </button>
+      <div class="advancedPanel">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Werkzeuge</label>
+          <div class="toolsRow">
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Read</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Write</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Edit</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Glob</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Grep</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Bash</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">WebFetch</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">WebSearch</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Task</button>
+          </div>
+        </div>
+        <div class="fieldRow">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Berechtigung</label>
+            <select data-field="permission">
+              <option value="default" selected>Standard (fragt bei wichtigen Aktionen)</option>
+              <option value="acceptEdits">Editiert selbststaendig</option>
+              <option value="dontAsk">Arbeitet autonom (schnell)</option>
+              <option value="bypassPermissions">Volle Kontrolle (Experten)</option>
+              <option value="plan">Nur planen (liest, aendert nichts)</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Isolierung</label>
+            <select data-field="isolation">
+              <option value="none" selected>none</option>
+              <option value="worktree">worktree</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel" title="Wie viele Aktionen der Agent ausfuehren darf bevor er pausiert">Max. Arbeitsschritte</label>
+            <input type="number" data-field="maxTurns" value="50" />
+          </div>
+        </div>
+      </div>
+      <button class="profileToggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Agenten-Profil
+      </button>
+      <div class="profilePanel">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Zustaendigkeitsbereich</label>
+          <input type="text" data-field="scope" placeholder="z.B. Code-Review, Qualitaetssicherung" />
+        </div>
+        <div class="fieldRow">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Hierarchie-Level</label>
+            <select data-field="hierarchyLevel">
+              <option value="">— waehlen —</option>
+              <option value="owner">Owner</option>
+              <option value="lead">Lead</option>
+              <option value="senior">Senior</option>
+              <option value="worker" selected>Worker</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Team-Zuordnung</label>
+            <select data-field="teamAssignment">
+              <option value="">— kein Team —</option>
+            </select>
+          </div>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Reports-to</label>
+          <select data-field="reportsTo">
+            <option value="">— niemand —</option>
+          </select>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Berechtigungen</label>
+          <div class="permChipsRow">
+            <button class="permChip on" data-perm="code" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">code</button>
+            <button class="permChip on" data-perm="review" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">review</button>
+            <button class="permChip" data-perm="strategy" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">strategy</button>
+            <button class="permChip" data-perm="marketing" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">marketing</button>
+            <button class="permChip" data-perm="finance" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">finance</button>
+            <button class="permChip" data-perm="ops" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">ops</button>
+            <button class="permChip" data-perm="design" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">design</button>
+            <button class="permChip on" data-perm="qa" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">qa</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Agent -->
+    <button class="addAgent" id="addAgentBtn" aria-label="Neuen Agent hinzufuegen">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Agent hinzufuegen
+    </button>
+
+    <div class="btnRow" style="margin-top:8px">
+      <button class="btn btn--secondary" id="exportBtn" aria-label="Konfiguration exportieren">Exportieren</button>
+      <button class="btn btn--primary" id="startTeamBtn" aria-label="Team starten">Team starten</button>
+    </div>
+
+  </main><!-- /configLayout -->
+
+  <script src="bridge_runtime_urls.js"></script>
+  <script>
+    const root = document.documentElement;
+    const BRIDGE_RUNTIME = window.BridgeRuntimeUrls.resolveConfig();
+    const API_BASE = BRIDGE_RUNTIME.apiBase;
+    const API_SERVER = BRIDGE_RUNTIME.apiBase;
+    const BRIDGE_UI_TOKEN = typeof window.__BRIDGE_UI_TOKEN === 'string' ? window.__BRIDGE_UI_TOKEN : '';
+    const BRIDGE_NATIVE_FETCH = window.fetch.bind(window);
+
+    function isBridgeHttpTarget(input){
+      try {
+        const raw = input instanceof Request ? input.url : String(input);
+        const url = new URL(raw, window.location.href);
+        return window.BridgeRuntimeUrls.isBridgeHttpTarget(url.toString(), API_BASE, window.location.href);
+      } catch {
+        return false;
+      }
+    }
+    function bridgeAuthHeaders(headers){
+      const merged = new Headers(headers || {});
+      if(BRIDGE_UI_TOKEN && !merged.has('X-Bridge-Token')) merged.set('X-Bridge-Token', BRIDGE_UI_TOKEN);
+      return merged;
+    }
+    function bridgeFetch(input, init){
+      if(!BRIDGE_UI_TOKEN || !isBridgeHttpTarget(input)) return BRIDGE_NATIVE_FETCH(input, init);
+      const reqInit = { ...(init || {}) };
+      reqInit.headers = bridgeAuthHeaders(reqInit.headers);
+      return BRIDGE_NATIVE_FETCH(input, reqInit);
+    }
+    window.fetch = bridgeFetch;
+
+    // ─── Dynamic Engine/Model Data ───
+    let _pcEngineModels = null;
+    async function pcFetchEngineModels(){
+      try {
+        const res = await fetch(API_SERVER + '/engines/models', { signal: AbortSignal.timeout(5000) });
+        if(!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        _pcEngineModels = data.engines || data;
+        pcPopulateAllModelDropdowns();
+      } catch(e){ console.log('[PC] engines/models not available:', e.message); }
+    }
+    const _modelHints = {
+      'opus':'Staerkstes Modell — komplex, langsamer, teurer',
+      'sonnet':'Ausgewogen — schnell und leistungsstark',
+      'haiku':'Schnell & guenstig — fuer einfache Tasks',
+      'o4-mini':'OpenAI — schnell, kosteneffizient',
+      'o3':'OpenAI — stark, teurer',
+      'gpt-4.1':'OpenAI — vielseitig',
+      'gemini-2.5-pro':'Google — stark bei Analyse',
+      'gemini-2.5-flash':'Google — schnell & guenstig',
+      'gemini-2.5-flash-lite':'Google — guenstig fuer leichte Tasks'
+    };
+    function resolveModelSelection(model){
+      const raw = String(model || '').trim();
+      if(!raw) return { model:'', engine:'claude' };
+      if(_pcEngineModels){
+        for(const [eid, edata] of Object.entries(_pcEngineModels)){
+          const models = edata.models || [];
+          for(const m of models){
+            const id = String(m.id || '').trim();
+            const alias = String(m.alias || '').trim();
+            if(raw === id || (alias && raw === alias)){
+              return { model: id || raw, engine: eid };
+            }
+          }
+        }
+      }
+      if(raw === 'opus') return { model:'claude-opus-4-6', engine:'claude' };
+      if(raw === 'sonnet') return { model:'claude-sonnet-4-6', engine:'claude' };
+      if(raw === 'haiku') return { model:'claude-haiku-4-5-20251001', engine:'claude' };
+      if(raw.startsWith('claude-')) return { model: raw, engine:'claude' };
+      if(raw.startsWith('auto-gemini') || raw.startsWith('gemini')) return { model: raw, engine:'gemini' };
+      if(raw === 'coder-model' || raw.startsWith('qwen')) return { model: raw, engine:'qwen' };
+      if(raw.startsWith('o') || raw.startsWith('gpt') || raw.startsWith('codex')) return { model: raw, engine:'codex' };
+      return { model: raw, engine:'claude' };
+    }
+    function pcPreferredModelValue(){
+      if(_pcEngineModels){
+        const preferred = resolveModelSelection('sonnet').model;
+        if(preferred) return preferred;
+      }
+      return 'claude-sonnet-4-6';
+    }
+    function pcBuildModelOptions(){
+      if(!_pcEngineModels) return '';
+      let html = '';
+      for(const [eid, edata] of Object.entries(_pcEngineModels)){
+        if(edata.available === false) continue;
+        const models = edata.models || [];
+        models.forEach(m => {
+          const val = m.id || m.alias;
+          const label = m.label || m.alias || m.id;
+          const hint = m.description || _modelHints[val] || _modelHints[m.alias] || _modelHints[m.id] || '';
+          const displayLabel = hint ? label + ' — ' + hint : label;
+          html += '<option value="' + val + '" title="' + hint + '">' + displayLabel + '</option>';
+        });
+      }
+      return html;
+    }
+    function pcPopulateAllModelDropdowns(){
+      if(!_pcEngineModels) return;
+      const html = pcBuildModelOptions();
+      document.querySelectorAll('select[data-field="model"]').forEach(sel => {
+        const currentVal = resolveModelSelection(sel.value).model || '';
+        sel.innerHTML = html;
+        if(currentVal && !Array.from(sel.options).some(opt => opt.value === currentVal)){
+          const fallback = document.createElement('option');
+          fallback.value = currentVal;
+          fallback.textContent = currentVal + ' — konfiguriert';
+          fallback.title = 'Aktuell konfiguriertes Modell ist nicht in der lokalen CLI-Liste enthalten';
+          sel.appendChild(fallback);
+        }
+        if(currentVal) sel.value = currentVal;
+        else {
+          const preferred = pcPreferredModelValue();
+          if(preferred && Array.from(sel.options).some(opt => opt.value === preferred)) sel.value = preferred;
+        }
+      });
+      pcEnhanceSelects(document);
+    }
+
+    function pcRefreshSelectUI(select){
+      if(!select) return;
+      const wrap = select.closest('.pcSelect');
+      if(!wrap) return;
+      const trigger = wrap.querySelector('.pcSelect__trigger');
+      const list = wrap.querySelector('.pcSelect__list');
+      if(!trigger || !list) return;
+      const selectedOpt = select.options[select.selectedIndex] || select.options[0];
+      trigger.textContent = selectedOpt ? selectedOpt.textContent : '';
+      trigger.setAttribute('aria-expanded', wrap.classList.contains('open') ? 'true' : 'false');
+      list.innerHTML = '';
+      Array.from(select.options).forEach((opt, idx) => {
+        const item = document.createElement('div');
+        item.className = 'pcSelect__item'
+          + (opt.selected ? ' active' : '')
+          + (opt.disabled ? ' disabled' : '');
+        item.textContent = opt.textContent;
+        item.dataset.index = String(idx);
+        item.dataset.value = opt.value;
+        if(opt.disabled) item.setAttribute('aria-disabled', 'true');
+        item.addEventListener('click', () => {
+          if(opt.disabled) return;
+          select.selectedIndex = idx;
+          select.value = opt.value;
+          pcRefreshSelectUI(select);
+          wrap.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+          select.dispatchEvent(new Event('input', { bubbles:true }));
+          select.dispatchEvent(new Event('change', { bubbles:true }));
+        });
+        list.appendChild(item);
+      });
+    }
+
+    function pcEnhanceSelects(rootEl){
+      const scope = rootEl || document;
+      scope.querySelectorAll('select').forEach(select => {
+        if(!select.dataset.pcEnhanced){
+          const wrap = document.createElement('div');
+          wrap.className = 'pcSelect';
+          const trigger = document.createElement('button');
+          trigger.type = 'button';
+          trigger.className = 'pcSelect__trigger';
+          trigger.setAttribute('aria-haspopup', 'listbox');
+          trigger.setAttribute('aria-expanded', 'false');
+          const list = document.createElement('div');
+          list.className = 'pcSelect__list';
+          list.setAttribute('role', 'listbox');
+
+          select.parentNode.insertBefore(wrap, select);
+          wrap.appendChild(trigger);
+          wrap.appendChild(list);
+          wrap.appendChild(select);
+          select.classList.add('pcNativeSelect');
+          select.dataset.pcEnhanced = '1';
+
+          trigger.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            document.querySelectorAll('.pcSelect.open').forEach(node => {
+              if(node !== wrap){
+                node.classList.remove('open');
+                const otherTrigger = node.querySelector('.pcSelect__trigger');
+                if(otherTrigger) otherTrigger.setAttribute('aria-expanded', 'false');
+              }
+            });
+            wrap.classList.toggle('open');
+            trigger.setAttribute('aria-expanded', wrap.classList.contains('open') ? 'true' : 'false');
+          });
+          select.addEventListener('change', () => pcRefreshSelectUI(select));
+        }
+        pcRefreshSelectUI(select);
+      });
+    }
+
+    /* ─── Theme Switcher ─── */
+    const themeColors = {warm:'#c8bfa8', light:'#d6e8f7', rose:'#e8c4cc', dark:'#1e2a42'};
+    const pcThemeBtn = document.getElementById('pcThemeBtn');
+    const pcThemeMenu = document.getElementById('pcThemeMenu');
+    const pcThemeDot = document.getElementById('pcThemeDot');
+
+    function pcSetTheme(t){
+      root.setAttribute('data-theme', t);
+      localStorage.setItem('bridge_theme', t);
+      if(pcThemeDot) pcThemeDot.style.background = themeColors[t] || themeColors.warm;
+    }
+
+    const stored = localStorage.getItem('bridge_theme');
+    if(stored) pcSetTheme(stored);
+    else pcSetTheme('warm');
+
+    if(pcThemeBtn && pcThemeMenu){
+      pcThemeBtn.addEventListener('click', function(){ pcThemeMenu.classList.toggle('open'); pcThemeBtn.setAttribute('aria-expanded', pcThemeMenu.classList.contains('open')); });
+      pcThemeMenu.querySelectorAll('button').forEach(function(b){ b.addEventListener('click', function(){ pcSetTheme(b.dataset.theme); pcThemeMenu.classList.remove('open'); pcThemeBtn.setAttribute('aria-expanded','false'); }); });
+      document.addEventListener('click', function(e){ if(!pcThemeBtn.contains(e.target) && !pcThemeMenu.contains(e.target)){ pcThemeMenu.classList.remove('open'); pcThemeBtn.setAttribute('aria-expanded','false'); } });
+    }
+    document.addEventListener('click', function(e){
+      if(e.target.closest('.pcSelect')) return;
+      document.querySelectorAll('.pcSelect.open').forEach(node => {
+        node.classList.remove('open');
+        const trigger = node.querySelector('.pcSelect__trigger');
+        if(trigger) trigger.setAttribute('aria-expanded', 'false');
+      });
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key !== 'Escape') return;
+      document.querySelectorAll('.pcSelect.open').forEach(node => {
+        node.classList.remove('open');
+        const trigger = node.querySelector('.pcSelect__trigger');
+        if(trigger) trigger.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    /* ─── URL-Parameter: ?project=slug → Projektname, ?path=abs → Pfad vorbelegen ─── */
+    const _urlParams = new URLSearchParams(window.location.search);
+    const _urlProject = _urlParams.get('project');
+    const _urlPath = _urlParams.get('path');
+    if(_urlProject){
+      const nameEl = document.getElementById('projName');
+      if(nameEl) nameEl.value = decodeURIComponent(_urlProject);
+    }
+    if(_urlPath){
+      const pathEl = document.getElementById('projPath');
+      if(pathEl) pathEl.value = decodeURIComponent(_urlPath);
+      // Also derive project name from path if not explicitly set
+      if(!_urlProject){
+        const nameEl = document.getElementById('projName');
+        const parts = decodeURIComponent(_urlPath).replace(/\/+$/, '').split('/');
+        if(nameEl && parts.length > 0) nameEl.value = parts[parts.length - 1];
+      }
+    }
+
+    /* ─── Refs ─── */
+    const scanBtn = document.getElementById('scanBtn');
+    const createBtn = document.getElementById('createBtn');
+    const startTeamBtn = document.getElementById('startTeamBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const scanResultsEl = document.getElementById('scanResults');
+    const statusDot = document.getElementById('statusDot');
+    const statusLabel = document.getElementById('statusLabel');
+    let allowedProjectsBaseDir = '';
+
+    function syncProjectActionState(){
+      const name = document.getElementById('projName')?.value.trim() || '';
+      const path = document.getElementById('projPath')?.value.trim() || '';
+      if(scanBtn) scanBtn.disabled = !path;
+      if(createBtn) createBtn.disabled = !(name && path);
+    }
+
+    function normalizeFsPath(path){
+      return String(path || '').trim().replace(/\/+$/, '');
+    }
+
+    function isPathWithin(base, candidate){
+      const normalizedBase = normalizeFsPath(base);
+      const normalizedCandidate = normalizeFsPath(candidate);
+      if(!normalizedBase || !normalizedCandidate) return false;
+      return normalizedCandidate === normalizedBase || normalizedCandidate.startsWith(normalizedBase + '/');
+    }
+
+    function updateProjectPathFieldContract(){
+      const pathEl = document.getElementById('projPath');
+      if(!pathEl) return;
+      pathEl.placeholder = '/path/to/project-or-base';
+      pathEl.title = 'Projektpfad zum Scannen oder Basisordner fuer neue Projekte';
+    }
+
+    async function loadAllowedProjectsBaseDir(){
+      try {
+        const res = await fetch(API_SERVER + '/projects');
+        if(!res.ok) return;
+        const data = await res.json();
+        if(typeof data.base_dir === 'string' && data.base_dir.trim()){
+          allowedProjectsBaseDir = normalizeFsPath(data.base_dir);
+          updateProjectPathFieldContract();
+        }
+      } catch(e){
+        console.warn('Projects base lookup failed:', e);
+      }
+    }
+
+    function resolveCreateBaseDir(projectPath, projectName){
+      const path = normalizeFsPath(projectPath);
+      const name = String(projectName || '').trim();
+      if(!path || !name) return { ok:false, error:'Projektname und Projektpfad sind erforderlich.' };
+
+      if(allowedProjectsBaseDir && !isPathWithin(allowedProjectsBaseDir, path)){
+        return {
+          ok:false,
+          error:'Projekt-Erstellung ist nur innerhalb von ' + allowedProjectsBaseDir + ' erlaubt.'
+        };
+      }
+
+      const leaf = path.split('/').filter(Boolean).pop() || '';
+      if(leaf === name){
+        const idx = path.lastIndexOf('/' + leaf);
+        const parent = idx > 0 ? path.slice(0, idx) : '/';
+        return { ok:true, baseDir: parent || '/' };
+      }
+
+      return { ok:true, baseDir: path };
+    }
+
+    /* ─── Feedback helper ─── */
+    function showFeedback(afterEl, type, text){
+      const prev = afterEl.parentNode.querySelector('.feedback');
+      if(prev) prev.remove();
+      const div = document.createElement('div');
+      div.className = 'feedback feedback--' + type;
+      div.textContent = text;
+      afterEl.parentNode.insertBefore(div, afterEl.nextSibling);
+      setTimeout(() => div.remove(), 5000);
+    }
+
+    /* ─── SVG icon helpers ─── */
+    const scanIconSvg = '<svg class="btnIcon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>';
+    const createIconSvg = '<svg class="btnIcon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+
+    /* ─── Folder Picker (browsePathBtn) ─── */
+    document.getElementById('browsePathBtn').addEventListener('click', async () => {
+      if (!window.showDirectoryPicker) {
+        alert('Bitte Pfad manuell eingeben — Ordner-Auswahl wird nur in Chrome/Edge unterstuetzt.');
+        return;
+      }
+      try {
+        const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+        const nameEl = document.getElementById('projName');
+        if(nameEl && !nameEl.value.trim()) nameEl.value = dirHandle.name;
+        showFeedback(document.getElementById('browsePathBtn'), 'warn', 'Browser liefert keinen absoluten Pfad. Bitte Projektpfad manuell eintragen.');
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          alert('Bitte Pfad manuell eingeben.');
+        }
+      } finally {
+        syncProjectActionState();
+      }
+    });
+
+    document.getElementById('projName')?.addEventListener('input', syncProjectActionState);
+    document.getElementById('projPath')?.addEventListener('input', syncProjectActionState);
+    updateProjectPathFieldContract();
+    syncProjectActionState();
+
+    // Fetch dynamic engine/model data on load
+    pcFetchEngineModels();
+    loadAllowedProjectsBaseDir();
+    pcEnhanceSelects(document);
+
+    /* ═══════════════════════════════════════════
+       Task 2: Scan Button → GET /context
+    ═══════════════════════════════════════════ */
+    scanBtn.addEventListener('click', async () => {
+      const path = document.getElementById('projPath').value.trim();
+      if(!path) return;
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Wird gescannt\u2026';
+      try {
+        const res = await fetch(API_SERVER + '/api/context/scan?project_path=' + encodeURIComponent(path));
+        const data = await res.json();
+        renderScanResults(data);
+      } catch(e){
+        console.error('Scan failed:', e);
+        scanResultsEl.innerHTML = '<div class="divider"></div><div class="section">Scan-Ergebnisse</div>'
+          + '<div class="scanItem scanItem--missing">'
+          + '<svg class="scanItemIcon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+          + '<span class="scanItemText">Server nicht erreichbar</span>'
+          + '<span class="scanItemStatus">error</span></div>';
+        scanResultsEl.classList.add('visible');
+      } finally {
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = scanIconSvg + ' Scannen';
+      }
+    });
+
+    function renderScanResults(data){
+      const items = [];
+      for(const engine of ['claude','codex','gemini','qwen']){
+        if(!data[engine]) continue;
+        for(const arr of Object.values(data[engine])){
+          if(Array.isArray(arr)) arr.forEach(item => items.push(item));
+        }
+      }
+      const foundCount = items.filter(i => i.exists).length;
+      const total = items.length;
+      let html = '<div class="divider"></div><div class="section">Scan-Ergebnisse</div>';
+      html += '<div style="font-size:13px;font-weight:600;padding:8px 0;color:inherit">'
+        + 'Projekt erkannt. ' + foundCount + ' von ' + total + ' Konfigurationen gefunden.</div>';
+      html += '<button class="advancedToggle" onclick="this.classList.toggle(\'open\');this.nextElementSibling.classList.toggle(\'open\')">'
+        + '<svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>'
+        + 'Details anzeigen</button>';
+      html += '<div class="advancedPanel">';
+      items.forEach(item => {
+        const found = item.exists;
+        const cls = found ? 'scanItem--found' : 'scanItem--missing';
+        const icon = found
+          ? '<polyline points="20 6 9 17 4 12"/>'
+          : '<path d="M18 6L6 18M6 6l12 12"/>';
+        const status = found ? (item.is_dir ? 'gefunden (Ordner)' : 'gefunden') : 'nicht gefunden';
+        const name = item.source || item.path.split('/').pop();
+        html += '<div class="scanItem ' + cls + '">'
+          + '<svg class="scanItemIcon" viewBox="0 0 24 24">' + icon + '</svg>'
+          + '<span class="scanItemText">' + escHtml(name) + '</span>'
+          + '<span class="scanItemStatus">' + status + '</span></div>';
+      });
+      html += '</div>';
+      scanResultsEl.innerHTML = html;
+      scanResultsEl.classList.add('visible');
+    }
+
+    function escHtml(s){
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function formatRuntimeConfigureError(data){
+      if(!data || typeof data !== 'object') return 'Konfiguration fehlgeschlagen';
+      const failures = Array.isArray(data.failed) ? data.failed : [];
+      const first = failures.find(item => item && (item.error_detail || item.error_reason || item.id || item.name));
+      if(first){
+        const label = first.id || first.name || 'runtime';
+        const detail = first.error_detail || first.error_reason || data.error || 'Konfiguration fehlgeschlagen';
+        return label + ': ' + detail;
+      }
+      return data.error || 'Konfiguration fehlgeschlagen';
+    }
+
+    /* ═══════════════════════════════════════════
+       Task 3: Create Button → POST /projects/create
+    ═══════════════════════════════════════════ */
+    createBtn.addEventListener('click', async () => {
+      const name = document.getElementById('projName').value.trim();
+      const path = document.getElementById('projPath').value.trim();
+      if(!name || !path) return;
+      createBtn.disabled = true;
+      createBtn.textContent = 'Wird erstellt\u2026';
+
+      /* Collect all form data for project generation */
+      const tagsRaw = (document.getElementById('projTags') || {}).value || '';
+      const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+      const projectNotes = (document.getElementById('projNotes') || {}).value || '';
+
+      /* Collect agent definitions from team cards */
+      const leader = extractCardData(document.getElementById('leaderBody'));
+      const agents = [];
+      document.querySelectorAll('.cardBody').forEach(body => {
+        if(body.id === 'leaderBody') return;
+        agents.push(extractCardData(body));
+      });
+
+      if(!allowedProjectsBaseDir){
+        await loadAllowedProjectsBaseDir();
+      }
+      const baseDirResolution = resolveCreateBaseDir(path, name);
+      if(!baseDirResolution.ok){
+        showFeedback(createBtn.parentNode, 'error', baseDirResolution.error);
+        createBtn.disabled = false;
+        createBtn.innerHTML = createIconSvg + ' Erstellen';
+        return;
+      }
+
+      const payload = {
+        project_name: name,
+        base_dir: baseDirResolution.baseDir,
+        tags: tags,
+        project_notes: projectNotes,
+        leader: leader,
+        agents: agents
+      };
+
+      try {
+        const res = await fetch(API_SERVER + '/api/projects/create', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(data.ok){
+          showFeedback(createBtn.parentNode, 'ok',
+            'Projekt erstellt: ' + data.project_path + ' (' + data.created.length + ' Dateien)');
+        } else {
+          showFeedback(createBtn.parentNode, 'error', data.error || 'Unbekannter Fehler');
+        }
+      } catch(e){
+        console.error('Create failed:', e);
+        showFeedback(createBtn.parentNode, 'error', 'Server nicht erreichbar');
+      } finally {
+        createBtn.disabled = false;
+        createBtn.innerHTML = createIconSvg + ' Erstellen';
+      }
+    });
+
+    /* ═══════════════════════════════════════════
+       Task 4: Start Team → POST /runtime/configure
+    ═══════════════════════════════════════════ */
+    function extractCardData(cardBody){
+      const f = (sel) => { const el = cardBody.querySelector(sel); return el ? el.value : ''; };
+      const modelSelection = resolveModelSelection(f('[data-field="model"]'));
+      const position = f('[data-field="position"]');
+      const slot = f('[data-field="slot"]');
+      const name = f('[data-field="name"]');
+      const prompt = f('[data-field="prompt"]');
+      const permission = f('[data-field="permission"]');
+      const isolation = f('[data-field="isolation"]');
+      const maxTurns = f('[data-field="maxTurns"]');
+      const planApproval = cardBody.querySelector('[data-field="planApproval"]');
+      const tools = [];
+      cardBody.querySelectorAll('.toolChip.on').forEach(chip => tools.push(chip.textContent.trim()));
+      // Profile fields
+      const scope = f('[data-field="scope"]');
+      const hierarchyLevel = f('[data-field="hierarchyLevel"]');
+      const teamAssignment = f('[data-field="teamAssignment"]');
+      const reportsTo = f('[data-field="reportsTo"]');
+      const permissions = [];
+      cardBody.querySelectorAll('.permChip.on').forEach(chip => permissions.push(chip.getAttribute('data-perm')));
+      return {
+        model: modelSelection.model,
+        engine: modelSelection.engine,
+        position, slot, name, prompt, permission, isolation, tools,
+        maxTurns: maxTurns ? parseInt(maxTurns,10) || 0 : 0,
+        planApproval: planApproval ? planApproval.checked : false,
+        scope, hierarchyLevel, teamAssignment, reportsTo, permissions
+      };
+    }
+
+    function modelToEngine(model){
+      return resolveModelSelection(model).engine;
+    }
+
+    function pcAgentCardBodies(){
+      return Array.from(document.querySelectorAll('.cardBody'));
+    }
+
+    function pcAgentOption(body){
+      const slotEl = body.querySelector('[data-field="slot"]');
+      const nameEl = body.querySelector('[data-field="name"]');
+      const slot = slotEl ? slotEl.value.trim() : '';
+      const name = nameEl ? nameEl.value.trim() : '';
+      const value = slot || name || body.id.replace(/Body$/,'');
+      if(!value) return null;
+      return { value, label: name || value };
+    }
+
+    function pcSyncProfileSelectors(){
+      const bodies = pcAgentCardBodies();
+      const agentOptions = bodies.map(pcAgentOption).filter(Boolean);
+      const teamValues = new Set(['management', 'delivery']);
+      bodies.forEach(body => {
+        const teamSel = body.querySelector('[data-field="teamAssignment"]');
+        if(teamSel && teamSel.value.trim()) teamValues.add(teamSel.value.trim());
+      });
+
+      bodies.forEach(body => {
+        const selfOpt = pcAgentOption(body);
+        const teamSel = body.querySelector('[data-field="teamAssignment"]');
+        if(teamSel){
+          const currentTeam = teamSel.value.trim();
+          teamSel.innerHTML = '<option value="">— kein Team —</option>';
+          Array.from(teamValues).sort().forEach(teamId => {
+            const opt = document.createElement('option');
+            opt.value = teamId;
+            opt.textContent = teamId;
+            teamSel.appendChild(opt);
+          });
+          const defaultTeam = body.id === 'leaderBody' ? 'management' : 'delivery';
+          teamSel.value = currentTeam && teamValues.has(currentTeam) ? currentTeam : defaultTeam;
+        }
+
+        const reportsSel = body.querySelector('[data-field="reportsTo"]');
+        if(reportsSel){
+          const currentReport = reportsSel.value.trim();
+          reportsSel.innerHTML = '<option value="">— niemand —</option><option value="user">user</option>';
+          agentOptions.forEach(optData => {
+            if(selfOpt && optData.value === selfOpt.value) return;
+            const opt = document.createElement('option');
+            opt.value = optData.value;
+            opt.textContent = optData.label;
+            reportsSel.appendChild(opt);
+          });
+          const leaderOpt = agentOptions.find(optData => optData.value === 'teamlead');
+          if(currentReport){
+            reportsSel.value = currentReport;
+          } else if(body.id !== 'leaderBody' && leaderOpt){
+            reportsSel.value = leaderOpt.value;
+          } else {
+            reportsSel.value = '';
+          }
+        }
+      });
+      pcEnhanceSelects(document);
+    }
+
+    function collectTeamConfig(){
+      const projectPath = document.getElementById('projPath').value.trim();
+      const projectName = document.getElementById('projName').value.trim();
+
+      const leader = extractCardData(document.getElementById('leaderBody'));
+      const agents = [];
+      document.querySelectorAll('.cardBody').forEach(body => {
+        if(body.id === 'leaderBody') return;
+        agents.push(extractCardData(body));
+      });
+
+      const config = {
+        project_path: projectPath,
+        project_name: projectName,
+        team_lead_engine: leader.engine || modelToEngine(leader.model),
+        team_lead_model: leader.model,
+        team_lead_enabled: true,
+        team_lead_cli_enabled: true,
+        leader: leader,
+        agents: agents
+      };
+      if(agents[0]){
+        config.agent_a_engine = agents[0].engine || modelToEngine(agents[0].model);
+        config.agent_a_model = agents[0].model;
+        config.agent_a_position = agents[0].position;
+      }
+      if(agents[1]){
+        config.agent_b_engine = agents[1].engine || modelToEngine(agents[1].model);
+        config.agent_b_model = agents[1].model;
+        config.agent_b_position = agents[1].position;
+      }
+      return config;
+    }
+
+    startTeamBtn.addEventListener('click', async () => {
+      const config = collectTeamConfig();
+      if(!config.project_path){
+        showFeedback(startTeamBtn.parentNode, 'error', 'Project Path fehlt');
+        return;
+      }
+      startTeamBtn.disabled = true;
+      startTeamBtn.textContent = 'Wird gestartet\u2026';
+      try {
+        const res = await fetch(API_SERVER + '/runtime/configure', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(config)
+        });
+        const data = await res.json();
+        if(data.ok){
+          const count = (data.started || []).length;
+          showFeedback(startTeamBtn.parentNode, 'ok',
+            'Team gestartet \u2014 ' + count + ' Agent' + (count !== 1 ? 's' : '') + ' aktiv');
+        } else {
+          showFeedback(startTeamBtn.parentNode, 'error', formatRuntimeConfigureError(data));
+        }
+      } catch(e){
+        console.error('Start team failed:', e);
+        showFeedback(startTeamBtn.parentNode, 'error', 'Server nicht erreichbar');
+      } finally {
+        startTeamBtn.disabled = false;
+        startTeamBtn.textContent = 'Team starten';
+      }
+    });
+
+    /* ─── Export (JSON download) ─── */
+    exportBtn.addEventListener('click', () => {
+      const config = collectTeamConfig();
+      const blob = new Blob([JSON.stringify(config, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (config.project_name || 'team-config') + '.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    /* ═══════════════════════════════════════════
+       Task 5: Status Dots → GET /status Polling
+    ═══════════════════════════════════════════ */
+    async function pollPlatformStatus(){
+      try {
+        const res = await fetch(API_BASE + '/status');
+        const data = await res.json();
+        const runtime = data.runtime || {};
+        const platformOnline = Number(data.platform?.online_count || 0);
+        const runtimeOnline = Number(runtime.running_count || 0);
+        const runtimeTotal = Number(runtime.agents_total || 0);
+        statusDot.className = 'statusDot';
+        const registeredCount = Number(data.platform?.registered_count || 0);
+        if(platformOnline > 0){
+          statusDot.classList.add('statusDot--live');
+          statusLabel.textContent = platformOnline + '/' + registeredCount + ' Agents online';
+        } else {
+          statusDot.classList.add('statusDot--connecting');
+          statusLabel.textContent = 'Keine Agents';
+        }
+      } catch(e){
+        statusDot.className = 'statusDot statusDot--disconnected';
+        statusLabel.textContent = 'Offline';
+      }
+    }
+
+    pollPlatformStatus();
+    setInterval(pollPlatformStatus, 10000);
+
+    /* ─── Advanced Toggle ─── */
+    document.getElementById('advancedToggle').addEventListener('click', () => {
+      const tog = document.getElementById('advancedToggle');
+      tog.classList.toggle('open');
+      document.getElementById('advancedPanel').classList.toggle('open');
+      tog.setAttribute('aria-expanded', tog.classList.contains('open'));
+    });
+
+    /* ─── Card Toggle (collapsible) ─── */
+    document.querySelectorAll('.cardToggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.target);
+        btn.classList.toggle('open');
+        target.classList.toggle('open');
+        btn.setAttribute('aria-expanded', btn.classList.contains('open'));
+      });
+    });
+
+    /* ─── Agent hinzufügen ─── */
+    let agentCount = 2;
+    document.getElementById('addAgentBtn').addEventListener('click', () => {
+      agentCount++;
+      const letter = String.fromCharCode(64 + agentCount);
+      const id = 'agent_' + letter.toLowerCase();
+      const bodyId = id + 'Body';
+
+      const toggle = document.createElement('button');
+      toggle.className = 'cardToggle';
+      toggle.dataset.target = bodyId;
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-controls', bodyId);
+      toggle.innerHTML = `
+        <svg class="cardToggle__arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg class="cardToggle__icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+        <span class="cardToggle__name">Agent ${letter}</span>
+        <span class="cardToggle__badge cardToggle__badge--agent">agent</span>
+      `;
+      toggle.addEventListener('click', () => {
+        const target = document.getElementById(toggle.dataset.target);
+        toggle.classList.toggle('open');
+        target.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', toggle.classList.contains('open'));
+      });
+
+      const body = document.createElement('div');
+      body.className = 'cardBody';
+      body.id = bodyId;
+      body.setAttribute('role', 'region');
+      body.setAttribute('aria-label', `Agent ${letter} Konfiguration`);
+      body.innerHTML = `
+        <div class="fieldTriple">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Modell</label>
+            <select data-field="model">
+              ${_pcEngineModels ? pcBuildModelOptions() : '<option value="claude-opus-4-6">Opus 4.6</option><option value="claude-sonnet-4-6" selected>Sonnet 4.6</option><option value="claude-haiku-4-5-20251001">Haiku 4.5</option>'}
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Rolle</label>
+            <input type="text" data-field="position" placeholder="z.B. Tester" />
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">ID</label>
+            <input type="text" data-field="slot" value="${id}" />
+          </div>
+        </div>
+        <div class="fieldGroup">
+          <label class="fieldLabel">Prompt</label>
+          <textarea data-field="prompt" rows="2" placeholder="Agent-Anweisungen..."></textarea>
+        </div>
+        <button class="advancedToggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          Erweiterte Optionen
+        </button>
+        <div class="advancedPanel">
+        <div class="fieldGroup">
+          <label class="fieldLabel">Werkzeuge</label>
+          <div class="toolsRow">
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Read</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Write</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Edit</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Glob</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Grep</button>
+            <button class="toolChip on" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Bash</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">WebFetch</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">WebSearch</button>
+            <button class="toolChip" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">Task</button>
+          </div>
+        </div>
+        <div class="fieldRow">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Berechtigung</label>
+            <select data-field="permission">
+              <option value="default" selected>Standard (fragt bei wichtigen Aktionen)</option>
+              <option value="acceptEdits">Editiert selbststaendig</option>
+              <option value="dontAsk">Arbeitet autonom (schnell)</option>
+              <option value="bypassPermissions">Volle Kontrolle (Experten)</option>
+              <option value="plan">Nur planen (liest, aendert nichts)</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Isolierung</label>
+            <select data-field="isolation">
+              <option value="none" selected>none</option>
+              <option value="worktree">worktree</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel" title="Wie viele Aktionen der Agent ausfuehren darf bevor er pausiert">Max. Arbeitsschritte</label>
+            <input type="number" data-field="maxTurns" value="50" />
+          </div>
+        </div>
+        </div>
+        <button class="profileToggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg class="advancedArrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          Agenten-Profil
+        </button>
+        <div class="profilePanel">
+          <div class="fieldGroup">
+            <label class="fieldLabel">Zustaendigkeitsbereich</label>
+            <input type="text" data-field="scope" placeholder="z.B. Testing, Dokumentation" />
+          </div>
+          <div class="fieldRow">
+            <div class="fieldGroup">
+              <label class="fieldLabel">Hierarchie-Level</label>
+              <select data-field="hierarchyLevel">
+                <option value="">— waehlen —</option>
+                <option value="owner">Owner</option>
+                <option value="lead">Lead</option>
+                <option value="senior">Senior</option>
+                <option value="worker" selected>Worker</option>
+              </select>
+            </div>
+            <div class="fieldGroup">
+              <label class="fieldLabel">Team-Zuordnung</label>
+              <select data-field="teamAssignment">
+                <option value="">— kein Team —</option>
+              </select>
+            </div>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Reports-to</label>
+            <select data-field="reportsTo">
+              <option value="">— niemand —</option>
+            </select>
+          </div>
+          <div class="fieldGroup">
+            <label class="fieldLabel">Berechtigungen</label>
+            <div class="permChipsRow">
+              <button class="permChip on" data-perm="code" aria-pressed="true" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">code</button>
+              <button class="permChip" data-perm="review" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">review</button>
+              <button class="permChip" data-perm="strategy" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">strategy</button>
+              <button class="permChip" data-perm="marketing" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">marketing</button>
+              <button class="permChip" data-perm="finance" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">finance</button>
+              <button class="permChip" data-perm="ops" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">ops</button>
+              <button class="permChip" data-perm="design" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">design</button>
+              <button class="permChip" data-perm="qa" aria-pressed="false" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed',this.classList.contains('on'))">qa</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const addBtn = document.getElementById('addAgentBtn');
+      addBtn.parentNode.insertBefore(toggle, addBtn);
+      addBtn.parentNode.insertBefore(body, addBtn);
+      pcEnhanceSelects(body);
+      const modelSel = body.querySelector('select[data-field="model"]');
+      if(_pcEngineModels && modelSel){
+        const preferred = pcPreferredModelValue();
+        if(preferred && Array.from(modelSel.options).some(opt => opt.value === preferred)) modelSel.value = preferred;
+        pcRefreshSelectUI(modelSel);
+      }
+      pcSyncProfileSelectors();
+    });
+
+    document.addEventListener('input', e => {
+      if(e.target && e.target.matches('[data-field="name"], [data-field="slot"]')){
+        pcSyncProfileSelectors();
+      }
+    });
+    document.addEventListener('change', e => {
+      if(e.target && e.target.matches('[data-field="teamAssignment"]')){
+        pcSyncProfileSelectors();
+      }
+    });
+
+    pcSyncProfileSelectors();
+  </script>
+<script src="buddy_widget.js"></script>
+</body>
+</html>

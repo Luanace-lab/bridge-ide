@@ -1,0 +1,42 @@
+# Bridge IDE — Python Dependencies
+# Core (required for server.py)
+websockets>=12.0,<16.0
+
+# Automation Engine (schedule triggers)
+croniter>=1.4,<7.0
+
+# Bridge Watcher (WebSocket client)
+websocket-client>=1.6,<2.0
+
+# HTTP client (MCP, integrations)
+httpx>=0.25,<1.0
+
+# Optional: MCP Server
+mcp>=0.1
+
+# Optional: Stealth Browser (uncomment if needed — adds ~500MB for browser binaries)
+# patchright>=1.50
+# playwright>=1.50
+
+# Optional: LLM Engines
+# openai>=1.0
+# litellm>=1.0
+# google-generativeai>=0.3
+
+# Optional: Office Automation
+# openpyxl>=3.1
+# python-pptx>=0.6
+# pypdf>=3.0
+
+# Optional: File Watcher
+watchdog>=3.0,<5.0
+
+# Credential Store (Fernet encryption)
+cryptography>=41.0
+
+# Optional: Semantic Memory (vector search)
+# numpy>=1.24
+# sentence-transformers>=2.2
+
+# Optional: RAG / ChromaDB
+# chromadb>=1.0

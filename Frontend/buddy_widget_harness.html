@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de" data-theme="warm">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buddy Widget Harness</title>
+  <script src="bridge_runtime_urls.js"></script>
+  <style>
+    :root{
+      --bgFlat:#fbf8f1;
+      --sidebar:#c8bfa8;
+      --sbDark:#8a7f6a;
+    }
+    html[data-theme="light"]{
+      --bgFlat:#ffffff;
+      --sidebar:#d6e8f7;
+      --sbDark:#5a9ac7;
+    }
+    html[data-theme="rose"]{
+      --bgFlat:#fdf2f4;
+      --sidebar:#e8c4cc;
+      --sbDark:#a3707e;
+    }
+    html[data-theme="dark"]{
+      --bgFlat:#161e3a;
+      --sidebar:#1e2a42;
+      --sbDark:#8aa4c8;
+    }
+    html[data-theme="black"]{
+      --bgFlat:#000000;
+      --sidebar:#111111;
+      --sbDark:#7a8fa8;
+    }
+    html,body{
+      margin:0;
+      min-height:100%;
+      background:var(--bgFlat);
+      color:var(--sbDark);
+      font-family:system-ui, sans-serif;
+    }
+    body{
+      min-height:100vh;
+    }
+  </style>
+  <script>
+    window.BRIDGE_BUDDY_WIDGET_CONFIG = {
+      autoOpenOnInit: false,
+      openOnIncoming: false,
+    };
+  </script>
+</head>
+<body>
+  <script src="buddy_widget.js"></script>
+</body>
+</html>

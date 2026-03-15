@@ -1,0 +1,16 @@
+{
+  "read_whitelist": [
+    "-1001234567890"
+  ],
+  "send_whitelist": [
+    "-1001234567890"
+  ],
+  "approval_whitelist": [],
+  "watch_chats": [
+    "-1001234567890"
+  ],
+  "default_route": "ordo",
+  "contacts": {
+    "team": "-1001234567890"
+  }
+}

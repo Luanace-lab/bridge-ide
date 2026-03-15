@@ -1,0 +1,828 @@
+#!/usr/bin/env python3
+"""
+bridge_watcher.py — WebSocket-to-tmux Message Router (Hardened V3)
+
+Hoert den Bridge-WebSocket (:9112) ab und injiziert eingehende
+Nachrichten via tmux buffer-paste in die richtige Agent-Session.
+
+Hardened Injection Strategy:
+1. Pruefen ob Agent am Prompt ist (bereit fuer Input)
+2. Kurze Notification statt voller Nachricht (MCP hat die volle Message)
+3. Retry mit Backoff bei Fehlschlag
+4. Deduplication — gleiche Nachricht nicht doppelt injizieren
+
+Usage:
+    python3 bridge_watcher.py
+    python3 bridge_watcher.py --ws ws://127.0.0.1:9112
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import atexit
+import json
+import logging
+import os
+import random
+import re
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from logging.handlers import RotatingFileHandler
+from collections import deque
+
+from common import send_message
+from tmux_manager import is_session_alive, send_to_session
+
+WS_DEFAULT = "ws://127.0.0.1:9112"
+BRIDGE_HTTP = "http://127.0.0.1:9111"
+PID_FILE = "/tmp/bridge_watcher.pid"
+LOG_FILE = "/home/user/bridge/BRIDGE/Backend/logs/watcher.log"
+TMUX_INJECT_BUFFER = "bridge_inject"
+
+# Nachrichten an "user" werden NICHT injiziert — die erscheinen in chat.html.
+SKIP_RECIPIENTS = {"user", "system"}
+
+ALLOWED_ROUTES = {
+    "user": {"ordo"},
+    "ordo": {"user", "viktor", "codex", "nova"},
+    "viktor": {"ordo", "codex", "nova", "qwen1", "qwen2", "qwen3", "user"},
+    "codex": {"ordo", "viktor"},
+    "nova": {"ordo", "viktor"},
+    "qwen1": {"viktor"},
+    "qwen2": {"viktor"},
+    "qwen3": {"viktor"},
+}
+
+# Bridge-ID aliases -> tmux session agent_id
+# Keep "teamlead" as a compatibility alias because existing bridge senders still use it.
+AGENT_ID_ALIASES = {
+    "teamlead": "ordo",
+}
+
+# Direct session name overrides: bridge-ID → full tmux session name
+# Bypasses the acw_ prefix convention for non-standard session names
+SESSION_NAME_OVERRIDES: dict[str, str] = {}
+
+# Extra tmux sessions (currently unused, kept for future multi-session needs)
+MULTI_SESSION_MAP: dict[str, list[str]] = {}
+
+# Deduplication: letzte 50 Message-IDs merken
+_recent_injections: deque[str] = deque(maxlen=50)
+
+# Rate Limiting pro Ziel-Session, nach Prioritaet
+# user -> agent (direct): 0.5s, agent -> agent (direct): 1.0s, broadcast(all): 2.0s
+_last_injection_time: dict[str, float] = {}
+COOLDOWN_USER_DIRECT = 0.5
+COOLDOWN_AGENT_DIRECT = 1.0
+COOLDOWN_BROADCAST = 2.0
+# Backwards-compat for existing tests/importers
+INJECTION_COOLDOWN = COOLDOWN_BROADCAST
+
+# Retry config
+MAX_RETRIES = 3
+RETRY_DELAYS = [0.3, 0.3, 0.4]
+
+# Persistent event logger (rotation: 5 MB, 3 backups)
+_EVENT_LOGGER: logging.Logger | None = None
+
+
+# Engine detection cache: agent_id → "claude" | "codex" | "shell"
+_ENGINE_CACHE: dict[str, str] = {}
+
+
+def _resolve_tmux_agent_id(agent_id: str) -> str:
+    """Map Bridge agent IDs to tmux session agent IDs."""
+    normalized = (agent_id or "").strip()
+    if not normalized:
+        return normalized
+    return AGENT_ID_ALIASES.get(normalized, normalized)
+
+
+def _same_tmux_agent(a: str, b: str) -> bool:
+    """Compare agent IDs after alias resolution."""
+    return _resolve_tmux_agent_id(a) == _resolve_tmux_agent_id(b)
+
+
+def _get_session_name(agent_id: str) -> str:
+    """Get the full tmux session name for a bridge agent ID.
+
+    Checks SESSION_NAME_OVERRIDES first (for non-standard names),
+    then falls back to acw_ prefix convention.
+    """
+    if agent_id in SESSION_NAME_OVERRIDES:
+        return SESSION_NAME_OVERRIDES[agent_id]
+    tmux_id = _resolve_tmux_agent_id(agent_id)
+    if tmux_id in SESSION_NAME_OVERRIDES:
+        return SESSION_NAME_OVERRIDES[tmux_id]
+    return f"acw_{tmux_id}"
+
+
+def _detect_session_engine(agent_id: str) -> str:
+    """Detect whether a tmux session runs Claude, Codex, or a plain shell.
+
+    Checks capture-pane content for engine-specific structural markers.
+    Result is cached per agent_id (engine does not change mid-session).
+
+    IMPORTANT: Use structural patterns (status bars, prompt chars), NOT keyword
+    matches. Agents discuss each other by name — "codex" appearing in text
+    does NOT mean the session runs Codex.
+    """
+    tmux_agent_id = _resolve_tmux_agent_id(agent_id)
+    cached = _ENGINE_CACHE.get(tmux_agent_id)
+    if cached:
+        return cached
+
+    session_name = _get_session_name(agent_id)
+    try:
+        result = subprocess.run(
+            ["tmux", "capture-pane", "-t", session_name, "-p", "-S", "-200"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if result.returncode != 0:
+            return "claude"  # default fallback
+        content = result.stdout or ""
+        # Codex: status bar "gpt-*-codex" OR prompt char › (U+203A) at line start
+        if re.search(r'gpt-[\d.]+-codex', content) or re.search(r'codex\s+\w+\s*·\s*\d+%\s*left', content):
+            _ENGINE_CACHE[tmux_agent_id] = "codex"
+            return "codex"
+        # Codex prompt char › (U+203A) at line start — distinct from Claude ❯ (U+276F)
+        if re.search(r'(?m)^\s*›', content) and "❯" not in content:
+            _ENGINE_CACHE[tmux_agent_id] = "codex"
+            return "codex"
+        # Qwen: banner ("Qwen Code"/"Qwen OAuth") or persistent markers (✦ response prefix, "? for shortcuts" status bar)
+        if re.search(r'Qwen\s+Code', content) or re.search(r'Qwen\s+OAuth', content, re.IGNORECASE) or (re.search(r'(?m)^\s*✦', content) and "❯" not in content and "? for shortcuts" in content):
+            _ENGINE_CACHE[tmux_agent_id] = "qwen"
+            return "qwen"
+        # Claude CLI markers (structural: prompt char ❯, permission line)
+        if "❯" in content or "bypass permissions" in content:
+            _ENGINE_CACHE[tmux_agent_id] = "claude"
+            return "claude"
+        # No CLI markers → plain shell (e.g. Ordo session)
+        _ENGINE_CACHE[tmux_agent_id] = "shell"
+        return "shell"
+    except Exception:
+        pass
+    _ENGINE_CACHE[tmux_agent_id] = "claude"
+    return "claude"
+
+
+def invalidate_engine_cache(agent_id: str | None = None) -> None:
+    """Clear engine cache for one or all agents.
+
+    Call after session restart so re-detection runs on next check.
+    """
+    if agent_id:
+        tmux_id = _resolve_tmux_agent_id(agent_id)
+        _ENGINE_CACHE.pop(tmux_id, None)
+    else:
+        _ENGINE_CACHE.clear()
+
+
+def is_agent_at_prompt(agent_id: str) -> bool:
+    """Check if agent's tmux session shows a prompt (ready for input).
+
+    Engine-aware prompt detection. Checks ALL last non-empty lines (not just
+    the last one) because engines may show status bars below the prompt.
+
+    - Claude: "❯" prompt, "bypass permissions", "esc to interrupt"
+    - Codex: "›" prompt, status bar with "gpt-*-codex" below prompt
+    - Shell: Standard bash/zsh prompt ($, %, #, ➜) for Ordo sessions.
+    """
+    session_name = _get_session_name(agent_id)
+    try:
+        result = subprocess.run(
+            ["tmux", "capture-pane", "-t", session_name, "-p"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if result.returncode != 0:
+            return False
+
+        lines = (result.stdout or "").strip().splitlines()
+        if not lines:
+            return False
+
+        # Check last 5 non-empty lines — engines show status bars below prompt
+        last_lines = [l.strip() for l in lines[-5:] if l.strip()]
+        if not last_lines:
+            return False  # Empty screen = crash or loading, NOT prompt
+
+        engine = _detect_session_engine(agent_id)
+
+        if engine == "codex":
+            # Codex shows status bar BELOW prompt (e.g. "gpt-5.3-codex high · 64% left")
+            # Must check ALL last lines for › prompt, not just last line
+            for line in last_lines:
+                if re.match(r'^\s*[>›]\s*$', line):       # Empty prompt line
+                    return True
+                if re.match(r'^\s*›\s+\S', line):          # Prompt with text after
+                    return True
+            # Status line itself indicates idle at prompt
+            for line in last_lines:
+                if re.search(r'codex.*\d+%\s*left', line, re.IGNORECASE):
+                    return True
+            return False
+
+        if engine == "qwen":
+            # Qwen prompt: > at line start (simple greater-than)
+            for line in last_lines:
+                if re.match(r'^\s*>\s*$', line):        # Empty prompt line
+                    return True
+                if re.match(r'^\s*>\s+\S', line):       # Prompt with text after
+                    return True
+            return False
+
+        if engine == "shell":
+            last = last_lines[-1]
+            shell_patterns = [
+                bool(re.match(r'^.*[\$%#➜]\s*$', last)),
+                bool(re.match(r'^\s*[\$%#➜]\s', last)),
+            ]
+            return any(shell_patterns)
+
+        # Claude prompt patterns — check ALL last lines (status bar may follow)
+        for line in last_lines:
+            prompt_patterns = [
+                bool(re.match(r'^\s*[❯>]\s*$', line)),
+                bool(re.match(r'^\s*❯\s+\S', line)),
+                "bypass permissions" in line,
+                "What should Claude do" in line,
+                "esc to interrupt" in line,
+            ]
+            if any(prompt_patterns):
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _inject_into_session(session_name: str, text: str) -> bool:
+    """Inject text via tmux buffer paste + Enter.
+
+    Using load-buffer/paste-buffer avoids shell/key escaping issues from send-keys text mode.
+    """
+    try:
+        load = subprocess.run(
+            ["tmux", "load-buffer", "-b", TMUX_INJECT_BUFFER, "-"],
+            input=text,
+            capture_output=True, text=True, timeout=5,
+        )
+        if load.returncode != 0:
+            return False
+
+        paste = subprocess.run(
+            ["tmux", "paste-buffer", "-b", TMUX_INJECT_BUFFER, "-t", session_name],
+            capture_output=True, text=True, timeout=3,
+        )
+        if paste.returncode != 0:
+            return False
+
+        # Small delay — some CLIs (Qwen, Codex) need time to process pasted text
+        time.sleep(0.2)
+
+        enter = subprocess.run(
+            ["tmux", "send-keys", "-t", session_name, "Enter"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if enter.returncode != 0:
+            return False
+
+        # Double-tap Enter for CLIs that buffer the first one
+        time.sleep(0.1)
+        subprocess.run(
+            ["tmux", "send-keys", "-t", session_name, "Enter"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return True
+    except Exception:
+        return False
+
+
+def _inject_via_send_keys(session_name: str, text: str) -> bool:
+    """Inject text via tmux send-keys -l + Enter.
+
+    Used for CLIs that don't process paste-buffer (e.g., Codex).
+    send-keys -l sends text literally, bypassing key interpretation.
+    """
+    try:
+        send = subprocess.run(
+            ["tmux", "send-keys", "-t", session_name, "-l", text],
+            capture_output=True, text=True, timeout=5,
+        )
+        if send.returncode != 0:
+            return False
+
+        time.sleep(0.2)
+
+        enter = subprocess.run(
+            ["tmux", "send-keys", "-t", session_name, "Enter"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return enter.returncode == 0
+    except Exception:
+        return False
+
+
+def smart_inject(agent_id: str, text: str) -> bool:
+    """Inject notification into tmux session.
+
+    Engine-aware: Codex needs send-keys -l (ignores paste-buffer),
+    all others use load-buffer + paste-buffer + Enter.
+    """
+    session_name = _get_session_name(agent_id)
+    engine = _detect_session_engine(agent_id)
+    if engine == "codex":
+        return _inject_via_send_keys(session_name, text)
+    return _inject_into_session(session_name, text)
+
+
+def _confirm_injection_visible(agent_id: str, notification: str) -> bool:
+    """Best-effort confirmation: verify notification text appears in pane output."""
+    session_name = _get_session_name(agent_id)
+    try:
+        result = subprocess.run(
+            ["tmux", "capture-pane", "-t", session_name, "-p", "-S", "-200"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if result.returncode != 0:
+            return False
+        pane_text = " ".join((result.stdout or "").split())
+        needle = " ".join(notification.split())
+        return bool(needle) and needle in pane_text
+    except Exception:
+        return False
+
+
+def _escape_for_tmux(text: str) -> str:
+    """Escape preview characters for notification readability in tests/UI."""
+    text = text.replace("\\", "\\\\")
+    text = text.replace(";", "\\;")
+    text = text.replace("'", "\\'")
+    text = text.replace('"', '\\"')
+    return text
+
+
+def format_notification(sender: str, content: str) -> str:
+    """Format a SHORT notification for tmux injection.
+
+    Key insight: The full message is already in the agent's bridge_receive buffer
+    via the MCP WebSocket listener. We only need a short nudge.
+    """
+    # Extract first 80 chars as preview
+    preview = content.replace("\n", " ").replace("\r", "").strip()
+    if len(preview) > 80:
+        preview = preview[:80] + "..."
+    # Keep compatibility with existing notification formatting tests.
+    preview = _escape_for_tmux(preview)
+
+    return f"Neue Nachricht von {sender}: {preview} — Pruefe bridge_receive() fuer Details."
+
+
+async def inject_with_retry(agent_id: str, sender: str, content: str, msg_id: str) -> bool:
+    """Inject message notification with smart retry logic.
+
+    Strategy:
+    1. Check if agent is at prompt
+    2. If yes: inject immediately
+    3. If no: wait and retry up to MAX_RETRIES times
+    4. Each retry waits longer (exponential backoff)
+    """
+    notification = format_notification(sender, content)
+    started = time.perf_counter()
+    last_reason = "not_at_prompt"
+
+    for attempt in range(MAX_RETRIES):
+        at_prompt = is_agent_at_prompt(agent_id)
+
+        if at_prompt:
+            ok = smart_inject(agent_id, notification)
+            if ok:
+                await asyncio.sleep(0.5)
+                confirmed = _confirm_injection_visible(agent_id, notification)
+                latency_ms = int((time.perf_counter() - started) * 1000)
+                if confirmed:
+                    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: injiziert+confirmed (Versuch {attempt+1})")
+                    _log_event(msg_id, sender, agent_id, "confirmed", latency_ms)
+                else:
+                    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: injiziert aber unconfirmed (Versuch {attempt+1})")
+                    _log_event(msg_id, sender, agent_id, "unconfirmed", latency_ms)
+                return True
+            else:
+                last_reason = "inject_failed"
+                _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: inject fehlgeschlagen (Versuch {attempt+1})")
+        else:
+            last_reason = "not_at_prompt"
+            _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: nicht am Prompt (Versuch {attempt+1}/{MAX_RETRIES})")
+
+        if attempt < MAX_RETRIES - 1:
+            base_delay = RETRY_DELAYS[min(attempt, len(RETRY_DELAYS) - 1)]
+            jitter = random.uniform(0.0, 1.0)
+            await asyncio.sleep(base_delay + jitter)
+
+    # Fallback: force-inject after all retries exhausted.
+    # Better to risk interrupting an agent than to silently drop messages.
+    ok = smart_inject(agent_id, notification)
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    if ok:
+        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: FALLBACK force-injiziert nach {MAX_RETRIES} Retries")
+        _log_event(msg_id, sender, agent_id, "fallback_injected", latency_ms)
+        return True
+
+    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: ALLE VERSUCHE FEHLGESCHLAGEN (inkl. Fallback)")
+    _log_event(msg_id, sender, agent_id, "all_failed", latency_ms)
+    return False
+
+
+async def _inject_to_extra_sessions(tmux_target: str, sender: str, content: str, msg_id: str) -> None:
+    """Inject notification into additional tmux sessions for a target."""
+    extra_sessions = MULTI_SESSION_MAP.get(tmux_target, [])
+    for session_name in extra_sessions:
+        try:
+            r = subprocess.run(["tmux", "has-session", "-t", session_name],
+                              capture_output=True, timeout=3)
+            if r.returncode != 0:
+                continue
+            notification = format_notification(sender, content)
+            started = time.perf_counter()
+            ok = _inject_into_session(session_name, notification)
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            if ok:
+                _flush(f"[watcher] #{msg_id} {sender}→{session_name}: injiziert (extra-session)")
+                _log_event(msg_id, sender, session_name, "extra_injected", latency_ms)
+            else:
+                _flush(f"[watcher] #{msg_id} {sender}→{session_name}: extra-inject fehlgeschlagen")
+                _log_event(msg_id, sender, session_name, "extra_inject_failed", latency_ms)
+        except Exception as e:
+            _flush(f"[watcher] #{msg_id} {sender}→{session_name}: FEHLER {e}")
+            _log_event(msg_id, sender, session_name, "extra_error", 0)
+
+
+def _cooldown_for_message(sender: str, recipient: str) -> float:
+    """Return cooldown by message priority."""
+    if recipient == "all":
+        return COOLDOWN_BROADCAST
+    if sender == "user":
+        return COOLDOWN_USER_DIRECT
+    return COOLDOWN_AGENT_DIRECT
+
+
+def _is_route_allowed(sender: str, recipient: str) -> bool:
+    if sender == "user":
+        return True  # Leo-Override: Product Owner kann alle erreichen
+    if recipient == "all":
+        # Broadcasts erlaubt, aber targets werden in watch() gefiltert
+        return sender in ALLOWED_ROUTES or True
+    allowed = ALLOWED_ROUTES.get(sender)
+    if allowed is None:
+        return True  # Unbekannte Sender durchlassen
+    return recipient in allowed
+
+
+def _get_context_usage(agent_id: str) -> int | None:
+    """Parse context usage percentage from agent status line."""
+    session_name = _get_session_name(agent_id)
+    try:
+        result = subprocess.run(
+            ["tmux", "capture-pane", "-t", session_name, "-p", "-S", "-200"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if result.returncode != 0:
+            return None
+        content = result.stdout or ""
+    except Exception:
+        return None
+
+    engine = _detect_session_engine(agent_id)
+
+    if engine == "codex":
+        matches = re.findall(r'(\d+)\s*%\s*left', content, re.IGNORECASE)
+        if not matches:
+            return None
+        pct_left = int(matches[-1])
+        return max(0, min(100, 100 - pct_left))
+
+    if engine == "qwen":
+        matches = re.findall(r'(\d+(?:\.\d+)?)\s*%\s*context used', content, re.IGNORECASE)
+        if not matches:
+            return None
+        pct_used = int(float(matches[-1]))
+        return max(0, min(100, pct_used))
+
+    if engine == "claude":
+        matches = re.findall(r'(\d+)\s*%\s*context used', content, re.IGNORECASE)
+        if not matches:
+            return None
+        pct_used = int(matches[-1])
+        return max(0, min(100, pct_used))
+
+    return None
+
+
+async def _force_context_stop(agent_id: str, pct_used: int) -> None:
+    """Hard-stop sequence for critical context usage."""
+    session_name = _get_session_name(agent_id)
+    tmux_agent_id = _resolve_tmux_agent_id(agent_id)
+
+    # Phase 1: immediate notification injection
+    warning = f"CONTEXT KRITISCH ({pct_used}%). Schreibe CONTEXT_BRIDGE.md JETZT."
+    smart_inject(agent_id, warning)
+
+    # Phase 2: grace period
+    await asyncio.sleep(60)
+
+    # Phase 3: if still active, interrupt and force instruction
+    if is_session_alive(tmux_agent_id):
+        try:
+            subprocess.run(
+                ["tmux", "send-keys", "-t", session_name, "C-c"],
+                capture_output=True, text=True, timeout=5,
+            )
+            subprocess.run(
+                ["tmux", "send-keys", "-t", session_name, "-l", "Schreibe CONTEXT_BRIDGE JETZT und stoppe."],
+                capture_output=True, text=True, timeout=5,
+            )
+            subprocess.run(
+                ["tmux", "send-keys", "-t", session_name, "Enter"],
+                capture_output=True, text=True, timeout=5,
+            )
+        except Exception:
+            pass
+
+    # Phase 4: wait 30s, then trigger compact command
+    await asyncio.sleep(30)
+    if is_session_alive(tmux_agent_id):
+        try:
+            subprocess.run(
+                ["tmux", "send-keys", "-t", session_name, "-l", "/compact"],
+                capture_output=True, text=True, timeout=5,
+            )
+            subprocess.run(
+                ["tmux", "send-keys", "-t", session_name, "Enter"],
+                capture_output=True, text=True, timeout=5,
+            )
+        except Exception:
+            pass
+
+    try:
+        send_message(
+            BRIDGE_HTTP,
+            "watcher",
+            "ordo",
+            f"Agent {agent_id} bei {pct_used}% Context. Hard-Stop eingeleitet.",
+            timeout=10.0,
+        )
+    except Exception as exc:
+        _flush(f"[watcher] WARN context-stop bridge_send failed for {agent_id}: {exc}")
+
+    _log_event(f"context_{agent_id}", "watcher", agent_id, "context_stop", 0)
+
+
+async def _context_monitor(interval: int = 30) -> None:
+    """Periodic monitor for critical context usage."""
+    already_stopped: set[str] = set()
+    while True:
+        await asyncio.sleep(interval)
+        for agent_id in _find_all_sessions():
+            if agent_id in already_stopped:
+                continue
+            pct_used = _get_context_usage(agent_id)
+            if pct_used is None or pct_used < 95:
+                continue
+            already_stopped.add(agent_id)
+            _flush(f"[watcher] context kritisch: {agent_id} bei {pct_used}%")
+            asyncio.create_task(_force_context_stop(agent_id, pct_used))
+
+
+async def watch(ws_url: str) -> None:
+    """Main watch loop — connect to WebSocket, route messages to tmux."""
+    try:
+        import websockets
+    except ImportError:
+        _flush("[watcher] FEHLER: websockets nicht installiert (pip install websockets)")
+        sys.exit(1)
+
+    asyncio.create_task(_context_monitor(interval=30))
+    _flush("[watcher] Context-Monitor gestartet (30s interval)")
+
+    while True:
+        try:
+            async with websockets.connect(ws_url, max_size=10 * 1024 * 1024) as ws:
+                _flush(f"[watcher] verbunden mit {ws_url}")
+                await ws.send(json.dumps({"type": "subscribe"}))
+
+                async for raw in ws:
+                    try:
+                        data = json.loads(raw)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+
+                    if data.get("type") != "message":
+                        continue
+
+                    msg = data.get("message", {})
+                    sender = msg.get("from", "")
+                    recipient = msg.get("to", "")
+                    content = msg.get("content", "")
+                    msg_id = str(msg.get("id", "?"))
+
+                    if not sender or not content:
+                        continue
+
+                    # Skip: Nachrichten an user/system (chat.html zeigt die)
+                    if recipient in SKIP_RECIPIENTS:
+                        continue
+
+                    # Deduplication: gleiche Message-ID nicht doppelt injizieren
+                    dedup_key = f"{msg_id}_{recipient}"
+                    if dedup_key in _recent_injections:
+                        _flush(f"[watcher] #{msg_id} {sender}→{recipient}: uebersprungen (Dedup)")
+                        _log_event(msg_id, sender, recipient, "dedup_skip", 0)
+                        continue
+                    _recent_injections.append(dedup_key)
+
+                    if not _is_route_allowed(sender, recipient):
+                        _flush(f"[watcher] #{msg_id} {sender}→{recipient}: BLOCKED (nicht in ALLOWED_ROUTES)")
+                        _log_event(msg_id, sender, recipient, "route_blocked", 0)
+                        continue
+
+                    # Bestimme Ziel-Sessions
+                    if recipient == "all":
+                        all_targets = _find_all_sessions(exclude=sender)
+                        # Filter broadcasts against ALLOWED_ROUTES
+                        allowed_set = ALLOWED_ROUTES.get(sender)
+                        if sender == "user" or allowed_set is None:
+                            targets = all_targets
+                        else:
+                            targets = [t for t in all_targets if t in allowed_set]
+                    else:
+                        targets = [recipient]
+
+                    cooldown = _cooldown_for_message(sender, recipient)
+                    for target in targets:
+                        if _same_tmux_agent(target, sender):
+                            continue
+
+                        session_name = _get_session_name(target)
+                        target_started = time.perf_counter()
+
+                        # Check if session is alive via tmux
+                        try:
+                            alive = subprocess.run(
+                                ["tmux", "has-session", "-t", session_name],
+                                capture_output=True, timeout=3,
+                            ).returncode == 0
+                        except Exception:
+                            alive = False
+
+                        if not alive:
+                            _log_event(msg_id, sender, target, "session_dead", 0)
+                            continue
+
+                        # Rate Limiting pro Agent
+                        now = time.time()
+                        last_time = _last_injection_time.get(session_name, 0)
+                        if now - last_time < cooldown:
+                            wait = cooldown - (now - last_time)
+                            _flush(f"[watcher] #{msg_id} {sender}→{target}: cooldown ({wait:.1f}s)")
+                            await asyncio.sleep(wait)
+
+                        # Smart inject with retry
+                        injected = await inject_with_retry(target, sender, content, msg_id)
+                        if injected:
+                            _last_injection_time[session_name] = time.time()
+
+        except Exception as exc:
+            _flush(f"[watcher] verbindung verloren: {exc} — reconnect in 3s")
+            await asyncio.sleep(3)
+
+
+def _find_all_sessions(exclude: str = "") -> list[str]:
+    """Find all acw_* tmux sessions, return agent_ids."""
+    exclude_tmux = _resolve_tmux_agent_id(exclude)
+    try:
+        result = subprocess.run(
+            ["tmux", "list-sessions", "-F", "#{session_name}"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return []
+
+        live_sessions = set((result.stdout or "").strip().splitlines())
+        agents = []
+
+        # Standard acw_* sessions
+        for name in live_sessions:
+            if name.startswith("acw_"):
+                agent_id = name[4:]
+                if agent_id != exclude_tmux:
+                    agents.append(agent_id)
+
+        # SESSION_NAME_OVERRIDES: add agents whose override session is alive
+        for bridge_id, session_name in SESSION_NAME_OVERRIDES.items():
+            tmux_id = _resolve_tmux_agent_id(bridge_id)
+            if tmux_id == exclude_tmux or bridge_id == exclude:
+                continue
+            if session_name in live_sessions and tmux_id not in agents:
+                agents.append(tmux_id)
+
+        return agents
+    except Exception:
+        return []
+
+
+def _flush(*args: object) -> None:
+    """Print and flush immediately."""
+    print(*args, flush=True)
+
+
+def _setup_event_logger() -> None:
+    """Initialize persistent rotating watcher log file."""
+    global _EVENT_LOGGER
+    if _EVENT_LOGGER is not None:
+        return
+
+    try:
+        os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+        logger = logging.getLogger("bridge_watcher.events")
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        handler = RotatingFileHandler(
+            LOG_FILE,
+            maxBytes=5 * 1024 * 1024,
+            backupCount=3,
+            encoding="utf-8",
+        )
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(handler)
+        _EVENT_LOGGER = logger
+    except Exception as exc:
+        _flush(f"[watcher] WARN logger setup failed: {exc}")
+
+
+def _log_event(msg_id: str, sender: str, target: str, result: str, latency_ms: int) -> None:
+    """Write structured watcher event to persistent log."""
+    if _EVENT_LOGGER is None:
+        return
+    ts = datetime.now(timezone.utc).isoformat()
+    _EVENT_LOGGER.info(f"{ts} | {msg_id} | {sender}→{target} | {result} | {latency_ms}")
+
+
+def _is_pid_alive(pid: int) -> bool:
+    """Check if a process with given PID is running."""
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def _acquire_pid_lock() -> None:
+    """Write PID file. Abort if another watcher is already running."""
+    if os.path.exists(PID_FILE):
+        try:
+            old_pid = int(open(PID_FILE).read().strip())
+            if _is_pid_alive(old_pid):
+                _flush(f"[watcher] ABBRUCH: Anderer Watcher laeuft bereits (PID {old_pid})")
+                _flush(f"[watcher] PID-File: {PID_FILE}")
+                sys.exit(1)
+            else:
+                _flush(f"[watcher] Stale PID-File gefunden (PID {old_pid} tot), ueberschreibe")
+        except (ValueError, OSError):
+            _flush(f"[watcher] Ungueltiges PID-File, ueberschreibe")
+
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+    atexit.register(_release_pid_lock)
+
+
+def _release_pid_lock() -> None:
+    """Remove PID file on exit."""
+    try:
+        if os.path.exists(PID_FILE):
+            stored_pid = int(open(PID_FILE).read().strip())
+            if stored_pid == os.getpid():
+                os.remove(PID_FILE)
+    except (ValueError, OSError):
+        pass
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Bridge WebSocket → tmux Router (Hardened V3)")
+    parser.add_argument("--ws", default=WS_DEFAULT, help=f"WebSocket URL (default: {WS_DEFAULT})")
+    args = parser.parse_args()
+
+    _acquire_pid_lock()
+    _setup_event_logger()
+
+    _flush(f"[watcher] Bridge Watcher V3 (Hardened) gestartet (PID {os.getpid()})")
+    _flush(f"[watcher] WebSocket: {args.ws}")
+    _flush(f"[watcher] Features: Smart-Inject, Retry, Dedup, Cooldown, Prompt-Detection, PID-Lock")
+    _flush(f"[watcher] Skip: {SKIP_RECIPIENTS}")
+
+    asyncio.run(watch(args.ws))
+
+
+if __name__ == "__main__":
+    main()

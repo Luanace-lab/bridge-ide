@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Browser Lab Navigator/Header/Storage Probe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: monospace; margin: 16px; background: #fff; color: #111; }
+    pre { white-space: pre-wrap; word-break: break-word; border: 1px solid #ccc; padding: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Navigator/Header/Storage Probe</h1>
+  <pre id="result">loading...</pre>
+  <script>
+    (function () {
+      function sortedObject(input) {
+        var output = {};
+        Object.keys(input).sort().forEach(function (key) {
+          output[key] = input[key];
+        });
+        return output;
+      }
+
+      function readHeaderHints(params) {
+        var headers = {};
+        params.forEach(function (value, key) {
+          if (key.indexOf("header_") === 0) {
+            headers[key.slice(7)] = value;
+          }
+        });
+        return sortedObject(headers);
+      }
+
+      function readStorage(storage) {
+        var values = {};
+        if (!storage) {
+          return values;
+        }
+        try {
+          for (var i = 0; i < storage.length; i += 1) {
+            var key = storage.key(i);
+            values[key] = storage.getItem(key);
+          }
+        } catch (err) {
+          values.__error = String(err);
+        }
+        return sortedObject(values);
+      }
+
+      function capabilityState(fn) {
+        try {
+          return fn();
+        } catch (err) {
+          return { available: false, error: String(err) };
+        }
+      }
+
+      function gatherResult() {
+        var params = new URLSearchParams(window.location.search);
+        var nav = window.navigator || {};
+        var screenInfo = window.screen || {};
+        return {
+          probe: "navigator_header_storage",
+          role: params.get("child") || "top",
+          location: {
+            href: window.location.href,
+            origin: window.location.origin,
+            referrer: document.referrer
+          },
+          navigator: {
+            userAgent: nav.userAgent || null,
+            hasUserAgentData: typeof nav.userAgentData !== "undefined",
+            platform: nav.platform || null,
+            language: nav.language || null,
+            languages: Array.isArray(nav.languages) ? nav.languages.slice() : null,
+            webdriver: typeof nav.webdriver === "undefined" ? null : nav.webdriver,
+            vendor: typeof nav.vendor === "undefined" ? null : nav.vendor,
+            vendorSub: typeof nav.vendorSub === "undefined" ? null : nav.vendorSub,
+            productSub: typeof nav.productSub === "undefined" ? null : nav.productSub,
+            oscpu: typeof nav.oscpu === "undefined" ? null : nav.oscpu,
+            hardwareConcurrency: typeof nav.hardwareConcurrency === "undefined" ? null : nav.hardwareConcurrency,
+            deviceMemory: typeof nav.deviceMemory === "undefined" ? null : nav.deviceMemory,
+            doNotTrack: typeof nav.doNotTrack === "undefined" ? null : nav.doNotTrack,
+            cookieEnabled: typeof nav.cookieEnabled === "undefined" ? null : nav.cookieEnabled,
+            maxTouchPoints: typeof nav.maxTouchPoints === "undefined" ? null : nav.maxTouchPoints,
+            pdfViewerEnabled: typeof nav.pdfViewerEnabled === "undefined" ? null : nav.pdfViewerEnabled,
+            globalPrivacyControl: typeof nav.globalPrivacyControl === "undefined" ? null : nav.globalPrivacyControl
+          },
+          timezone: capabilityState(function () {
+            return {
+              available: true,
+              value: Intl.DateTimeFormat().resolvedOptions().timeZone || null
+            };
+          }),
+          screen: {
+            width: typeof screenInfo.width === "undefined" ? null : screenInfo.width,
+            height: typeof screenInfo.height === "undefined" ? null : screenInfo.height,
+            availWidth: typeof screenInfo.availWidth === "undefined" ? null : screenInfo.availWidth,
+            availHeight: typeof screenInfo.availHeight === "undefined" ? null : screenInfo.availHeight,
+            colorDepth: typeof screenInfo.colorDepth === "undefined" ? null : screenInfo.colorDepth,
+            pixelDepth: typeof screenInfo.pixelDepth === "undefined" ? null : screenInfo.pixelDepth
+          },
+          viewport: {
+            innerWidth: typeof window.innerWidth === "undefined" ? null : window.innerWidth,
+            innerHeight: typeof window.innerHeight === "undefined" ? null : window.innerHeight,
+            outerWidth: typeof window.outerWidth === "undefined" ? null : window.outerWidth,
+            outerHeight: typeof window.outerHeight === "undefined" ? null : window.outerHeight,
+            devicePixelRatio: typeof window.devicePixelRatio === "undefined" ? null : window.devicePixelRatio
+          },
+          headers: readHeaderHints(params),
+          cookies: {
+            raw: document.cookie || ""
+          },
+          storage: {
+            localStorage: readStorage(window.localStorage),
+            sessionStorage: readStorage(window.sessionStorage),
+            indexedDB: capabilityState(function () {
+              return {
+                available: typeof window.indexedDB !== "undefined",
+                databases: typeof window.indexedDB === "undefined" || typeof window.indexedDB.databases !== "function"
+                  ? null
+                  : "supported"
+              };
+            }),
+            serviceWorker: capabilityState(function () {
+              return {
+                available: typeof navigator.serviceWorker !== "undefined",
+                controller: navigator.serviceWorker && navigator.serviceWorker.controller
+                  ? true
+                  : false
+              };
+            })
+          }
+        };
+      }
+
+      function publishResult(result) {
+        window.__browserLabResult = result;
+        document.getElementById("result").textContent = JSON.stringify(result, null, 2);
+        document.body.setAttribute("data-ready", "1");
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "browser-lab-result", result: result }, "*");
+          }
+        } catch (err) {}
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({ type: "browser-lab-result", result: result }, "*");
+          }
+        } catch (err) {}
+      }
+
+      publishResult(gatherResult());
+    }());
+  </script>
+</body>
+</html>

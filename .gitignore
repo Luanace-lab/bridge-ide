@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+*.bak
+*.bak_*
+node_modules/
+venv/
+messages/bridge.jsonl
+Backend/pids/
+Backend/logs/
+Backend/agent_state/
+Backend/execution_runs/

@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "templates": {
+    "trading": {
+      "name": "Trading Team",
+      "description": "Autonomes Trading-Research-Team. Marktanalyse, Trade Signals, Risk Management.",
+      "team_scope": "Marktanalyse, Trade Signals, Risk Management",
+      "agents": [
+        {
+          "id_suffix": "analyst",
+          "name": "Analyst",
+          "role": "researcher",
+          "description": "Market-Analyst. Marktdaten analysieren, Trends erkennen, Reports erstellen.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["research: Marktdaten abrufen und analysieren"],
+          "scope": ["research/", "reports/"]
+        },
+        {
+          "id_suffix": "strategist",
+          "name": "Strategist",
+          "role": "strategist",
+          "description": "Trading-Stratege. Handelsstrategien entwickeln, Backtesting, Signal-Generierung.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["strategy: Handelsstrategien entwickeln und testen"],
+          "scope": ["strategies/", "signals/"]
+        },
+        {
+          "id_suffix": "risk",
+          "name": "Risk Manager",
+          "role": "analyst",
+          "description": "Risk Manager. Portfolio-Risiko bewerten, Limits setzen, Alerts ausloesen.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["risk: Risikobewertung und Portfolio-Analyse"],
+          "scope": ["risk/", "reports/"]
+        }
+      ],
+      "workflow_templates": ["daily_status_report"],
+      "recommended_capability_queries": ["trading finance stock", "market data API", "financial analysis"]
+    },
+    "marketing": {
+      "name": "Marketing Team",
+      "description": "Content-Marketing-Team. Social Media, SEO, Kampagnen, Analytics.",
+      "team_scope": "Content-Erstellung, Social Media, SEO, Kampagnen-Management",
+      "agents": [
+        {
+          "id_suffix": "content",
+          "name": "Content Creator",
+          "role": "creator",
+          "description": "Content Creator. Blog-Posts, Social Media Posts, Newsletter schreiben.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["content: Inhalte erstellen und veroeffentlichen"],
+          "scope": ["content/", "drafts/"]
+        },
+        {
+          "id_suffix": "seo",
+          "name": "SEO Specialist",
+          "role": "analyst",
+          "description": "SEO-Spezialist. Keyword-Recherche, On-Page-Optimierung, Ranking-Analyse.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["research: SEO-Daten analysieren und optimieren"],
+          "scope": ["seo/", "reports/"]
+        },
+        {
+          "id_suffix": "campaign",
+          "name": "Campaign Manager",
+          "role": "manager",
+          "description": "Kampagnen-Manager. Kampagnen planen, ausfuehren, Performance tracken.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["campaigns: Kampagnen verwalten und auswerten"],
+          "scope": ["campaigns/", "reports/"]
+        }
+      ],
+      "workflow_templates": ["daily_status_report"],
+      "recommended_capability_queries": ["social media management", "SEO tools", "email marketing"]
+    },
+    "legal": {
+      "name": "Legal Team",
+      "description": "Rechtsabteilung. Vertragsanalyse, Compliance, Rechtsrecherche.",
+      "team_scope": "Vertragsanalyse, Compliance-Pruefung, Rechtsrecherche",
+      "agents": [
+        {
+          "id_suffix": "contract",
+          "name": "Contract Analyst",
+          "role": "analyst",
+          "description": "Vertragsanalyst. Vertraege pruefen, Risiken identifizieren, Klauseln bewerten.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["legal: Vertraege analysieren und bewerten"],
+          "scope": ["contracts/", "reviews/"]
+        },
+        {
+          "id_suffix": "compliance",
+          "name": "Compliance Officer",
+          "role": "auditor",
+          "description": "Compliance Officer. Regulatorische Anforderungen pruefen, Richtlinien durchsetzen.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["compliance: Regulatorische Pruefungen durchfuehren"],
+          "scope": ["compliance/", "policies/"]
+        },
+        {
+          "id_suffix": "researcher",
+          "name": "Legal Researcher",
+          "role": "researcher",
+          "description": "Rechtsrechercheur. Urteile, Gesetze, Praezedenzfaelle recherchieren.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["research: Rechtliche Recherche durchfuehren"],
+          "scope": ["research/", "memos/"]
+        }
+      ],
+      "workflow_templates": [],
+      "recommended_capability_queries": ["legal research", "contract analysis", "compliance tools"]
+    },
+    "ecommerce": {
+      "name": "E-Commerce Team",
+      "description": "E-Commerce-Team. Produktmanagement, Bestellungen, Kundenservice.",
+      "team_scope": "Produktkatalog, Bestellmanagement, Kundenservice, Analytics",
+      "agents": [
+        {
+          "id_suffix": "product",
+          "name": "Product Manager",
+          "role": "manager",
+          "description": "Produktmanager. Produktkatalog pflegen, Preise optimieren, Listings erstellen.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["products: Produktdaten verwalten und optimieren"],
+          "scope": ["products/", "listings/"]
+        },
+        {
+          "id_suffix": "support",
+          "name": "Support Agent",
+          "role": "support",
+          "description": "Kundenservice. Anfragen beantworten, Reklamationen bearbeiten, FAQ pflegen.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["support: Kundenanfragen bearbeiten"],
+          "scope": ["support/", "faq/"]
+        },
+        {
+          "id_suffix": "analytics",
+          "name": "Analytics Specialist",
+          "role": "analyst",
+          "description": "Analytics-Spezialist. Verkaufsdaten analysieren, KPIs tracken, Reports erstellen.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["analytics: Verkaufs- und Performance-Daten analysieren"],
+          "scope": ["analytics/", "reports/"]
+        }
+      ],
+      "workflow_templates": ["daily_status_report"],
+      "recommended_capability_queries": ["ecommerce platform", "inventory management", "customer support"]
+    },
+    "development": {
+      "name": "Development Team",
+      "description": "Software-Entwicklungsteam. Backend, Frontend, Testing, DevOps.",
+      "team_scope": "Software-Entwicklung, Code-Reviews, Testing, Deployment",
+      "agents": [
+        {
+          "id_suffix": "backend",
+          "name": "Backend Developer",
+          "role": "backend",
+          "description": "Backend-Entwickler. API-Entwicklung, Datenbanken, Server-Logik.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["code: Backend-Code schreiben und reviewen"],
+          "scope": ["src/backend/", "api/"]
+        },
+        {
+          "id_suffix": "frontend",
+          "name": "Frontend Developer",
+          "role": "frontend",
+          "description": "Frontend-Entwickler. UI-Komponenten, Styling, Client-Logik.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["code: Frontend-Code schreiben und reviewen"],
+          "scope": ["src/frontend/", "public/"]
+        },
+        {
+          "id_suffix": "tester",
+          "name": "QA Engineer",
+          "role": "tester",
+          "description": "QA-Engineer. Unit-Tests, Integration-Tests, E2E-Tests schreiben und ausfuehren.",
+          "engine": "claude",
+          "mcp_servers": "bridge",
+          "skills": ["bridge-agent-core"],
+          "permissions": ["test: Tests schreiben und ausfuehren"],
+          "scope": ["tests/", "e2e/"]
+        }
+      ],
+      "workflow_templates": ["daily_status_report"],
+      "recommended_capability_queries": ["code review", "testing framework", "CI/CD pipeline"]
+    }
+  }
+}
