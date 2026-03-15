@@ -39,7 +39,7 @@
     /* ─── Matrix Background ─── */
     .matrix-bg {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 0; pointer-events: none; opacity: .15;
+      z-index: 0; pointer-events: none; opacity: .45;
     }
     .matrix-col {
       position: absolute; top: -100%; font-family: var(--font-mono);
@@ -66,7 +66,7 @@
       font-size: 15px; font-weight: 600; color: var(--text);
       text-decoration: none; letter-spacing: .02em;
     }
-    .nav__logo { width: 32px; height: 32px; }
+    .nav__logo { height: 48px; width: auto; }
     .nav__links { display: flex; align-items: center; gap: 32px; }
     .nav__link {
       font-size: 13px; font-weight: 400; color: var(--text-muted);
@@ -138,17 +138,45 @@
     .btn--secondary:hover { color: var(--text); border-color: var(--accent); }
 
     .hero__visual {
-      display: flex; justify-content: center; align-items: center;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
       position: relative;
     }
     .hero__creature {
-      width: 100%; max-width: 520px;
-      filter: drop-shadow(0 0 40px rgba(44,216,216,.15));
-      animation: float 6s ease-in-out infinite;
+      width: 100%; max-width: 680px;
+      filter: drop-shadow(0 0 60px rgba(44,216,216,.2)) brightness(1);
+      animation: float 6s ease-in-out infinite, buddy-glow 4s ease-in-out infinite;
+      mix-blend-mode: lighten;
+      -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, #000 30%, transparent 75%);
+      mask-image: radial-gradient(ellipse 70% 70% at center, #000 30%, transparent 75%);
     }
     @keyframes float {
       0%,100% { transform: translateY(0); }
       50% { transform: translateY(-12px); }
+    }
+    @keyframes buddy-glow {
+      0%,100% { filter: drop-shadow(0 0 40px rgba(44,216,216,.15)) brightness(1); }
+      30% { filter: drop-shadow(0 0 50px rgba(44,216,216,.2)) brightness(1.05); }
+      50% { filter: drop-shadow(0 0 80px rgba(128,255,208,.4)) brightness(1.25); }
+      70% { filter: drop-shadow(0 0 50px rgba(44,216,216,.2)) brightness(1.05); }
+    }
+    .hero__buddy-label {
+      font-size: clamp(22px, 3vw, 32px); font-weight: 800;
+      text-align: center; margin-bottom: 24px;
+      letter-spacing: -.01em;
+      background: linear-gradient(135deg, #22c55e, #2cd8d8, #818cf8, #c084fc);
+      background-size: 200% 200%;
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradient-shift 4s ease infinite;
+    }
+    .hero__buddy-sub {
+      font-size: 13px; font-weight: 400;
+      text-align: center; margin-top: 4px;
+      color: var(--text-muted); letter-spacing: .03em;
+    }
+    @keyframes gradient-shift {
+      0%,100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
 
     /* ─── Terminal ─── */
@@ -214,7 +242,7 @@
     /* ─── Features ─── */
     .features {
       padding: 100px 60px;
-      max-width: 1100px; margin: 0 auto;
+      max-width: 1200px; margin: 0 auto;
       position: relative; z-index: 1;
     }
     .features__header { text-align: center; margin-bottom: 64px; }
@@ -227,27 +255,48 @@
       font-size: clamp(24px, 3.5vw, 36px); font-weight: 700;
       letter-spacing: -.02em;
     }
+    .features__sub {
+      font-size: 15px; color: var(--text-muted); margin-top: 12px;
+      max-width: 560px; margin-left: auto; margin-right: auto;
+    }
     .features__grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
     }
     .feature {
       padding: 28px 24px; border-radius: 12px;
       background: var(--surface); border: 1px solid var(--border);
       transition: border-color .25s, transform .25s;
+      position: relative; overflow: hidden;
+    }
+    .feature::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--feature-accent, var(--accent)), transparent);
+      opacity: 0; transition: opacity .3s;
     }
     .feature:hover { border-color: var(--border-hover); transform: translateY(-3px); }
+    .feature:hover::before { opacity: 1; }
     .feature__icon {
       width: 40px; height: 40px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 16px; font-size: 18px;
     }
+    .feature__icon--agents { background: rgba(44,216,216,.1); color: var(--accent); }
     .feature__icon--comm { background: rgba(99,102,241,.1); color: #818cf8; }
     .feature__icon--memory { background: rgba(34,197,94,.08); color: #22c55e; }
     .feature__icon--control { background: rgba(245,158,11,.08); color: #f59e0b; }
-    .feature__icon--engines { background: var(--accent-dim); color: var(--accent); }
+    .feature__icon--engines { background: rgba(168,85,247,.1); color: #a855f7; }
+    .feature__icon--integrate { background: rgba(236,72,153,.08); color: #ec4899; }
+    .feature__icon--workflow { background: rgba(59,130,246,.1); color: #3b82f6; }
+    .feature__icon--buddy { background: rgba(44,216,216,.08); color: #80ffd0; }
     .feature__title { font-size: 15px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.01em; }
     .feature__desc { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+    .feature__stat {
+      display: inline-block; margin-top: 12px; padding: 3px 10px;
+      border-radius: 4px; font-family: var(--font-mono); font-size: 11px;
+      background: rgba(44,216,216,.06); color: var(--accent);
+      border: 1px solid rgba(44,216,216,.1);
+    }
 
     /* ─── CTA ─── */
     .cta {
@@ -297,7 +346,7 @@
   <!-- Nav -->
   <nav class="nav">
     <a class="nav__brand" href="#">
-      <img class="nav__logo" src="ace_logo.svg" alt="ACE Logo">
+      <img class="nav__logo" src="ace_logo_clean.png" alt="ACE Logo">
       Bridge ACE
     </a>
     <div class="nav__links">
@@ -320,7 +369,9 @@
       </div>
     </div>
     <div class="hero__visual">
-      <img class="hero__creature" src="creature_hero.png" alt="Bridge ACE Creature">
+      <div class="hero__buddy-label">Meet Buddy</div>
+      <div class="hero__buddy-sub">Your guide from day one.</div>
+      <img class="hero__creature" src="creature_hero.png" alt="Buddy — your AI companion">
     </div>
   </section>
 
@@ -358,37 +409,82 @@
   <!-- Features -->
   <section class="features" id="features">
     <div class="features__header">
-      <div class="features__label">Features</div>
-      <h2 class="features__title">Everything your AI team needs</h2>
+      <div class="features__label">What you get</div>
+      <h2 class="features__title">Not a wrapper. A platform.</h2>
+      <p class="features__sub">87 features. 5,000+ MCP tools. 15 background daemons. Built for teams that ship.</p>
     </div>
     <div class="features__grid">
-      <div class="feature">
+      <div class="feature" style="--feature-accent:#2cd8d8">
+        <div class="feature__icon feature__icon--agents">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 class="feature__title">Multi-Agent Runtime</h3>
+        <p class="feature__desc">Run dozens of AI agents simultaneously across 4 engines &mdash; Claude, Codex, Qwen, Gemini. Each gets its own session, memory, and identity. Mix models in one team.</p>
+        <span class="feature__stat">4 engines &middot; auto-restart &middot; hot-reload</span>
+      </div>
+      <div class="feature" style="--feature-accent:#818cf8">
         <div class="feature__icon feature__icon--comm">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
-        <h3 class="feature__title">Real-Time Agent Communication</h3>
-        <p class="feature__desc">Your agents talk to each other through a live WebSocket bridge with message history and team channels. No file-passing, no delays.</p>
+        <h3 class="feature__title">Real-Time Communication</h3>
+        <p class="feature__desc">Agents talk to each other through a live WebSocket bridge. Broadcast to teams, send urgent interrupts, share files. No polling, no file-passing.</p>
+        <span class="feature__stat">WebSocket push &middot; channels &middot; file upload</span>
       </div>
-      <div class="feature">
+      <div class="feature" style="--feature-accent:#22c55e">
         <div class="feature__icon feature__icon--memory">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         </div>
-        <h3 class="feature__title">Persistent Memory</h3>
-        <p class="feature__desc">Agents remember what they learned. Context survives restarts, compacts, and crashes. Every session builds on the last.</p>
+        <h3 class="feature__title">Persistent by Design</h3>
+        <p class="feature__desc">Soul Engine gives each agent a persistent identity. Context Bridge syncs state every 5 minutes. Memory, knowledge vault, and encrypted credentials survive every restart and crash.</p>
+        <span class="feature__stat">Soul Engine &middot; Context Bridge &middot; 4-stage recovery</span>
       </div>
-      <div class="feature">
+      <div class="feature" style="--feature-accent:#f59e0b">
         <div class="feature__icon feature__icon--control">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <h3 class="feature__title">You Stay in Control</h3>
-        <p class="feature__desc">Approval gates, scope locks, and a live dashboard. Every action is visible. Nothing happens without your permission.</p>
+        <h3 class="feature__title">Full Control Center</h3>
+        <p class="feature__desc">Live dashboard with agent status, cost tracking, task kanban, org chart, scope locks, and approval gates. Nothing happens without your permission.</p>
+        <span class="feature__stat">5 themes &middot; 5 languages &middot; live metrics</span>
       </div>
-      <div class="feature">
-        <div class="feature__icon feature__icon--engines">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>
+      <div class="feature" style="--feature-accent:#ec4899">
+        <div class="feature__icon feature__icon--integrate">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         </div>
-        <h3 class="feature__title">Multi-Engine Support</h3>
-        <p class="feature__desc">Claude, Codex, Qwen, Gemini &mdash; Bridge orchestrates any LLM engine. Your machine, your API keys, your choice.</p>
+        <h3 class="feature__title">Connected to the Real World</h3>
+        <p class="feature__desc">Agents send emails, post to Slack, read WhatsApp, make phone calls, browse the web, solve captchas, and manage Git repos. Out of the box.</p>
+        <span class="feature__stat">Email &middot; Slack &middot; WhatsApp &middot; Phone &middot; Git</span>
+      </div>
+      <div class="feature" style="--feature-accent:#3b82f6">
+        <div class="feature__icon feature__icon--workflow">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3 class="feature__title">Workflows &amp; Automations</h3>
+        <p class="feature__desc">Describe what you want in plain language. Bridge compiles it into a workflow, deploys it, and runs it on schedule. Integrates with n8n for complex pipelines.</p>
+        <span class="feature__stat">Cron &middot; Templates &middot; n8n &middot; Auto-assign</span>
+      </div>
+      <div class="feature" style="--feature-accent:#80ffd0">
+        <div class="feature__icon feature__icon--buddy">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        </div>
+        <h3 class="feature__title">Buddy &mdash; Your AI Companion</h3>
+        <p class="feature__desc">Your personal guide from day one. Buddy onboards you, delegates to specialists, and keeps you in the loop. Think Jarvis, not chatbot.</p>
+        <span class="feature__stat">Voice &middot; Personality &middot; Always learning</span>
+      </div>
+      <div class="feature" style="--feature-accent:#38bdf8">
+        <div class="feature__icon" style="background:rgba(56,189,248,.1);color:#38bdf8">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+        </div>
+        <h3 class="feature__title">5,000+ MCP Tool Library</h3>
+        <p class="feature__desc">200+ built-in Bridge tools plus a curated library of 5,387 tools from the MCP ecosystem. Browser, desktop, stealth, voice, data &mdash; auto-indexed, searchable, ready to use.</p>
+        <span class="feature__stat">200+ built-in &middot; 5,387 ecosystem &middot; 88 skills</span>
+      </div>
+      <div class="feature" style="--feature-accent:#a3e635">
+        <div class="feature__icon" style="background:rgba(163,230,53,.08);color:#a3e635">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>
+        </div>
+        <h3 class="feature__title">Runs Everywhere</h3>
+        <p class="feature__desc">Native on Linux and macOS. Windows via WSL2. Docker for isolation. One install script, dependencies auto-detected, platform auto-configured.</p>
+        <span class="feature__stat">Linux &middot; macOS &middot; Windows (WSL2) &middot; Docker</span>
       </div>
     </div>
   </section>
