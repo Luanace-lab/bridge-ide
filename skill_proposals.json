@@ -1,0 +1,62 @@
+[
+  {
+    "id": "d08769fa-1c5e-470c-8081-f6caea572095",
+    "agent_id": "backend",
+    "skill_name": "test_skill",
+    "description": "Test skill for G5 verification",
+    "content": "# Test Skill\nThis is a test skill proposal.",
+    "reason": "",
+    "status": "approved",
+    "created_at": "2026-03-07T18:04:00.033603+00:00",
+    "reviewed_by": "viktor",
+    "reviewed_at": "2026-03-07T18:04:04.965235+00:00"
+  },
+  {
+    "id": "4d889ce4-e86d-4fac-a8d8-1d765532b031",
+    "agent_id": "backend",
+    "skill_name": "test_g5_skill",
+    "description": "Verification test skill",
+    "content": "# Test G5 Skill\nSkill content for verification.",
+    "reason": "G5+M3 endpoint testing",
+    "status": "approved",
+    "created_at": "2026-03-07T18:06:03.374524+00:00",
+    "reviewed_by": "viktor",
+    "reviewed_at": "2026-03-07T18:06:08.168189+00:00"
+  },
+  {
+    "id": "6ec1cb93-3185-45cc-9375-ac41df67e5f2",
+    "agent_id": "viktor",
+    "skill_name": "g5_verify",
+    "description": "Verification endpoint test",
+    "content": "# G5 Verification\nTest content.",
+    "reason": "G5+M3 endpoint verification",
+    "status": "rejected",
+    "created_at": "2026-03-07T18:06:07.318137+00:00",
+    "reviewed_by": "viktor",
+    "reviewed_at": "2026-03-07T18:06:10.922926+00:00"
+  },
+  {
+    "id": "7c5676ef-71d8-4a2b-b925-60c1e5b710dc",
+    "agent_id": "buddy",
+    "skill_name": "slice10tempskill",
+    "description": "temporary live probe",
+    "content": "---\nname: slice10tempskill\ndescription: temporary live probe\n---\nBody",
+    "reason": "slice10 baseline",
+    "status": "rejected",
+    "created_at": "2026-03-14T08:06:35.899556+00:00",
+    "reviewed_by": "viktor",
+    "reviewed_at": "2026-03-14T08:17:52.308826+00:00"
+  },
+  {
+    "id": "b67eb1fa-4121-4313-b37f-dfbcf6bcd890",
+    "agent_id": "buddy",
+    "skill_name": "slice10postrestart",
+    "description": "post restart live probe",
+    "content": "---\nname: slice10postrestart\ndescription: post restart live probe\n---\nBody",
+    "reason": "slice10 post-restart",
+    "status": "rejected",
+    "created_at": "2026-03-14T08:17:32.456063+00:00",
+    "reviewed_by": "viktor",
+    "reviewed_at": "2026-03-14T08:17:52.359374+00:00"
+  }
+]

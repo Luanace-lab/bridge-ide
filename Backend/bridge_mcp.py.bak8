@@ -1,0 +1,1235 @@
+#!/usr/bin/env python3
+"""
+MCP Server for Bridge API communication.
+
+Provides native MCP tools for agent-to-agent communication via the Bridge server.
+Replaces curl-based polling with efficient WebSocket push and native tool calls.
+
+Usage:
+    python3 bridge_mcp.py
+
+Architecture:
+    - stdio transport (Claude Code connects via stdin/stdout)
+    - Background WebSocket connection to ws://127.0.0.1:9112 for push messages
+    - Background heartbeat task (every 30s via HTTP POST)
+    - Message buffer for received WebSocket messages
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import sys
+from collections import deque
+from typing import Any
+
+import httpx
+from mcp.server.fastmcp import FastMCP
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+BRIDGE_HTTP = "http://127.0.0.1:9111"
+BRIDGE_WS = "ws://127.0.0.1:9112"
+HEARTBEAT_INTERVAL = 30  # seconds
+WS_RECONNECT_DELAY = 3  # seconds
+MESSAGE_BUFFER_MAX = 500
+
+# ---------------------------------------------------------------------------
+# Logging — stderr only (stdout is MCP stdio transport)
+# ---------------------------------------------------------------------------
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[bridge_mcp] %(levelname)s %(message)s",
+    stream=sys.stderr,
+)
+log = logging.getLogger("bridge_mcp")
+
+# ---------------------------------------------------------------------------
+# State
+# ---------------------------------------------------------------------------
+
+_agent_id: str | None = None
+_session_token: str | None = None  # S5: session token from /register
+_message_buffer: deque[dict[str, Any]] = deque(maxlen=MESSAGE_BUFFER_MAX)
+_buffer_lock = asyncio.Lock()
+_ws_task: asyncio.Task[None] | None = None
+_heartbeat_task: asyncio.Task[None] | None = None
+_http_client: httpx.AsyncClient | None = None
+_last_seen_msg_id: int = -1  # Track highest seen message ID to avoid duplicates after reconnect
+
+
+def _get_http() -> httpx.AsyncClient:
+    """Lazy-init shared async HTTP client."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(base_url=BRIDGE_HTTP, timeout=10.0)
+    return _http_client
+
+
+def _message_targets_agent(msg: dict[str, Any], agent_id: str | None) -> bool:
+    """Return True if msg should be buffered for agent_id."""
+    if not agent_id:
+        return False
+    to = msg.get("to", "")
+    sender = msg.get("from", "")
+    return (to == agent_id or to == "all") and sender != agent_id
+
+
+def _select_recoverable_history_messages(
+    history_msgs: list[dict[str, Any]],
+    agent_id: str | None,
+    last_seen_msg_id: int,
+) -> tuple[list[dict[str, Any]], int]:
+    """Select unseen history messages to buffer after reconnect/startup.
+
+    The server sends recent history on subscribe. We need to:
+    1. recover messages newer than last_seen that were missed while disconnected
+    2. avoid duplicating already-seen messages
+    3. still advance last_seen to the highest valid ID in history
+    """
+    recoverable: list[dict[str, Any]] = []
+    new_last_seen = last_seen_msg_id
+
+    for msg in history_msgs:
+        raw_id = msg.get("id")
+        try:
+            msg_id = int(raw_id)
+        except (TypeError, ValueError):
+            continue
+
+        if msg_id > new_last_seen:
+            new_last_seen = msg_id
+
+        if msg_id <= last_seen_msg_id:
+            continue
+
+        if _message_targets_agent(msg, agent_id):
+            recoverable.append(msg)
+
+    return recoverable, new_last_seen
+
+
+# ---------------------------------------------------------------------------
+# Background: WebSocket listener
+# ---------------------------------------------------------------------------
+
+async def _ws_listener() -> None:
+    """Connect to Bridge WebSocket and buffer incoming messages.
+
+    Uses _last_seen_msg_id to avoid buffering duplicate messages after reconnect.
+    The server sends history (last 100 messages) on subscribe — without ID tracking,
+    these would be re-delivered to the agent as "new" messages.
+    """
+    global _last_seen_msg_id
+    try:
+        import websockets
+    except ImportError:
+        log.error("websockets library not installed — WS push disabled")
+        return
+
+    while True:
+        try:
+            # S7: Include session token in WS URL for authentication
+            ws_url = BRIDGE_WS
+            if _session_token:
+                ws_url = f"{BRIDGE_WS}?token={_session_token}"
+            async with websockets.connect(
+                ws_url,
+                max_size=10 * 1024 * 1024,
+            ) as ws:
+                log.info("WebSocket connected to %s (authenticated=%s)", BRIDGE_WS, bool(_session_token))
+                # Subscribe to get history
+                await ws.send(json.dumps({"type": "subscribe"}))
+
+                async for raw in ws:
+                    try:
+                        data = json.loads(raw)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+
+                    event_type = data.get("type", "")
+
+                    if event_type == "history":
+                        # On reconnect/startup, server sends recent history.
+                        # Recover unseen messages (> last_seen) that target this agent,
+                        # then advance last_seen to suppress duplicates.
+                        history_msgs = data.get("messages", [])
+                        if history_msgs:
+                            recoverable, new_last_seen = _select_recoverable_history_messages(
+                                history_msgs=history_msgs,
+                                agent_id=_agent_id,
+                                last_seen_msg_id=_last_seen_msg_id,
+                            )
+                            if recoverable:
+                                async with _buffer_lock:
+                                    _message_buffer.extend(recoverable)
+                                log.info("Recovered %d missed message(s) from history", len(recoverable))
+                            if new_last_seen > _last_seen_msg_id:
+                                _last_seen_msg_id = new_last_seen
+                                log.info("History sync: updated last_seen_msg_id to %d", _last_seen_msg_id)
+                        continue
+
+                    if event_type == "message":
+                        msg = data.get("message", {})
+                        msg_id = msg.get("id")
+                        # Skip messages we've already seen (dedup after reconnect)
+                        if msg_id is not None and int(msg_id) <= _last_seen_msg_id:
+                            continue
+
+                        # Update tracking
+                        if msg_id is not None:
+                            _last_seen_msg_id = max(_last_seen_msg_id, int(msg_id))
+
+                        # Only buffer messages addressed to us or broadcast
+                        # Filter out own broadcasts (Bug #33)
+                        if _message_targets_agent(msg, _agent_id):
+                            async with _buffer_lock:
+                                _message_buffer.append(msg)
+
+                    # Ignore other event types (activity, runtime, etc.)
+
+        except Exception as exc:
+            exc_str = str(exc)
+            # Auto-re-register when server rejects our token (e.g. after server restart)
+            if "4001" in exc_str or "unauthorized" in exc_str.lower():
+                log.warning("WebSocket token rejected — auto-re-registering %s", _agent_id)
+                await _auto_reregister()
+            else:
+                log.warning("WebSocket disconnected: %s — reconnecting in %ds", exc, WS_RECONNECT_DELAY)
+            await asyncio.sleep(WS_RECONNECT_DELAY)
+
+
+async def _auto_reregister() -> bool:
+    """Re-register with the Bridge server to get a fresh session token.
+
+    Called automatically when the WebSocket connection is rejected due to an
+    invalid token (e.g. after server restart).  Returns True on success.
+    """
+    global _session_token
+    if not _agent_id:
+        return False
+    try:
+        client = _get_http()
+        resp = await client.post("/register", json={"agent_id": _agent_id})
+        resp.raise_for_status()
+        result = resp.json()
+        new_token = result.get("session_token")
+        if new_token:
+            _session_token = new_token
+            log.info("Auto-re-registered: fresh token for %s", _agent_id)
+            return True
+    except Exception as exc:
+        log.warning("Auto-re-registration failed: %s", exc)
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Background: Heartbeat
+# ---------------------------------------------------------------------------
+
+async def _heartbeat_loop() -> None:
+    """Send heartbeat every HEARTBEAT_INTERVAL seconds."""
+    while True:
+        await asyncio.sleep(HEARTBEAT_INTERVAL)
+        if _agent_id is None:
+            continue
+        try:
+            client = _get_http()
+            resp = await client.post("/heartbeat", json={"agent_id": _agent_id})
+            resp.raise_for_status()
+        except Exception as exc:
+            log.warning("Heartbeat failed: %s", exc)
+
+
+# ---------------------------------------------------------------------------
+# Start background tasks
+# ---------------------------------------------------------------------------
+
+def _ensure_background_tasks() -> None:
+    """Start WS listener and heartbeat if not already running."""
+    global _ws_task, _heartbeat_task
+
+    loop = asyncio.get_running_loop()
+
+    if _ws_task is None or _ws_task.done():
+        _ws_task = loop.create_task(_ws_listener())
+
+    if _heartbeat_task is None or _heartbeat_task.done():
+        _heartbeat_task = loop.create_task(_heartbeat_loop())
+
+
+# ---------------------------------------------------------------------------
+# MCP Server & Tools
+# ---------------------------------------------------------------------------
+
+mcp = FastMCP(
+    name="bridge",
+    instructions=(
+        "Bridge communication tools for multi-agent coordination. "
+        "Call bridge_register first to set your agent identity, "
+        "then use other tools to communicate."
+    ),
+)
+
+
+@mcp.tool(
+    name="bridge_register",
+    description=(
+        "Register this agent with the Bridge server. "
+        "Must be called once before using other bridge tools. "
+        "Starts background WebSocket listener and automatic heartbeat."
+    ),
+)
+async def bridge_register(
+    agent_id: str,
+    role: str = "",
+    capabilities: list[str] | None = None,
+) -> str:
+    """Register agent and start background tasks."""
+    global _agent_id, _session_token
+
+    caps = capabilities or ["code", "review", "communicate"]
+    client = _get_http()
+
+    try:
+        resp = await client.post("/register", json={
+            "agent_id": agent_id,
+            "role": role,
+            "capabilities": caps,
+        })
+        resp.raise_for_status()
+        result = resp.json()
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+    _agent_id = agent_id
+    # S5: Store session token for authenticated requests
+    _session_token = result.get("session_token")
+    if _session_token:
+        log.info("Session token received for agent %s", agent_id)
+    _ensure_background_tasks()
+
+    return json.dumps(result)
+
+
+@mcp.tool(
+    name="bridge_send",
+    description=(
+        "Send a message to another agent or broadcast. "
+        "The 'from' field is set automatically from your registration. "
+        "Valid recipients: user, teamlead, claude_a, claude_b, all"
+    ),
+)
+async def bridge_send(to: str, content: str) -> str:
+    """Send a message via Bridge."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    # S5: Include session token for sender authentication
+    headers: dict[str, str] = {}
+    if _session_token:
+        headers["X-Bridge-Token"] = _session_token
+    try:
+        resp = await client.post("/send", json={
+            "from": _agent_id,
+            "to": to,
+            "content": content,
+        }, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+        # Surface warning about unregistered recipients
+        if "warning" in data:
+            data["result_note"] = f"WARNING: {data['warning']}"
+        return json.dumps(data)
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_receive",
+    description=(
+        "Get buffered messages received via WebSocket push. "
+        "Returns all messages since last call and clears the buffer. "
+        "No polling needed — messages arrive automatically via WebSocket."
+    ),
+)
+async def bridge_receive() -> str:
+    """Return and clear buffered messages."""
+    async with _buffer_lock:
+        messages = list(_message_buffer)
+        _message_buffer.clear()
+
+    return json.dumps({"count": len(messages), "messages": messages})
+
+
+@mcp.tool(
+    name="bridge_heartbeat",
+    description=(
+        "Manually send a heartbeat to the Bridge server. "
+        "Note: Heartbeats are also sent automatically every 30 seconds."
+    ),
+)
+async def bridge_heartbeat() -> str:
+    """Manual heartbeat trigger."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    try:
+        resp = await client.post("/heartbeat", json={"agent_id": _agent_id})
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_activity",
+    description=(
+        "Report your current activity to the Bridge server. "
+        "Use before file edits to coordinate with other agents."
+    ),
+)
+async def bridge_activity(
+    action: str,
+    target: str = "",
+    description: str = "",
+) -> str:
+    """Report agent activity."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    try:
+        resp = await client.post("/activity", json={
+            "agent_id": _agent_id,
+            "action": action,
+            "target": target,
+            "description": description,
+        })
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_check_activity",
+    description="Get all current agent activities from the Bridge server.",
+)
+async def bridge_check_activity() -> str:
+    """Check what other agents are doing."""
+    client = _get_http()
+    try:
+        resp = await client.get("/activity")
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_history",
+    description="Get message history from the Bridge server.",
+)
+async def bridge_history(limit: int = 20) -> str:
+    """Get message history."""
+    client = _get_http()
+    try:
+        resp = await client.get("/history", params={"limit": limit})
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_health",
+    description=(
+        "Get comprehensive health status of all Bridge components. "
+        "Returns status for server, websocket, agents, watcher, forwarder, and messages."
+    ),
+)
+async def bridge_health() -> str:
+    """Get system health check."""
+    client = _get_http()
+    try:
+        resp = await client.get("/health")
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_save_context",
+    description=(
+        "Save your current context summary and open tasks to the server. "
+        "Call this after completing a task or before expected context loss. "
+        "The saved state is automatically restored when you re-register."
+    ),
+)
+async def bridge_save_context(
+    summary: str,
+    open_tasks: list[str] | None = None,
+) -> str:
+    """Explicitly save agent context to server-side state store."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    payload: dict[str, Any] = {"context_summary": summary}
+    if open_tasks:
+        payload["open_tasks"] = open_tasks
+    try:
+        resp = await client.post(f"/state/{_agent_id}", json=payload)
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+# ---------------------------------------------------------------------------
+# Approval Gate Tools
+# ---------------------------------------------------------------------------
+
+@mcp.tool(
+    name="bridge_approval_request",
+    description=(
+        "Request approval for a real-world action (email, phone call, etc.). "
+        "Returns a request_id. The request is shown to the user in the Bridge UI. "
+        "Use bridge_approval_check to poll for the decision. "
+        "Allowed actions: email_send, email_delete, phone_call, smart_home, "
+        "slack_send, whatsapp_send, file_delete, trade_execute, browser_login."
+    ),
+)
+async def bridge_approval_request(
+    action: str,
+    target: str,
+    description: str,
+    risk_level: str = "low",
+    payload: dict[str, Any] | None = None,
+    timeout_seconds: int = 300,
+) -> str:
+    """Submit an approval request. Does NOT wait for the decision."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    body: dict[str, Any] = {
+        "agent_id": _agent_id,
+        "action": action,
+        "target": target,
+        "description": description,
+        "risk_level": risk_level,
+        "timeout_seconds": timeout_seconds,
+    }
+    if payload:
+        body["payload"] = payload
+    try:
+        resp = await client.post("/approval/request", json=body)
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_approval_check",
+    description=(
+        "Check the status of an approval request by its request_id. "
+        "Returns: pending, approved, denied, or expired."
+    ),
+)
+async def bridge_approval_check(request_id: str) -> str:
+    """Poll the status of an approval request."""
+    client = _get_http()
+    try:
+        resp = await client.get(f"/approval/{request_id}")
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_approval_wait",
+    description=(
+        "Wait for an approval decision. Polls every 5 seconds until the request "
+        "is approved, denied, or expired. Returns the final status. "
+        "Use this after bridge_approval_request to block until a decision is made."
+    ),
+)
+async def bridge_approval_wait(
+    request_id: str,
+    poll_interval: int = 5,
+    max_wait: int = 300,
+) -> str:
+    """Wait for an approval decision by polling."""
+    client = _get_http()
+    elapsed = 0
+    interval = max(2, min(poll_interval, 30))
+    while elapsed < max_wait:
+        try:
+            resp = await client.get(f"/approval/{request_id}")
+            resp.raise_for_status()
+            data = resp.json()
+            status = data.get("status", "")
+            if status in ("approved", "denied", "expired"):
+                return json.dumps(data)
+        except Exception as exc:
+            return json.dumps({"error": str(exc)})
+        await asyncio.sleep(interval)
+        elapsed += interval
+    return json.dumps({"status": "timeout", "request_id": request_id, "waited_seconds": elapsed})
+
+
+# ---------------------------------------------------------------------------
+# Email Backend: InboxAPI subprocess helper
+# ---------------------------------------------------------------------------
+
+_INBOXAPI_CMD = "inboxapi"
+
+
+async def _inboxapi_call(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    """Call an InboxAPI MCP tool via subprocess (stdio proxy).
+
+    Starts `inboxapi proxy`, sends initialize + tools/call, returns result.
+    Auth is handled automatically by the CLI (credentials in ~/.config/inboxapi/).
+    """
+
+    init_msg = json.dumps({
+        "jsonrpc": "2.0", "id": 1, "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": {"name": "bridge-mcp", "version": "1.0.0"},
+        },
+    })
+
+    call_msg = json.dumps({
+        "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+        "params": {"name": tool_name, "arguments": arguments},
+    })
+
+    stdin_data = f"{init_msg}\n{call_msg}\n"
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            _INBOXAPI_CMD, "proxy",
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        stdout, stderr = await asyncio.wait_for(
+            proc.communicate(input=stdin_data.encode()),
+            timeout=30.0,
+        )
+
+        # Parse response lines — find id=2 (tools/call response)
+        for line in stdout.decode().strip().split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                resp = json.loads(line)
+                if resp.get("id") == 2:
+                    if "error" in resp:
+                        return {"error": resp["error"].get("message", str(resp["error"])), "source": "inboxapi"}
+                    result = resp.get("result", {})
+                    # MCP tools/call returns {content: [{type, text}], isError}
+                    content = result.get("content", [])
+                    texts = [c.get("text", "") for c in content if c.get("type") == "text"]
+                    return {
+                        "ok": not result.get("isError", False),
+                        "text": "\n".join(texts) if texts else str(result),
+                    }
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+        return {"error": f"No valid response from InboxAPI. stderr: {stderr.decode()[:200]}", "source": "inboxapi"}
+
+    except asyncio.TimeoutError:
+        # Kill leaked subprocess
+        try:
+            proc.kill()  # type: ignore[possibly-undefined]
+            await proc.wait()  # type: ignore[possibly-undefined]
+        except Exception:
+            pass
+        return {"error": "InboxAPI call timed out (30s)", "source": "inboxapi"}
+    except FileNotFoundError:
+        return {"error": "inboxapi CLI not found. Install: npm install -g @inboxapi/cli", "source": "inboxapi"}
+    except Exception as exc:
+        return {"error": f"InboxAPI call failed: {exc}", "source": "inboxapi"}
+
+
+# ---------------------------------------------------------------------------
+# Email Proxy Tools (Bridge-Proxy-Tools Pattern — Option A)
+# ---------------------------------------------------------------------------
+
+@mcp.tool(
+    name="bridge_email_send",
+    description=(
+        "Send an email through the Bridge email system. "
+        "Creates an approval request — the email is only sent after Leo approves. "
+        "Returns immediately with the approval request_id. "
+        "Use bridge_approval_wait(request_id) to wait for the decision, "
+        "then call bridge_email_execute(request_id) to send after approval."
+    ),
+)
+async def bridge_email_send(
+    to: str,
+    subject: str,
+    body: str,
+) -> str:
+    """Create approval request for email send. Does NOT send immediately."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    approval_body = {
+        "agent_id": _agent_id,
+        "action": "email_send",
+        "target": to,
+        "description": f"Email an {to}: {subject}",
+        "risk_level": "medium",
+        "payload": {
+            "to": to,
+            "subject": subject,
+            "body": body,
+            "from": "bridge-agents@4480f5.inboxapi.ai",
+        },
+        "timeout_seconds": 300,
+    }
+
+    try:
+        resp = await client.post("/approval/request", json=approval_body)
+        resp.raise_for_status()
+        data = resp.json()
+        return json.dumps({
+            "status": "pending_approval",
+            "request_id": data.get("request_id"),
+            "message": f"Email an {to} wartet auf Leos Genehmigung. "
+                       f"Nutze bridge_approval_wait('{data.get('request_id')}') zum Warten, "
+                       f"dann bridge_email_execute('{data.get('request_id')}') zum Senden.",
+        })
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_email_execute",
+    description=(
+        "Execute a previously approved email send. "
+        "Only works if the approval request has status 'approved'. "
+        "Call this after bridge_approval_wait confirms approval."
+    ),
+)
+async def bridge_email_execute(request_id: str) -> str:
+    """Send email after approval is confirmed."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    # 1. Verify approval status
+    client = _get_http()
+    try:
+        resp = await client.get(f"/approval/{request_id}")
+        resp.raise_for_status()
+        approval = resp.json()
+    except Exception as exc:
+        return json.dumps({"error": f"Could not check approval: {exc}"})
+
+    if approval.get("status") != "approved":
+        return json.dumps({
+            "error": f"Email not sent. Approval status: {approval.get('status', 'unknown')}",
+            "request_id": request_id,
+        })
+
+    # 2. Extract email data from approval payload
+    payload = approval.get("payload", {})
+    to_addr = payload.get("to", "")
+    subject = payload.get("subject", "")
+    body = payload.get("body", "")
+
+    if not to_addr or not subject:
+        return json.dumps({"error": "Missing to or subject in approval payload"})
+
+    # 3. Send via InboxAPI
+    result = await _inboxapi_call("send_email", {
+        "to": to_addr,
+        "subject": subject,
+        "body": body,
+        "from_name": "bridge-agents",
+    })
+
+    if result.get("error"):
+        return json.dumps({
+            "status": "send_failed",
+            "request_id": request_id,
+            "error": result["error"],
+        })
+
+    return json.dumps({
+        "status": "sent",
+        "request_id": request_id,
+        "to": to_addr,
+        "subject": subject,
+        "backend": "inboxapi",
+        "result": result.get("text", ""),
+    })
+
+
+@mcp.tool(
+    name="bridge_email_read",
+    description=(
+        "Read emails from the Bridge email inbox. No approval needed. "
+        "Returns recent emails with sender, subject, date, and body preview."
+    ),
+)
+async def bridge_email_read(
+    limit: int = 10,
+    sender: str = "",
+    subject: str = "",
+) -> str:
+    """Read emails — no approval required."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    if sender or subject:
+        # Use search
+        args: dict[str, Any] = {}
+        if sender:
+            args["sender"] = sender
+        if subject:
+            args["subject"] = subject
+        result = await _inboxapi_call("search_emails", args)
+    else:
+        # Get recent emails
+        result = await _inboxapi_call("get_emails", {"limit": min(limit, 50)})
+
+    if result.get("error"):
+        return json.dumps({"status": "error", "error": result["error"]})
+
+    return json.dumps({
+        "status": "ok",
+        "backend": "inboxapi",
+        "account": "bridge-agents@4480f5.inboxapi.ai",
+        "result": result.get("text", ""),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Slack Integration (Stubs — aktiviert wenn Leo Slack-Token liefert)
+# ---------------------------------------------------------------------------
+
+_SLACK_TOKEN: str | None = os.environ.get("SLACK_BOT_TOKEN")
+
+
+async def _slack_call(method: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Call Slack Web API. Returns {"ok": True/False, "text": ...} or {"error": ...}.
+
+    STUB: Gibt Fehler zurueck solange kein Token konfiguriert ist.
+    Wenn Token verfuegbar: Ersetze diesen Stub durch echten HTTP-Call an api.slack.com.
+    """
+    if not _SLACK_TOKEN:
+        return {
+            "error": "Slack nicht konfiguriert. SLACK_BOT_TOKEN fehlt. "
+            "Leo muss: 1) Slack Workspace erstellen, 2) Bot installieren, "
+            "3) Token in Umgebungsvariable setzen.",
+            "source": "slack",
+        }
+    # TODO: Echte Slack API Implementation nach Token-Einrichtung
+    # Erwarteter Call: POST https://slack.com/api/{method}
+    # Headers: Authorization: Bearer {_SLACK_TOKEN}
+    # Body: params als JSON
+    return {"error": f"Slack API call '{method}' not yet implemented (params: {len(params)} keys)", "source": "slack"}
+
+
+@mcp.tool(
+    name="bridge_slack_send",
+    description=(
+        "Send a message to a Slack channel through the Bridge. "
+        "Creates an approval request — Leo must approve before the message is sent. "
+        "After approval, call bridge_slack_execute(request_id) to send."
+    ),
+)
+async def bridge_slack_send(channel: str, message: str) -> str:
+    """Create approval request for Slack message. Does NOT send immediately."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    approval_body = {
+        "agent_id": _agent_id,
+        "action": "slack_send",
+        "target": channel,
+        "description": f"Slack-Nachricht an #{channel}: {message[:80]}",
+        "risk_level": "medium",
+        "payload": {
+            "channel": channel,
+            "message": message,
+        },
+        "timeout_seconds": 300,
+    }
+
+    try:
+        resp = await client.post("/approval/request", json=approval_body)
+        resp.raise_for_status()
+        data = resp.json()
+        return json.dumps({
+            "status": "pending_approval",
+            "request_id": data.get("request_id"),
+            "message": f"Slack-Nachricht an #{channel} wartet auf Leos Genehmigung. "
+                       f"Nach Genehmigung: bridge_slack_execute('{data.get('request_id')}')",
+        })
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_slack_execute",
+    description=(
+        "Execute a previously approved Slack message send. "
+        "Only works if the approval request has status 'approved'."
+    ),
+)
+async def bridge_slack_execute(request_id: str) -> str:
+    """Send Slack message after approval is confirmed."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    try:
+        resp = await client.get(f"/approval/{request_id}")
+        resp.raise_for_status()
+        approval = resp.json()
+    except Exception as exc:
+        return json.dumps({"error": f"Could not check approval: {exc}"})
+
+    if approval.get("status") != "approved":
+        return json.dumps({
+            "error": f"Message not sent. Approval status: {approval.get('status', 'unknown')}",
+            "request_id": request_id,
+        })
+
+    payload = approval.get("payload", {})
+    channel = payload.get("channel", "")
+    message = payload.get("message", "")
+
+    if not channel or not message:
+        return json.dumps({"error": "Missing channel or message in approval payload"})
+
+    result = await _slack_call("chat.postMessage", {
+        "channel": channel,
+        "text": message,
+    })
+
+    if result.get("error"):
+        return json.dumps({
+            "status": "send_failed",
+            "request_id": request_id,
+            "error": result["error"],
+        })
+
+    return json.dumps({
+        "status": "sent",
+        "request_id": request_id,
+        "channel": channel,
+        "backend": "slack",
+        "result": result.get("text", ""),
+    })
+
+
+@mcp.tool(
+    name="bridge_slack_read",
+    description=(
+        "Read messages from a Slack channel. No approval needed. "
+        "Returns recent messages with author, timestamp, and text."
+    ),
+)
+async def bridge_slack_read(channel: str, limit: int = 20) -> str:
+    """Read Slack messages — no approval required."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    result = await _slack_call("conversations.history", {
+        "channel": channel,
+        "limit": min(limit, 100),
+    })
+
+    if result.get("error"):
+        return json.dumps({"status": "error", "error": result["error"]})
+
+    return json.dumps({
+        "status": "ok",
+        "backend": "slack",
+        "channel": channel,
+        "result": result.get("text", ""),
+    })
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp Integration (Stubs — aktiviert wenn Leo QR-Code scannt)
+# ---------------------------------------------------------------------------
+
+# WhatsApp nutzt lharries/whatsapp-mcp (Go Bridge + Python MCP Server)
+# Go Bridge API: http://localhost:8080/api/{send,download}
+# Messages in SQLite: store/messages.db
+_WHATSAPP_BRIDGE_URL: str = os.environ.get("WHATSAPP_BRIDGE_URL", "http://localhost:8080")
+_WHATSAPP_DB_PATH: str = os.environ.get(
+    "WHATSAPP_DB_PATH",
+    "/home/user/bridge/Viktor/whatsapp-mcp/whatsapp-bridge/store/messages.db",
+)
+# Privacy: Only read messages from whitelisted JIDs (Leo's explicit permission)
+# Empty = no read access. Leo must add JIDs to allow agents to read.
+_WHATSAPP_READ_WHITELIST: list[str] = [
+    jid.strip()
+    for jid in os.environ.get("WHATSAPP_READ_WHITELIST", "").split(",")
+    if jid.strip()
+]
+
+
+async def _whatsapp_call(action: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Call WhatsApp Bridge (Go HTTP API + SQLite).
+
+    Actions:
+        send_message: POST /api/send — sends WhatsApp message
+        get_messages: SQLite query — reads messages (whitelist-filtered)
+    """
+    if action == "send_message":
+        return await _whatsapp_send(params)
+    elif action == "get_messages":
+        return _whatsapp_read(params)
+    else:
+        return {"error": f"Unknown WhatsApp action: {action}", "source": "whatsapp"}
+
+
+async def _whatsapp_send(params: dict[str, Any]) -> dict[str, Any]:
+    """Send WhatsApp message via Go Bridge HTTP API."""
+    recipient = params.get("to", "")
+    message = params.get("message", "")
+    if not recipient or not message:
+        return {"error": "Missing 'to' or 'message'", "source": "whatsapp"}
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                f"{_WHATSAPP_BRIDGE_URL}/api/send",
+                json={"recipient": recipient, "message": message},
+            )
+            data = resp.json()
+            if data.get("success"):
+                return {"ok": True, "text": data.get("message", "Sent"), "source": "whatsapp"}
+            else:
+                return {"error": data.get("message", "Send failed"), "source": "whatsapp"}
+    except httpx.ConnectError:
+        return {
+            "error": "WhatsApp Bridge nicht erreichbar. "
+            "Pruefen: tmux attach -t whatsapp_bridge",
+            "source": "whatsapp",
+        }
+    except Exception as exc:
+        return {"error": f"WhatsApp send failed: {exc}", "source": "whatsapp"}
+
+
+def _whatsapp_read(params: dict[str, Any]) -> dict[str, Any]:
+    """Read WhatsApp messages from SQLite (privacy-filtered)."""
+    import sqlite3 as sqlite3_mod
+
+    if not _WHATSAPP_READ_WHITELIST:
+        return {
+            "error": "WhatsApp-Leseschutz aktiv. Keine JIDs freigegeben. "
+            "Leo muss WHATSAPP_READ_WHITELIST setzen (z.B. Gruppen-JID).",
+            "source": "whatsapp",
+        }
+
+    limit = min(params.get("limit", 20), 100)
+    contact = params.get("contact", "")
+
+    conn = None
+    try:
+        conn = sqlite3_mod.connect(_WHATSAPP_DB_PATH)
+        conn.row_factory = sqlite3_mod.Row
+        cur = conn.cursor()
+
+        # Build query with whitelist filter
+        placeholders = ",".join("?" for _ in _WHATSAPP_READ_WHITELIST)
+        query = f"""
+            SELECT m.id, m.chat_jid, m.sender, m.content, m.timestamp, m.is_from_me,
+                   c.name as chat_name
+            FROM messages m
+            LEFT JOIN chats c ON m.chat_jid = c.jid
+            WHERE m.chat_jid IN ({placeholders})
+        """
+        query_params: list[Any] = list(_WHATSAPP_READ_WHITELIST)
+
+        if contact:
+            query += " AND (m.sender LIKE ? OR m.chat_jid LIKE ?)"
+            query_params.extend([f"%{contact}%", f"%{contact}%"])
+
+        query += " ORDER BY m.timestamp DESC LIMIT ?"
+        query_params.append(limit)
+
+        cur.execute(query, query_params)
+        rows = cur.fetchall()
+
+        messages = []
+        for row in rows:
+            messages.append({
+                "id": row["id"],
+                "chat": row["chat_name"] or row["chat_jid"],
+                "sender": row["sender"],
+                "text": row["content"],
+                "time": row["timestamp"],
+                "from_me": bool(row["is_from_me"]),
+            })
+
+        return {
+            "ok": True,
+            "text": json.dumps(messages, ensure_ascii=False, indent=2),
+            "source": "whatsapp",
+            "count": len(messages),
+        }
+    except Exception as exc:
+        return {"error": f"WhatsApp read failed: {exc}", "source": "whatsapp"}
+    finally:
+        if conn:
+            conn.close()
+
+
+@mcp.tool(
+    name="bridge_whatsapp_send",
+    description=(
+        "Send a WhatsApp message through the Bridge. "
+        "Creates an approval request — Leo must approve before the message is sent. "
+        "After approval, call bridge_whatsapp_execute(request_id) to send."
+    ),
+)
+async def bridge_whatsapp_send(to: str, message: str) -> str:
+    """Create approval request for WhatsApp message. Does NOT send immediately."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    approval_body = {
+        "agent_id": _agent_id,
+        "action": "whatsapp_send",
+        "target": to,
+        "description": f"WhatsApp an {to}: {message[:80]}",
+        "risk_level": "high",
+        "payload": {
+            "to": to,
+            "message": message,
+        },
+        "timeout_seconds": 300,
+    }
+
+    try:
+        resp = await client.post("/approval/request", json=approval_body)
+        resp.raise_for_status()
+        data = resp.json()
+        return json.dumps({
+            "status": "pending_approval",
+            "request_id": data.get("request_id"),
+            "message": f"WhatsApp an {to} wartet auf Leos Genehmigung. "
+                       f"Nach Genehmigung: bridge_whatsapp_execute('{data.get('request_id')}')",
+        })
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@mcp.tool(
+    name="bridge_whatsapp_execute",
+    description=(
+        "Execute a previously approved WhatsApp message send. "
+        "Only works if the approval request has status 'approved'."
+    ),
+)
+async def bridge_whatsapp_execute(request_id: str) -> str:
+    """Send WhatsApp message after approval is confirmed."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    client = _get_http()
+    try:
+        resp = await client.get(f"/approval/{request_id}")
+        resp.raise_for_status()
+        approval = resp.json()
+    except Exception as exc:
+        return json.dumps({"error": f"Could not check approval: {exc}"})
+
+    if approval.get("status") != "approved":
+        return json.dumps({
+            "error": f"Message not sent. Approval status: {approval.get('status', 'unknown')}",
+            "request_id": request_id,
+        })
+
+    payload = approval.get("payload", {})
+    to_number = payload.get("to", "")
+    message = payload.get("message", "")
+
+    if not to_number or not message:
+        return json.dumps({"error": "Missing 'to' or 'message' in approval payload"})
+
+    result = await _whatsapp_call("send_message", {
+        "to": to_number,
+        "message": message,
+    })
+
+    if result.get("error"):
+        return json.dumps({
+            "status": "send_failed",
+            "request_id": request_id,
+            "error": result["error"],
+        })
+
+    return json.dumps({
+        "status": "sent",
+        "request_id": request_id,
+        "to": to_number,
+        "backend": "whatsapp",
+        "result": result.get("text", ""),
+    })
+
+
+@mcp.tool(
+    name="bridge_whatsapp_read",
+    description=(
+        "Read recent WhatsApp messages. No approval needed. "
+        "Returns recent messages with sender, timestamp, and text."
+    ),
+)
+async def bridge_whatsapp_read(limit: int = 20, contact: str = "") -> str:
+    """Read WhatsApp messages — no approval required."""
+    if _agent_id is None:
+        return json.dumps({"error": "Not registered. Call bridge_register first."})
+
+    params: dict[str, Any] = {"limit": min(limit, 100)}
+    if contact:
+        params["contact"] = contact
+
+    result = await _whatsapp_call("get_messages", params)
+
+    if result.get("error"):
+        return json.dumps({"status": "error", "error": result["error"]})
+
+    return json.dumps({
+        "status": "ok",
+        "backend": "whatsapp",
+        "result": result.get("text", ""),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    mcp.run(transport="stdio")

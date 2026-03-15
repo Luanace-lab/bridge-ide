@@ -1,0 +1,104 @@
+{
+  "template_id": "tpl_chat_summary",
+  "name": "Chat-Zusammenfassung",
+  "description": "Fasst die Bridge-Chat Nachrichten des Tages zusammen und sendet eine kurze Uebersicht. Susi muss nicht 200 Nachrichten lesen — 5 Saetze reichen.",
+  "category": "reports",
+  "difficulty": "mittel",
+  "icon": "message",
+  "variables": [
+    {
+      "key": "cron_time",
+      "label": "Uhrzeit in Server-Zeitzone (HH:MM)",
+      "type": "time",
+      "default": "18:00"
+    },
+    {
+      "key": "message_limit",
+      "label": "Anzahl Nachrichten (letzte X)",
+      "type": "number",
+      "default": 50,
+      "min": 10,
+      "max": 200
+    },
+    {
+      "key": "bridge_url",
+      "label": "Bridge Server URL",
+      "type": "url",
+      "default": "http://localhost:9111"
+    }
+  ],
+  "n8n_workflow": {
+    "name": "Bridge: Taegliche Chat-Zusammenfassung",
+    "active": true,
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {"field": "cronExpression", "expression": "{{cron_minute}} {{cron_hour}} * * *"}
+            ]
+          }
+        },
+        "name": "Schedule",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [250, 300]
+      },
+      {
+        "parameters": {
+          "url": "{{bridge_url}}/history?limit={{message_limit}}",
+          "options": {}
+        },
+        "name": "Get Chat History",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [470, 300]
+      },
+      {
+        "parameters": {
+          "jsCode": "const history = $('Get Chat History').first().json;\nconst messages = history.messages || [];\nif (messages.length === 0) {\n  return [{ json: { body: 'Heute gab es keine neuen Nachrichten.' } }];\n}\n\nconst agents = new Set();\nconst topics = [];\nfor (const msg of messages) {\n  agents.add(msg.from);\n  if (msg.content && msg.content.length > 10) {\n    topics.push(`${msg.from}: ${msg.content.substring(0, 100)}`);\n  }\n}\n\nconst summary = [\n  `Chat-Zusammenfassung: ${messages.length} Nachrichten von ${[...agents].join(', ')}`,\n  '',\n  'Letzte Themen:',\n  ...topics.slice(-10).map(t => `- ${t}`),\n].join('\\n');\n\nreturn [{ json: { body: summary } }];"
+        },
+        "name": "Build Summary",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [690, 300]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "{{bridge_url}}/send",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {"name": "from", "value": "system"},
+              {"name": "to", "value": "user"},
+              {"name": "content", "value": "={{$json.body}}"}
+            ]
+          },
+          "options": {}
+        },
+        "name": "Bridge Notify",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [910, 300]
+      }
+    ],
+    "connections": {
+      "Schedule": {
+        "main": [[{"node": "Get Chat History", "type": "main", "index": 0}]]
+      },
+      "Get Chat History": {
+        "main": [[{"node": "Build Summary", "type": "main", "index": 0}]]
+      },
+      "Build Summary": {
+        "main": [[{"node": "Bridge Notify", "type": "main", "index": 0}]]
+      }
+    }
+  },
+  "setup_steps": [
+    "Uhrzeit in der n8n-/Server-Zeitzone anpassen (Standard: 18:00)",
+    "Template deployen (1-Klick im Workflow-Wizard)",
+    "Zusammenfassung erscheint im Bridge Chat"
+  ],
+  "bridge_subscription": null
+}

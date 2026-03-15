@@ -1,0 +1,13 @@
+{
+  "name": "intro_clip",
+  "description": "Clip mit farbigem Intro-Screen und Text",
+  "render_type": "with_intro",
+  "defaults": {
+    "intro_duration_s": 3.0,
+    "intro_color": "black",
+    "intro_font_size": 56,
+    "intro_font_color": "white",
+    "width": 1080,
+    "height": 1920
+  }
+}

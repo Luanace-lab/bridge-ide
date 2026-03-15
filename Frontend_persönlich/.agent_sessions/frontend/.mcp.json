@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "bridge": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "/home/user/bridge/BRIDGE/Backend/bridge_mcp.py"
+      ],
+      "env": {
+        "BRIDGE_CLI_AGENT_ID": "frontend",
+        "BRIDGE_CLI_ENGINE": "claude",
+        "BRIDGE_CLI_HOME_DIR": "/home/user/bridge/BRIDGE/Frontend_pers\u00f6nlich/.agent_sessions/frontend",
+        "BRIDGE_CLI_WORKSPACE": "/home/user/bridge/BRIDGE/Frontend_pers\u00f6nlich/.agent_sessions/frontend",
+        "BRIDGE_CLI_PROJECT_ROOT": "/home/user/bridge/BRIDGE/Frontend_pers\u00f6nlich",
+        "BRIDGE_CLI_INSTRUCTION_PATH": "/home/user/bridge/BRIDGE/Frontend_pers\u00f6nlich/.agent_sessions/frontend/CLAUDE.md",
+        "BRIDGE_CLI_SESSION_NAME": "acw_frontend",
+        "BRIDGE_CLI_INCARNATION_ID": "claude:frontend:1773602206960624405",
+        "BRIDGE_CLI_RESUME_SOURCE": "session_file",
+        "BRIDGE_RESUME_ID": "c62f96c8-71ca-44fd-b127-138e78136817",
+        "BRIDGE_TOKEN_CONFIG_FILE": "/home/user/.config/bridge/tokens.json",
+        "BRIDGE_REGISTER_TOKEN": "be597e6e78af3ea44e63fd09bafd200d6924ef9786e1cef443d8c89a81274a91"
+      }
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@0.0.68"
+      ],
+      "env": {}
+    }
+  }
+}

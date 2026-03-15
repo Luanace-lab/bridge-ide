@@ -1,0 +1,12 @@
+{
+  "read_whitelist": [
+    "REDACTED_GROUP_JID@g.us"
+  ],
+  "send_whitelist": [
+    "REDACTED_GROUP_JID@g.us"
+  ],
+  "contacts": {
+    "Leo": "REDACTED_GROUP_JID@g.us",
+    "leo": "REDACTED_GROUP_JID@g.us"
+  }
+}

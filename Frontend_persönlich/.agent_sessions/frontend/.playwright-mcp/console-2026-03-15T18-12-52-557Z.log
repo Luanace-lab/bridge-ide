@@ -1,0 +1,7 @@
+[  189494ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:9112/?token=0a03752efb2fc005fdc3ab206045a471f80fa908e3803f007b67c4df45d9c483' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:9111/buddy_widget.js:1043
+[  189504ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:9112/?token=0a03752efb2fc005fdc3ab206045a471f80fa908e3803f007b67c4df45d9c483' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:9111/chat.html:6388
+[  190084ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://127.0.0.1:9111/task/queue:0
+[  190085ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://127.0.0.1:9111/n8n/executions?limit=5:0
+[  190091ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://127.0.0.1:9111/agents:0
+[  191599ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://127.0.0.1:9111/history?limit=500:0
+[  192000ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://127.0.0.1:9111/history?since=2026-03-12T18%3A16%3A04.528Z&limit=500:0

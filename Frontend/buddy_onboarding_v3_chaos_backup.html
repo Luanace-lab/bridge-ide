@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bridge IDE</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%236366f1'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui' font-size='18' font-weight='700' fill='white'%3EB%3C/text%3E%3C/svg%3E">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#040810;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e7edf5}
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#subtitle{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:115px;z-index:15;
+  font-size:13px;letter-spacing:5px;text-transform:uppercase;
+  color:rgba(32,245,224,.4);opacity:0;transition:opacity 2s ease;
+  font-weight:300;pointer-events:none;
+}
+#subtitle.visible{opacity:1}
+#chat-container{
+  position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
+  z-index:20;width:min(500px,88vw);pointer-events:auto;
+  opacity:0;transition:opacity 1.2s ease;
+}
+#chat-container.visible{opacity:1}
+#chat-box{
+  background:rgba(8,14,30,.5);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(46,209,208,.08);border-radius:16px;padding:6px 6px 6px 18px;
+  display:flex;align-items:center;gap:8px;
+  box-shadow:0 0 80px rgba(40,149,229,.04);transition:border-color .4s,box-shadow .4s;
+}
+#chat-box:focus-within{border-color:rgba(46,209,208,.2);box-shadow:0 0 80px rgba(40,149,229,.1)}
+#chat-input{flex:1;background:none;border:none;outline:none;color:#e7edf5;font-size:15px;font-family:inherit;padding:12px 0;caret-color:#2ED1D0}
+#chat-input::placeholder{color:rgba(138,164,200,.3);font-weight:300}
+#send-btn{width:40px;height:40px;border-radius:10px;border:none;background:linear-gradient(135deg,#2895E5,#2ED1D0);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .3s;flex-shrink:0}
+#send-btn:hover{transform:scale(1.06);box-shadow:0 0 24px rgba(46,209,208,.35)}
+#send-btn svg{width:18px;height:18px}
+#response-area{max-height:180px;overflow-y:auto;padding:0 18px;margin-bottom:8px;scrollbar-width:thin;scrollbar-color:rgba(46,209,208,.12) transparent}
+.buddy-msg{font-size:14px;line-height:1.65;color:rgba(231,237,245,.85);padding:12px 0;border-bottom:1px solid rgba(46,209,208,.05);animation:msgIn .4s ease}
+.buddy-msg:last-child{border-bottom:none}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.typing-dots{display:inline-flex;gap:4px;padding:12px 0}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:rgba(46,209,208,.6);animation:dotP 1.4s ease infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotP{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="subtitle">Welcome to Bridge</div>
+<div id="chat-container">
+  <div id="response-area"></div>
+  <div id="chat-box">
+    <input id="chat-input" type="text" placeholder="Say hello..." autocomplete="off"/>
+    <button id="send-btn" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+let speaking = false, speakIntensity = 0;
+
+/* ── textures ── */
+function radialTex(size, stops) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  stops.forEach(s => g.addColorStop(s[0], s[1]));
+  ctx.fillStyle = g; ctx.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex = radialTex(256,[[0,'rgba(255,255,255,1)'],[.12,'rgba(255,255,255,.5)'],[.35,'rgba(255,255,255,.1)'],[.7,'rgba(255,255,255,.01)'],[1,'rgba(255,255,255,0)']]);
+const dotTex = radialTex(64,[[0,'rgba(255,255,255,.9)'],[.3,'rgba(255,255,255,.25)'],[.7,'rgba(255,255,255,.03)'],[1,'rgba(255,255,255,0)']]);
+
+/* ── renderer ── */
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 3));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#040810');
+const camera = new THREE.PerspectiveCamera(36, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(0, 0.3, 20);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 0.75, 0.2, 0.25);
+composer.addPass(bloom);
+
+/* ── colors — more green mixed in ── */
+const C_CORE  = new THREE.Color('#20F5E0');  /* bright teal-green */
+const C_INNER = new THREE.Color('#22E8C8');  /* green-cyan */
+const C_MID1  = new THREE.Color('#27DEDE');  /* cyan-green */
+const C_MID2  = new THREE.Color('#2895E5');  /* blue */
+const C_MID   = new THREE.Color('#25B8A0');  /* green-teal mid */
+const C_OUTER = new THREE.Color('#1A8E6B');  /* deep green */
+const C_DEEP  = new THREE.Color('#1B7A55');  /* forest teal */
+const C_BLUE  = new THREE.Color('#1F6EB4');  /* original blue */
+const C_GLOW  = new THREE.Color('#80FFD0');  /* green-white glow */
+
+const logo = new THREE.Group();
+scene.add(logo);
+const allNodes = [];
+
+/* ── hex geometry ── */
+function hexGeo(r) {
+  const s = new THREE.Shape();
+  for (let i=0;i<6;i++){
+    const a = Math.PI/3*i - Math.PI/6;
+    i===0 ? s.moveTo(r*Math.cos(a),r*Math.sin(a)) : s.lineTo(r*Math.cos(a),r*Math.sin(a));
+  }
+  s.closePath();
+  return new THREE.ExtrudeGeometry(s,{depth:.06, bevelEnabled:true, bevelThickness:.01, bevelSize:.01, bevelSegments:1});
+}
+
+function node(x, y, z, size, color, ring) {
+  const pos = new THREE.Vector3(x, y, z);
+  const geo = hexGeo(size);
+  const mat = new THREE.MeshStandardMaterial({
+    color, emissive:color, emissiveIntensity:.45,
+    metalness:.85, roughness:.12, transparent:true, opacity:.96
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  if (pos.lengthSq() > 0.01) {
+    mesh.lookAt(pos.clone().normalize().multiplyScalar(50));
+  }
+  logo.add(mesh);
+
+  const gMat = new THREE.SpriteMaterial({map:glowTex, color, transparent:true, opacity:.14, blending:THREE.AdditiveBlending, depthWrite:false});
+  const glow = new THREE.Sprite(gMat);
+  glow.position.copy(pos);
+  glow.scale.setScalar(size * 4.5);
+  logo.add(glow);
+
+  allNodes.push({mesh, glow, mat, gMat, color:color.clone(), pos:pos.clone(), size, ring});
+  return pos;
+}
+
+/* ══════════════════════════════════════════════
+   CORONA CELL v2 — ULTRA-DENSE
+   Ordered core + chaotic spikes, ~500+ nodes
+   ══════════════════════════════════════════════ */
+
+/* Seeded random for deterministic chaos */
+let seed = 42;
+function sRand(){ seed=(seed*16807+0)%2147483647; return(seed&0x7fffffff)/0x7fffffff; }
+
+/* Helper: uniform points on sphere (fibonacci) */
+function fibSphere(n, radius, zSpread) {
+  const pts = [];
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  for (let i=0; i<n; i++) {
+    const y = 1 - (i / (n-1)) * 2;
+    const r = Math.sqrt(1 - y*y);
+    const theta = golden * i;
+    pts.push({
+      x: Math.cos(theta) * r * radius,
+      y: y * radius,
+      z: Math.sin(theta) * r * radius * zSpread
+    });
+  }
+  return pts;
+}
+
+/* ═══ ORDERED CORE ═══ */
+
+/* Center */
+node(0, 0, 0, 0.5, C_CORE, 0);
+
+/* Shell 1: r=0.5, 8 tight */
+const s1 = fibSphere(8, 0.5, 0.8);
+for (const p of s1) node(p.x, p.y, p.z, 0.22, C_CORE, 0);
+
+/* Shell 2: r=0.9, 16 */
+const s2 = fibSphere(16, 0.9, 0.85);
+for (const p of s2) node(p.x, p.y, p.z, 0.2, C_CORE, 0);
+
+/* Shell 3: r=1.3, 28 */
+const s3 = fibSphere(28, 1.3, 0.88);
+for (const p of s3) node(p.x, p.y, p.z, 0.17, C_INNER, 1);
+
+/* Shell 4: r=1.7, 40 */
+const s4 = fibSphere(40, 1.7, 0.9);
+for (let i=0; i<s4.length; i++) {
+  const p = s4[i];
+  node(p.x, p.y, p.z, 0.15, i%2===0?C_INNER:C_MID1, 1);
+}
+
+/* Shell 5: r=2.1, 52 — transition */
+const s5 = fibSphere(52, 2.1, 0.92);
+for (let i=0; i<s5.length; i++) {
+  const p = s5[i];
+  const c = [C_INNER, C_MID1, C_MID][i%3];
+  node(p.x, p.y, p.z, 0.13, c, 2);
+}
+
+/* Shell 6: r=2.5, 60 — outer core surface */
+const s6 = fibSphere(60, 2.5, 0.94);
+for (let i=0; i<s6.length; i++) {
+  const p = s6[i];
+  node(p.x, p.y, p.z, 0.11, i%2===0?C_MID1:C_MID2, 2);
+}
+
+/* Shell 7: r=2.9, 48 — bumpy surface */
+const s7 = fibSphere(48, 2.9, 0.95);
+for (let i=0; i<s7.length; i++) {
+  const p = s7[i];
+  node(p.x, p.y, p.z, 0.09, i%3===0?C_MID:C_MID2, 3);
+}
+
+/* ═══ CHAOTIC SPIKES ═══ */
+
+/* Generate 40 random spike directions (seeded) */
+const spikeDirs = [];
+for (let i=0; i<40; i++) {
+  const theta = sRand() * Math.PI * 2;
+  const phi = Math.acos(2*sRand()-1);
+  spikeDirs.push(new THREE.Vector3(
+    Math.sin(phi)*Math.cos(theta),
+    Math.sin(phi)*Math.sin(theta),
+    Math.cos(phi)
+  ));
+}
+
+/* Each spike: chaotic path with random deviations */
+for (let s=0; s<spikeDirs.length; s++) {
+  const baseDir = spikeDirs[s];
+  const spikeLen = 2.0 + sRand() * 3.5; /* 2-5.5 units long */
+  const segments = 3 + Math.floor(sRand() * 5); /* 3-7 nodes per spike */
+  const chaos = 0.2 + sRand() * 0.5; /* how much it deviates */
+  const thickness = 0.08 + sRand() * 0.1;
+
+  /* accumulate random walk direction */
+  let dx = baseDir.x, dy = baseDir.y, dz = baseDir.z;
+
+  for (let j=0; j<segments; j++) {
+    const t = (j+1) / segments;
+    const r = 2.7 + t * spikeLen;
+
+    /* chaotic deviation increases with distance */
+    dx += (sRand()-0.5) * chaos * t;
+    dy += (sRand()-0.5) * chaos * t;
+    dz += (sRand()-0.5) * chaos * t * 0.8;
+    const len = Math.sqrt(dx*dx+dy*dy+dz*dz);
+    const nx=dx/len, ny=dy/len, nz=dz/len;
+
+    const px = nx * r;
+    const py = ny * r;
+    const pz = nz * r;
+    const sz = thickness * (1 - t*0.65);
+    const ring = 3 + Math.floor(t * 3);
+
+    /* color: near=green, mid=blue, far=deep */
+    let c;
+    if (t < 0.25) c = C_MID1;
+    else if (t < 0.45) c = sRand()>0.5 ? C_OUTER : C_MID;
+    else if (t < 0.7) c = sRand()>0.5 ? C_BLUE : C_OUTER;
+    else c = sRand()>0.4 ? C_DEEP : C_BLUE;
+
+    node(px, py, pz, sz, c, ring);
+  }
+
+  /* chaotic tip cluster: 2-4 scattered micro-nodes */
+  const tipCount = 2 + Math.floor(sRand()*3);
+  const tipR = 2.7 + spikeLen;
+  const tipDir = new THREE.Vector3(dx,dy,dz).normalize();
+  for (let k=0; k<tipCount; k++) {
+    const scatter = 0.2 + sRand()*0.4;
+    const ox = (sRand()-0.5)*scatter;
+    const oy = (sRand()-0.5)*scatter;
+    const oz = (sRand()-0.5)*scatter*0.7;
+    const sz = 0.03 + sRand()*0.05;
+    node(tipDir.x*tipR+ox, tipDir.y*tipR+oy, tipDir.z*tipR+oz, sz, C_DEEP, 6);
+  }
+}
+
+/* ═══ SCATTER DEBRIS — random floating fragments around surface ═══ */
+for (let i=0; i<80; i++) {
+  const theta = sRand()*Math.PI*2;
+  const phi = Math.acos(2*sRand()-1);
+  const r = 3.0 + sRand()*2.5;
+  const x = r*Math.sin(phi)*Math.cos(theta) + (sRand()-0.5)*0.4;
+  const y = r*Math.sin(phi)*Math.sin(theta) + (sRand()-0.5)*0.4;
+  const z = r*Math.cos(phi) + (sRand()-0.5)*0.3;
+  const sz = 0.04 + sRand()*0.08;
+  const c = [C_MID1, C_MID2, C_OUTER, C_BLUE, C_DEEP][Math.floor(sRand()*5)];
+  node(x, y, z, sz, c, 4);
+}
+
+/* ── glowing core sphere ── */
+const coreSphere = new THREE.Mesh(
+  new THREE.SphereGeometry(2.5, 48, 48),
+  new THREE.MeshStandardMaterial({
+    color:'#0a2530', emissive:'#20F5E0', emissiveIntensity:.08,
+    metalness:1, roughness:.1, transparent:true, opacity:.12
+  })
+);
+logo.add(coreSphere);
+
+/* inner glow sphere */
+const innerGlow = new THREE.Mesh(
+  new THREE.SphereGeometry(1.2, 32, 32),
+  new THREE.MeshStandardMaterial({
+    color:'#20F5E0', emissive:'#20F5E0', emissiveIntensity:.2,
+    metalness:0, roughness:1, transparent:true, opacity:.06
+  })
+);
+logo.add(innerGlow);
+
+/* ── particles ── */
+const PCOUNT = 500;
+const pGeo = new THREE.BufferGeometry();
+const pp = new Float32Array(PCOUNT*3);
+for (let i=0;i<PCOUNT;i++){
+  const t=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), r=8+Math.random()*20;
+  pp[i*3]=r*Math.sin(ph)*Math.cos(t); pp[i*3+1]=r*Math.sin(ph)*Math.sin(t); pp[i*3+2]=r*Math.cos(ph)-5;
+}
+pGeo.setAttribute('position',new THREE.BufferAttribute(pp,3));
+const pMat = new THREE.PointsMaterial({map:dotTex,color:0x22E8C8,size:.12,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,sizeAttenuation:true,depthWrite:false});
+scene.add(new THREE.Points(pGeo, pMat));
+
+/* ── lights — green-blue mix ── */
+scene.add(new THREE.AmbientLight(0x081a15, 0.6));
+const kl = new THREE.PointLight(0x20F5E0, 3, 30); kl.position.set(0,0,8); scene.add(kl);
+const rl = new THREE.PointLight(0x22E8C8, 1.2, 22); rl.position.set(-6,4,5); scene.add(rl);
+const fl = new THREE.PointLight(0x2895E5, 0.8, 20); fl.position.set(5,-3,5); scene.add(fl);
+const gl = new THREE.PointLight(0x1A8E6B, 1.0, 20); gl.position.set(4,5,3); scene.add(gl);
+/* back light for rim when rotated */
+const bl = new THREE.PointLight(0x22E8C8, 1.5, 25); bl.position.set(0,0,-8); scene.add(bl);
+
+/* ── animation ── */
+const clock = new THREE.Clock();
+(function animate(){
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  /* speak lerp */
+  speakIntensity += ((speaking?1:0) - speakIntensity) * 0.1;
+
+  /* ── alive rotation — faster, more organic ── */
+  logo.rotation.y = t * 0.22 + Math.sin(t*0.3)*0.15;
+  logo.rotation.x = Math.sin(t * 0.17) * 0.1 + Math.cos(t*0.11)*0.04;
+  logo.rotation.z = Math.sin(t * 0.09) * 0.06;
+
+  /* breathing — more pronounced */
+  const breath = 1 + Math.sin(t*.5)*.015 + speakIntensity*Math.sin(t*5)*.04;
+  logo.scale.setScalar(breath);
+  logo.position.y = 0.3 + Math.sin(t*.22)*.12;
+
+  /* ── nodes: individual movement + shimmer + SPEAK GLOW ── */
+  for (let i=0; i<allNodes.length; i++) {
+    const n = allNodes[i];
+    const phase = t*1.2 + n.ring*0.6 + i*0.17;
+    const shimmer = .5 + .5*Math.sin(phase);
+
+    /* individual micro-movement — spikes breathe in/out */
+    const dist = n.pos.length();
+    if (dist > 2.5) {
+      /* spike nodes: radial pulse outward */
+      const pulse = 1 + Math.sin(t*1.5 + i*0.7) * 0.04 + speakIntensity * Math.sin(t*6+i) * 0.06;
+      n.mesh.position.x = n.pos.x * pulse;
+      n.mesh.position.y = n.pos.y * pulse;
+      n.mesh.position.z = n.pos.z * pulse;
+      n.glow.position.copy(n.mesh.position);
+    } else if (dist > 0.1) {
+      /* core nodes: subtle jitter */
+      const jx = Math.sin(t*2.5+i*1.3)*0.02;
+      const jy = Math.cos(t*2.1+i*0.9)*0.02;
+      n.mesh.position.x = n.pos.x + jx;
+      n.mesh.position.y = n.pos.y + jy;
+      n.glow.position.copy(n.mesh.position);
+    }
+
+    /* speaking: ripple outward from center */
+    const wave = Math.sin(t*8 - dist*0.8)*.5 + .5;
+    const speak = speakIntensity * wave;
+
+    /* emissive: base shimmer + strong speak boost */
+    n.mat.emissiveIntensity = .45 + shimmer*.15 + speak * 1.6;
+    n.gMat.opacity = .14 + shimmer*.05 + speak * 0.6;
+    n.glow.scale.setScalar(n.size * (4.5 + speak * 7));
+
+    /* rotation of individual hexagons */
+    n.mesh.rotation.z += Math.sin(t*0.5 + i*0.3) * 0.002;
+
+    /* color shift: normal → bright green-white when speaking */
+    if (speakIntensity > 0.01) {
+      n.mat.emissive.lerpColors(n.color, C_GLOW, speak * 0.7);
+    } else {
+      n.mat.emissive.copy(n.color);
+    }
+  }
+
+  /* core sphere glow when speaking */
+  coreSphere.material.emissiveIntensity = .1 + speakIntensity*.5 + Math.sin(t*2.5)*.04;
+  coreSphere.material.opacity = .12 + speakIntensity*.35;
+  innerGlow.material.emissiveIntensity = .25 + speakIntensity*.7 + Math.sin(t*3.5)*.06;
+  innerGlow.material.opacity = .08 + speakIntensity*.2;
+
+  /* particles */
+  const pa = pGeo.attributes.position.array;
+  for(let i=0;i<PCOUNT;i++){pa[i*3+1]+=Math.sin(t*.2+i)*.0008;pa[i*3]+=Math.cos(t*.1+i*.3)*.0004;}
+  pGeo.attributes.position.needsUpdate = true;
+  pMat.opacity = .16 + speakIntensity*.1;
+
+  /* bloom + key light reactive to speaking */
+  bloom.strength = .9 + speakIntensity * 1.2;
+  kl.intensity = 2.5 + speakIntensity * (2 + Math.sin(t*6)*1.5);
+
+  composer.render();
+})();
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight)});
+
+/* ── intro — show UI immediately ── */
+setTimeout(()=>document.getElementById('subtitle').classList.add('visible'), 800);
+setTimeout(()=>document.getElementById('chat-container').classList.add('visible'), 1500);
+
+/* ── chat ── */
+const ci = document.getElementById('chat-input');
+const sb = document.getElementById('send-btn');
+const ra = document.getElementById('response-area');
+let proc = false;
+
+async function send() {
+  const txt = ci.value.trim();
+  if (!txt || proc) return;
+  proc = true; ci.value = '';
+  speaking = true;
+
+  const dots = document.createElement('div');
+  dots.className = 'typing-dots';
+  dots.innerHTML = '<span></span><span></span><span></span>';
+  ra.appendChild(dots); ra.scrollTop = ra.scrollHeight;
+
+  await new Promise(r => setTimeout(r, 1200 + Math.random()*800));
+  dots.remove();
+
+  const m = document.createElement('div');
+  m.className = 'buddy-msg';
+  m.textContent = respond(txt);
+  ra.appendChild(m); ra.scrollTop = ra.scrollHeight;
+
+  /* keep glowing a bit after response */
+  setTimeout(() => { speaking = false; }, 600);
+  proc = false;
+}
+
+function respond(input) {
+  const l = input.toLowerCase();
+  if (l.match(/hall?o|hey|hi|moin|servus|guten/))
+    return 'Hey! Ich bin Buddy \u2014 dein Guide f\u00fcr Bridge IDE. Ich zeig dir wie alles funktioniert. Arbeitest du eher mit Code oder mit Menschen?';
+  if (l.match(/code|entwickl|program|terminal|cli|tech/))
+    return 'Alles klar. Bridge IDE ist eine Multi-Agent-Plattform. Mehrere AI-Agents arbeiten als Team \u2014 du steuerst sie von hier aus.';
+  if (l.match(/mensch|manage|menschen|team|chef|lead/))
+    return 'Perfekt. Stell dir Bridge IDE vor wie ein B\u00fcro mit deinem AI-Team. Du bist der Chef \u2014 deine Agents arbeiten f\u00fcr dich.';
+  if (l.match(/ja|klar|gerne|zeig|los|ok/))
+    return 'Links der Management Chat, rechts das Team Board, oben rechts das Control Center. Schreib einfach was du brauchst!';
+  return 'Verstanden. Ich k\u00fcmmere mich drum. Schreib einfach \u2014 ich bin immer da.';
+}
+
+sb.addEventListener('click', send);
+ci.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+/* NO auto-speaking on focus — only on actual messages */
+</script>
+</body>
+</html>

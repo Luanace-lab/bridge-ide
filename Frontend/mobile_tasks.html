@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="de" data-theme="warm">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Bridge – Mobile Tasks</title>
+  <style>
+    html[data-theme="warm"]{
+      --bg:#fbf8f1; --bgFlat:#fbf8f1;
+      --sidebar:#c8bfa8; --sbThumb:#b8af98; --sbDark:#8a7f6a;
+      --surface:#fdfcfa; --surfaceStrong:#ffffff; --surfaceMuted:#f7f3ea;
+      --line:rgba(138,127,106,.18); --lineStrong:rgba(138,127,106,.28);
+      --text:#3d3d3a; --muted:#8f8f8f; --accent:#8a7f6a;
+      --ok:#22c55e; --warn:#b45309; --error:#b91c1c;
+    }
+    html[data-theme="light"]{
+      --bg:#ffffff; --bgFlat:#ffffff;
+      --sidebar:#d6e8f7; --sbThumb:#b8d4ed; --sbDark:#5a9ac7;
+      --surface:#fbfdff; --surfaceStrong:#ffffff; --surfaceMuted:#f2f8fd;
+      --line:rgba(90,154,199,.16); --lineStrong:rgba(90,154,199,.26);
+      --text:#1f2937; --muted:#6b7280; --accent:#5a9ac7;
+      --ok:#22c55e; --warn:#b45309; --error:#dc2626;
+    }
+    html[data-theme="rose"]{
+      --bg:#fdf2f4; --bgFlat:#fdf2f4;
+      --sidebar:#e8c4cc; --sbThumb:#d9adb7; --sbDark:#a3707e;
+      --surface:#fff8f9; --surfaceStrong:#ffffff; --surfaceMuted:#fdf0f3;
+      --line:rgba(163,112,126,.18); --lineStrong:rgba(163,112,126,.28);
+      --text:#3f2730; --muted:#8b6b74; --accent:#a3707e;
+      --ok:#16a34a; --warn:#b45309; --error:#be123c;
+    }
+    html[data-theme="dark"]{
+      --bg:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);
+      --bgFlat:#161e3a;
+      --sidebar:#1e2a42; --sbThumb:#2d3f5e; --sbDark:#8aa4c8;
+      --surface:#162033; --surfaceStrong:#1b2740; --surfaceMuted:#111827;
+      --line:rgba(138,164,200,.18); --lineStrong:rgba(138,164,200,.28);
+      --text:#e7edf5; --muted:#8da1be; --accent:#8aa4c8;
+      --ok:#4ade80; --warn:#fbbf24; --error:#fca5a5;
+      color-scheme:dark;
+    }
+    html[data-theme="black"]{
+      --bg:#000000; --bgFlat:#000000;
+      --sidebar:#111111; --sbThumb:#222222; --sbDark:#7a8fa8;
+      --surface:#111111; --surfaceStrong:#181818; --surfaceMuted:#0c0c0c;
+      --line:rgba(122,143,168,.18); --lineStrong:rgba(122,143,168,.28);
+      --text:#f3f4f6; --muted:#98a2b3; --accent:#7a8fa8;
+      --ok:#4ade80; --warn:#fbbf24; --error:#fca5a5;
+      color-scheme:dark;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; min-height:100%; }
+    html{ background:var(--bgFlat); }
+    body{
+      background:
+        radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--sidebar) 20%, transparent), transparent 48%),
+        radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--sidebar) 16%, transparent), transparent 42%),
+        var(--bg);
+      color:var(--text);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+      min-height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+
+    html, body{
+      scrollbar-width:thin;
+      scrollbar-color:color-mix(in srgb, var(--sbDark) 22%, var(--bgFlat)) transparent;
+    }
+
+    .skipLink{
+      position:absolute;
+      left:16px;
+      top:-40px;
+      padding:10px 14px;
+      background:var(--surfaceStrong);
+      color:var(--text);
+      border-radius:999px;
+      z-index:1000;
+    }
+    .skipLink:focus{ top:16px; }
+
+    .app{
+      width:min(100%, 430px);
+      height:min(100dvh - 20px, 900px);
+      min-height:680px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 15%, var(--bgFlat)), color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat)));
+      border:1px solid color-mix(in srgb, var(--sidebar) 28%, transparent);
+      border-radius:34px;
+      box-shadow:0 30px 80px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.28);
+      padding:10px;
+    }
+
+    .shell{
+      height:100%;
+      border-radius:28px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--bgFlat) 96%, var(--sidebar) 4%), color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat)));
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      position:relative;
+      isolation:isolate;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.36);
+    }
+
+    .shell::before{
+      content:'';
+      position:absolute;
+      inset:0 0 auto 0;
+      height:132px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 10%, transparent), transparent);
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .header{
+      padding:14px 14px 4px;
+      background:transparent;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      position:relative;
+      z-index:1;
+    }
+
+    .logoBtn{
+      width:50px;
+      height:50px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 30%, transparent);
+      border-radius:18px;
+      background:linear-gradient(180deg, color-mix(in srgb, #ffffff 90%, var(--bgFlat) 10%), color-mix(in srgb, var(--sidebar) 10%, var(--bgFlat)));
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 12px 28px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.72);
+      cursor:pointer;
+      flex-shrink:0;
+      padding:8px;
+      position:relative;
+      z-index:2;
+    }
+    .logoBtn img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
+
+    .screenViewport{
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      padding:8px 10px 12px;
+      position:relative;
+      z-index:1;
+    }
+
+    .mobileBoard{
+      display:flex;
+      flex-direction:column;
+      border-radius:26px;
+      overflow:hidden;
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      box-shadow:0 16px 38px rgba(0,0,0,.08), 0 3px 10px rgba(0,0,0,.04);
+      background:#fdfcfa;
+    }
+    html[data-theme="light"] .mobileBoard,
+    html[data-theme="rose"] .mobileBoard{ background:#ffffff; }
+    html:is([data-theme="dark"],[data-theme="black"]) .mobileBoard{
+      background:rgba(0,0,0,.25);
+      border-color:rgba(255,255,255,.06);
+      box-shadow:0 10px 24px rgba(0,0,0,.24);
+    }
+
+    .boardHeaderMobile{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:9px 12px 8px;
+      background:color-mix(in srgb, var(--sidebar) 10%, #ffffff);
+      backdrop-filter:blur(8px);
+      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 12%, transparent);
+    }
+    html[data-theme="light"] .boardHeaderMobile{ border-color:transparent; }
+    html:is([data-theme="dark"],[data-theme="black"]) .boardHeaderMobile{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.08);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .boardHeader__title{
+      font-size:11px;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      color:#3d3d3a;
+      opacity:.56;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .boardHeader__title{ color:#e7edf5; }
+
+    .boardHeader__agents{
+      display:flex;
+      gap:6px;
+      justify-content:flex-end;
+      overflow:hidden;
+      flex:1 1 0;
+      min-width:0;
+    }
+
+    .pageSection{
+      background:#fdfcfa;
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      border-radius:26px;
+      box-shadow:0 16px 38px rgba(0,0,0,.08), 0 3px 10px rgba(0,0,0,.04);
+      padding:16px;
+      overflow:hidden;
+    }
+    .pageSection + .pageSection{ margin-top:12px; }
+    html:is([data-theme="dark"],[data-theme="black"]) .pageSection{
+      background:rgba(0,0,0,.25);
+      border-color:rgba(255,255,255,.06);
+      box-shadow:0 10px 24px rgba(0,0,0,.24);
+    }
+
+    .eyebrow{
+      margin:0 0 6px;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:var(--accent);
+    }
+
+    .sectionHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .sectionHead__title{
+      margin:0;
+      font-size:22px;
+      line-height:1.08;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+    .sectionHead__sub{
+      margin:6px 0 0;
+      font-size:14px;
+      line-height:1.45;
+      color:var(--muted);
+    }
+
+    .sectionBadge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:8px 11px;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 12%, #ffffff);
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      color:var(--accent);
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .sectionBadge__dot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--ok);
+      flex-shrink:0;
+    }
+    .sectionBadge[data-state="warn"] .sectionBadge__dot{ background:var(--warn); }
+    .sectionBadge[data-state="error"] .sectionBadge__dot{ background:var(--error); }
+
+    .topBoardBody{
+      padding:16px;
+      display:grid;
+      gap:14px;
+    }
+
+    .metricGrid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    .metricCard{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+      padding:12px 13px;
+      border-radius:18px;
+      background:#ffffff;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .metricCard{
+      background:rgba(255,255,255,.04);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .metricCard__label{
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--accent);
+    }
+    .metricCard__value{
+      font-size:15px;
+      line-height:1.2;
+      font-weight:760;
+      letter-spacing:-.02em;
+      word-break:break-word;
+    }
+    .metricCard__hint{
+      font-size:12px;
+      line-height:1.35;
+      color:var(--muted);
+      word-break:break-word;
+    }
+
+    .fieldGrid{
+      display:grid;
+      gap:12px;
+    }
+    .fieldRow{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    .fieldGroup{
+      min-width:0;
+    }
+    .fieldLabel{
+      display:block;
+      margin-bottom:6px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.02em;
+      color:var(--accent);
+    }
+    input[type="date"],
+    select{
+      width:100%;
+      min-width:0;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      border-radius:18px;
+      background:#ffffff;
+      color:var(--text);
+      padding:14px 16px;
+      font:inherit;
+      font-size:16px;
+      line-height:1.4;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 6px 14px rgba(0,0,0,.03);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) input[type="date"],
+    html:is([data-theme="dark"],[data-theme="black"]) select{
+      background:rgba(255,255,255,.05);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    input:focus, select:focus{
+      outline:none;
+      border-color:color-mix(in srgb, var(--sbDark) 48%, var(--surfaceStrong));
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--sbDark) 18%, transparent);
+    }
+
+    .toggleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      min-height:48px;
+      padding:0 2px;
+    }
+    .toggleLabel{
+      font-size:14px;
+      font-weight:700;
+      color:var(--text);
+    }
+    .toggleCaption{
+      display:block;
+      margin-top:3px;
+      font-size:12px;
+      font-weight:500;
+      color:var(--muted);
+    }
+
+    .toggleSwitch{
+      position:relative;
+      width:52px;
+      height:32px;
+      flex-shrink:0;
+    }
+    .toggleSwitch input{
+      position:absolute;
+      inset:0;
+      opacity:0;
+      cursor:pointer;
+    }
+    .toggleSwitch span{
+      position:absolute;
+      inset:0;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 20%, #ffffff);
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      transition:background .16s ease;
+    }
+    .toggleSwitch span::after{
+      content:'';
+      position:absolute;
+      top:3px;
+      left:3px;
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      background:#ffffff;
+      box-shadow:0 2px 8px rgba(0,0,0,.12);
+      transition:transform .16s ease;
+    }
+    .toggleSwitch input:checked + span{
+      background:color-mix(in srgb, var(--sbDark) 26%, #ffffff);
+    }
+    .toggleSwitch input:checked + span::after{
+      transform:translateX(20px);
+    }
+
+    .actionGrid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    .actionGrid--triple{
+      grid-template-columns:repeat(3, minmax(0,1fr));
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:48px;
+      padding:0 16px;
+      border:none;
+      border-radius:18px;
+      font:inherit;
+      font-size:15px;
+      font-weight:700;
+      letter-spacing:-.01em;
+      cursor:pointer;
+      transition:transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+    .btn:not(:disabled):active{ transform:translateY(1px); }
+    .btn svg{
+      width:18px;
+      height:18px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .btn--primary{
+      background:color-mix(in srgb, var(--sidebar) 22%, #ffffff);
+      color:var(--text);
+      box-shadow:0 12px 28px rgba(0,0,0,.08);
+      border:1px solid color-mix(in srgb, var(--sidebar) 22%, transparent);
+    }
+    .btn--secondary{
+      background:#ffffff;
+      color:var(--text);
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      box-shadow:0 12px 28px rgba(0,0,0,.06);
+    }
+    .btn--ghost{
+      background:color-mix(in srgb, var(--sidebar) 16%, var(--surfaceStrong));
+      color:var(--accent);
+      border:1px solid var(--line);
+    }
+
+    .taskList{
+      display:grid;
+      gap:10px;
+    }
+    .taskCard{
+      width:100%;
+      text-align:left;
+      border:none;
+      border-radius:22px;
+      padding:14px;
+      background:#ffffff;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      box-shadow:0 12px 28px rgba(0,0,0,.06);
+      cursor:pointer;
+      color:var(--text);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .taskCard{
+      background:rgba(255,255,255,.04);
+      box-shadow:0 8px 20px rgba(0,0,0,.22);
+    }
+    .taskCard.is-selected{
+      border-color:color-mix(in srgb, var(--sbDark) 34%, transparent);
+      box-shadow:0 0 0 2px color-mix(in srgb, var(--sbDark) 14%, transparent), 0 12px 28px rgba(0,0,0,.08);
+    }
+    .taskCard__top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .taskCard__title{
+      margin:0;
+      font-size:16px;
+      line-height:1.2;
+      font-weight:760;
+      letter-spacing:-.02em;
+    }
+    .taskCard__meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-bottom:10px;
+    }
+    .taskMetaPill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      min-height:26px;
+      padding:0 10px;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 10%, var(--surfaceStrong));
+      color:var(--accent);
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+    }
+    .taskCard__grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    .taskCard__field span{
+      display:block;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--accent);
+      margin-bottom:4px;
+    }
+    .taskCard__field strong{
+      font-size:13px;
+      line-height:1.4;
+      font-weight:650;
+      color:var(--text);
+      word-break:break-word;
+    }
+
+    .listEmpty{
+      margin:0;
+      padding:18px 16px;
+      border-radius:18px;
+      background:#ffffff;
+      border:1px dashed color-mix(in srgb, var(--sidebar) 24%, transparent);
+      font-size:14px;
+      line-height:1.45;
+      color:var(--muted);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .listEmpty{ background:rgba(255,255,255,.04); }
+
+    .feedback{
+      display:none;
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid transparent;
+      font-size:14px;
+      line-height:1.45;
+      font-weight:600;
+    }
+    .feedback.is-visible{ display:block; }
+    .feedback[data-type="ok"]{
+      background:rgba(34,197,94,.12);
+      border-color:rgba(34,197,94,.24);
+      color:var(--ok);
+    }
+    .feedback[data-type="warn"]{
+      background:rgba(245,158,11,.12);
+      border-color:rgba(245,158,11,.24);
+      color:var(--warn);
+    }
+    .feedback[data-type="error"]{
+      background:rgba(239,68,68,.10);
+      border-color:rgba(239,68,68,.24);
+      color:var(--error);
+    }
+
+    .detailLayer{
+      position:absolute;
+      inset:0;
+      z-index:30;
+    }
+    .detailLayer[hidden]{ display:none; }
+    .detailBackdrop{
+      position:absolute;
+      inset:0;
+      border:none;
+      background:rgba(34,29,23,.22);
+      backdrop-filter:blur(8px);
+      cursor:pointer;
+    }
+    .detailSheet{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      max-height:min(78dvh, 720px);
+      background:color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat));
+      border-top-left-radius:28px;
+      border-top-right-radius:28px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 24%, transparent);
+      box-shadow:0 -20px 50px rgba(0,0,0,.22);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .detailHandle{
+      width:42px;
+      height:4px;
+      border-radius:999px;
+      background:color-mix(in srgb, var(--sidebar) 40%, transparent);
+      margin:10px auto 4px;
+    }
+    .detailHeader{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:8px 16px 12px;
+      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 16%, transparent);
+    }
+    .detailHeader h2{
+      margin:0;
+      font-size:20px;
+      line-height:1.1;
+      letter-spacing:-.03em;
+    }
+    .detailClose{
+      width:44px;
+      height:44px;
+      border-radius:16px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 24%, transparent);
+      background:#ffffff;
+      color:var(--accent);
+      font-size:22px;
+      cursor:pointer;
+      flex-shrink:0;
+    }
+    .detailContent{
+      overflow:auto;
+      padding:12px 16px 18px;
+      display:grid;
+      gap:12px;
+    }
+    .detailField{
+      padding:14px;
+      border-radius:18px;
+      background:#ffffff;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+    }
+    .detailField__label{
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--accent);
+      margin-bottom:6px;
+    }
+    .detailField__value{
+      font-size:14px;
+      line-height:1.5;
+      color:var(--text);
+      word-break:break-word;
+    }
+    .detailField__value pre{
+      margin:0;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font:inherit;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:26px;
+      padding:0 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .badge--done{ background:rgba(34,197,94,.12); color:#15803d; }
+    .badge--failed{ background:rgba(239,68,68,.12); color:#dc2626; }
+    .badge--acked{ background:rgba(99,102,241,.12); color:#4f46e5; }
+    .badge--claimed{ background:rgba(245,158,11,.12); color:#b45309; }
+    .badge--created{ background:rgba(143,143,143,.12); color:#737373; }
+
+    #shell #buddyWidget.bw-cloudMode{ z-index:18; }
+    #shell #buddyWidget.bw-cloudMode #buddyWidgetBubble::after{ display:none; }
+    #shell #buddyWidget.bw-cloudMode #buddyWidgetBubble{
+      box-shadow:0 18px 40px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.65);
+    }
+
+    @media (max-width:520px){
+      body{ padding:0; }
+      .app{
+        width:100%;
+        height:100dvh;
+        min-height:100dvh;
+        border-radius:0;
+        padding:0;
+        border:none;
+        box-shadow:none;
+      }
+      .shell{ border-radius:0; }
+      .screenViewport{ padding:8px 8px 10px; }
+      .fieldRow,
+      .actionGrid,
+      .actionGrid--triple{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skipLink" href="#mobileTasksPage">Zum Inhalt</a>
+
+  <main class="app">
+    <section class="shell" id="shell">
+      <header class="header">
+        <button class="logoBtn" id="backBtn" type="button" aria-label="Zurueck zur mobilen Uebersicht">
+          <img src="ace_logo.svg" alt="Bridge Logo" />
+        </button>
+      </header>
+
+      <div class="screenViewport" id="mobileTasksPage" aria-label="Mobile Task-Uebersicht">
+        <section class="mobileBoard" aria-labelledby="tasksBoardTitle">
+          <header class="boardHeaderMobile">
+            <span class="boardHeader__title" id="tasksBoardTitle">Tasks</span>
+            <div class="boardHeader__agents">
+              <span class="sectionBadge" id="trackerModeBadge" data-state="warn">
+                <span class="sectionBadge__dot" aria-hidden="true"></span>
+                <span id="trackerModeLabel">laedt</span>
+              </span>
+            </div>
+          </header>
+          <div class="topBoardBody">
+            <div class="sectionHead">
+              <div>
+                <h1 class="sectionHead__title">Mobile Task-Uebersicht</h1>
+                <p class="sectionHead__sub">Filter, Export und Detailansicht bleiben erhalten, aber in einer mobilen Taskliste statt in einer Desktop-Tabelle.</p>
+              </div>
+            </div>
+            <div class="metricGrid">
+              <div class="metricCard">
+                <span class="metricCard__label">Tasks</span>
+                <strong class="metricCard__value" id="taskCountMetric">0 geladen</strong>
+                <span class="metricCard__hint" id="taskCountHint">Tracker wird geprueft.</span>
+              </div>
+              <div class="metricCard">
+                <span class="metricCard__label">Status</span>
+                <strong class="metricCard__value" id="stateSummaryMetric">—</strong>
+                <span class="metricCard__hint" id="stateSummaryHint">Haeufigster Zustand</span>
+              </div>
+              <div class="metricCard">
+                <span class="metricCard__label">Zuletzt</span>
+                <strong class="metricCard__value" id="lastUpdatedMetric">—</strong>
+                <span class="metricCard__hint">Letzte Aktualisierung</span>
+              </div>
+              <div class="metricCard">
+                <span class="metricCard__label">Agenten</span>
+                <strong class="metricCard__value" id="agentCountMetric">0 sichtbar</strong>
+                <span class="metricCard__hint" id="agentCountHint">Filter wird geladen</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="pageSection" aria-labelledby="filterSectionHeading">
+          <div class="sectionHead">
+            <div>
+              <p class="eyebrow">Filter</p>
+              <h2 class="sectionHead__title" id="filterSectionHeading">Taskliste steuern</h2>
+              <p class="sectionHead__sub">Dieselben Tracker-Parameter wie `task_tracker.html`, aber als mobile Controls.</p>
+            </div>
+            <button class="btn btn--ghost" id="btnFilter" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"></path><path d="M7 12h10"></path><path d="M10 18h4"></path></svg>
+              Filtern
+            </button>
+          </div>
+
+          <div class="fieldGrid">
+            <div class="fieldRow">
+              <div class="fieldGroup">
+                <label class="fieldLabel" for="filterAgent">Agent</label>
+                <select id="filterAgent">
+                  <option value="">Alle</option>
+                </select>
+              </div>
+              <div class="fieldGroup">
+                <label class="fieldLabel" for="filterStatus">Status</label>
+                <select id="filterStatus">
+                  <option value="">Alle</option>
+                  <option value="created">Created</option>
+                  <option value="claimed">Claimed</option>
+                  <option value="acked">Acked</option>
+                  <option value="done">Done</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+            </div>
+            <div class="fieldRow">
+              <div class="fieldGroup">
+                <label class="fieldLabel" for="filterFrom">Von</label>
+                <input type="date" id="filterFrom" />
+              </div>
+              <div class="fieldGroup">
+                <label class="fieldLabel" for="filterTo">Bis</label>
+                <input type="date" id="filterTo" />
+              </div>
+            </div>
+            <div class="fieldGroup">
+              <label class="fieldLabel" for="sortMode">Sortierung</label>
+              <select id="sortMode">
+                <option value="created_at_desc">Neueste zuerst</option>
+                <option value="created_at_asc">Aelteste zuerst</option>
+                <option value="priority_desc">Hoechste Prioritaet zuerst</option>
+                <option value="title_asc">Titel A–Z</option>
+              </select>
+            </div>
+            <div class="toggleRow">
+              <div>
+                <span class="toggleLabel">Auto-Refresh</span>
+                <span class="toggleCaption">Aktualisiert die mobile Liste alle 30 Sekunden.</span>
+              </div>
+              <label class="toggleSwitch" aria-label="Auto-Refresh ein oder aus">
+                <input type="checkbox" id="autoRefreshToggle" checked />
+                <span></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="actionGrid actionGrid--triple">
+            <button class="btn btn--secondary" id="btnRefreshNow" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg>
+              Neu laden
+            </button>
+            <button class="btn btn--secondary" id="btnExportCsv" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M8 11l4 4 4-4"></path><path d="M5 21h14"></path></svg>
+              CSV
+            </button>
+            <button class="btn btn--secondary" id="btnExportJson" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M8 11l4 4 4-4"></path><path d="M5 21h14"></path></svg>
+              JSON
+            </button>
+          </div>
+
+          <div class="feedback" id="tasksFeedback" aria-live="polite"></div>
+        </section>
+
+        <section class="pageSection" aria-labelledby="listSectionHeading">
+          <div class="sectionHead">
+            <div>
+              <p class="eyebrow">Liste</p>
+              <h2 class="sectionHead__title" id="listSectionHeading">Tasks im Fokus</h2>
+              <p class="sectionHead__sub" id="listSectionSub">Wird geladen.</p>
+            </div>
+          </div>
+          <div class="taskList" id="taskList" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <div class="detailLayer" id="detailLayer" hidden>
+        <button class="detailBackdrop" id="detailBackdrop" type="button" aria-label="Task-Detail schliessen"></button>
+        <aside class="detailSheet" id="detailSheet" aria-label="Task-Details">
+          <div class="detailHandle" aria-hidden="true"></div>
+          <div class="detailHeader">
+            <div>
+              <p class="eyebrow">Task-Detail</p>
+              <h2 id="detailTitle">—</h2>
+            </div>
+            <button class="detailClose" id="detailClose" type="button" aria-label="Task-Detail schliessen">×</button>
+          </div>
+          <div class="detailContent" id="detailContent"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="bridge_runtime_urls.js"></script>
+  <script>
+    const root = document.documentElement;
+    const BRIDGE_RUNTIME = window.BridgeRuntimeUrls.resolveConfig();
+    const API_BASE = BRIDGE_RUNTIME.apiBase;
+    const BRIDGE_UI_TOKEN = typeof window.__BRIDGE_UI_TOKEN === 'string' ? window.__BRIDGE_UI_TOKEN : '';
+    const BRIDGE_NATIVE_FETCH = window.fetch.bind(window);
+    const CANONICAL_THEMES = new Set(['warm', 'light', 'rose', 'dark', 'black']);
+
+    function isBridgeHttpTarget(input){
+      try {
+        const raw = input instanceof Request ? input.url : String(input);
+        const url = new URL(raw, window.location.href);
+        return window.BridgeRuntimeUrls.isBridgeHttpTarget(url.toString(), API_BASE, window.location.href);
+      } catch {
+        return false;
+      }
+    }
+
+    function bridgeFetch(input, init){
+      if(!BRIDGE_UI_TOKEN || !isBridgeHttpTarget(input)) return BRIDGE_NATIVE_FETCH(input, init);
+      const reqInit = { ...(init || {}) };
+      const headers = new Headers(reqInit.headers || {});
+      if(!headers.has('X-Bridge-Token')) headers.set('X-Bridge-Token', BRIDGE_UI_TOKEN);
+      reqInit.headers = headers;
+      return BRIDGE_NATIVE_FETCH(input, reqInit);
+    }
+    window.fetch = bridgeFetch;
+
+    const backBtn = document.getElementById('backBtn');
+    const trackerModeBadge = document.getElementById('trackerModeBadge');
+    const trackerModeLabel = document.getElementById('trackerModeLabel');
+    const taskCountMetric = document.getElementById('taskCountMetric');
+    const taskCountHint = document.getElementById('taskCountHint');
+    const stateSummaryMetric = document.getElementById('stateSummaryMetric');
+    const stateSummaryHint = document.getElementById('stateSummaryHint');
+    const lastUpdatedMetric = document.getElementById('lastUpdatedMetric');
+    const agentCountMetric = document.getElementById('agentCountMetric');
+    const agentCountHint = document.getElementById('agentCountHint');
+    const filterAgent = document.getElementById('filterAgent');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterFrom = document.getElementById('filterFrom');
+    const filterTo = document.getElementById('filterTo');
+    const sortMode = document.getElementById('sortMode');
+    const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+    const tasksFeedback = document.getElementById('tasksFeedback');
+    const listSectionSub = document.getElementById('listSectionSub');
+    const taskList = document.getElementById('taskList');
+    const detailLayer = document.getElementById('detailLayer');
+    const detailBackdrop = document.getElementById('detailBackdrop');
+    const detailClose = document.getElementById('detailClose');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailContent = document.getElementById('detailContent');
+
+    let tasks = [];
+    let selectedTaskId = null;
+    let refreshInterval = null;
+    let trackerEndpoint = '/task/tracker';
+
+    function esc(value){
+      const div = document.createElement('div');
+      div.textContent = value == null ? '' : String(value);
+      return div.innerHTML;
+    }
+
+    function setTheme(theme){
+      const resolved = CANONICAL_THEMES.has(theme) ? theme : 'warm';
+      root.setAttribute('data-theme', resolved);
+      try {
+        window.localStorage.setItem('bridge_theme', resolved);
+      } catch {}
+    }
+
+    function applyStoredTheme(){
+      let theme = 'warm';
+      try {
+        theme = window.localStorage.getItem('bridge_theme') || theme;
+      } catch {}
+      setTheme(theme);
+    }
+
+    function setFeedback(type, text){
+      tasksFeedback.dataset.type = type;
+      tasksFeedback.textContent = text;
+      tasksFeedback.classList.add('is-visible');
+    }
+
+    function clearFeedback(){
+      tasksFeedback.classList.remove('is-visible');
+      tasksFeedback.textContent = '';
+      delete tasksFeedback.dataset.type;
+    }
+
+    function fmtDate(iso){
+      if(!iso) return '—';
+      const date = new Date(iso);
+      return date.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' + date.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    }
+
+    function fmtTime(iso){
+      if(!iso) return '—';
+      return new Date(iso).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    }
+
+    function fmtDuration(mins){
+      if(mins == null || mins < 0) return '—';
+      if(mins < 60) return Math.round(mins) + ' min';
+      const h = Math.floor(mins / 60);
+      const m = Math.round(mins % 60);
+      return h + ' h' + (m > 0 ? ' ' + m + ' min' : '');
+    }
+
+    function calcDuration(task){
+      if(!task.created_at) return null;
+      const end = task.done_at || task.failed_at || task.verified_at || null;
+      if(!end) return null;
+      return (new Date(end) - new Date(task.created_at)) / 60000;
+    }
+
+    function buildTrackerParams(format){
+      const params = new URLSearchParams();
+      const usesQueueFallback = trackerEndpoint === '/task/queue';
+      if(filterAgent.value) params.set(usesQueueFallback ? 'agent_id' : 'agent', filterAgent.value);
+      if(filterStatus.value) params.set(usesQueueFallback ? 'state' : 'status', filterStatus.value);
+      if(filterFrom.value) params.set('from', filterFrom.value);
+      if(filterTo.value) params.set('to', filterTo.value);
+      if(format) params.set('format', format);
+      return params;
+    }
+
+    function populateAgentFilter(nextTasks){
+      const agents = new Set();
+      nextTasks.forEach(task => {
+        if(task.assigned_to) agents.add(task.assigned_to);
+        if(task.created_by) agents.add(task.created_by);
+      });
+      const current = filterAgent.value;
+      filterAgent.innerHTML = '<option value="">Alle</option>' + Array.from(agents).sort().map(agent => `<option value="${esc(agent)}"${agent === current ? ' selected' : ''}>${esc(agent)}</option>`).join('');
+      agentCountMetric.textContent = agents.size + ' sichtbar';
+      agentCountHint.textContent = agents.size ? 'Agenten aus geladener Taskmenge' : 'Keine Agenten in dieser Auswahl';
+    }
+
+    function sortTasks(nextTasks){
+      const sorted = [...nextTasks];
+      switch(sortMode.value){
+        case 'created_at_asc':
+          sorted.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+          break;
+        case 'priority_desc':
+          sorted.sort((a, b) => (a.priority || 99) - (b.priority || 99));
+          break;
+        case 'title_asc':
+          sorted.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'de'));
+          break;
+        case 'created_at_desc':
+        default:
+          sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+          break;
+      }
+      return sorted;
+    }
+
+    function badgeHtml(state){
+      const label = state || 'created';
+      return `<span class="badge badge--${esc(label)}">${esc(label)}</span>`;
+    }
+
+    function summarizeStates(nextTasks){
+      const counts = new Map();
+      nextTasks.forEach(task => {
+        const key = task.state || 'created';
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      let winner = '—';
+      let max = 0;
+      counts.forEach((value, key) => {
+        if(value > max){
+          max = value;
+          winner = key;
+        }
+      });
+      return { label:winner, count:max };
+    }
+
+    function updateSummary(nextTasks){
+      taskCountMetric.textContent = nextTasks.length + ' geladen';
+      taskCountHint.textContent = trackerEndpoint === '/task/tracker' ? 'Primärpfad /task/tracker aktiv' : 'Fallback /task/queue aktiv';
+      const summary = summarizeStates(nextTasks);
+      stateSummaryMetric.textContent = summary.label;
+      stateSummaryHint.textContent = summary.count ? summary.count + ' Task' + (summary.count !== 1 ? 's' : '') + ' in diesem Zustand' : 'Keine Tasks im aktuellen Filter';
+      lastUpdatedMetric.textContent = fmtTime(new Date().toISOString());
+      lastUpdatedMetric.title = new Date().toISOString();
+      trackerModeBadge.dataset.state = trackerEndpoint === '/task/tracker' ? 'ok' : 'warn';
+      trackerModeLabel.textContent = trackerEndpoint === '/task/tracker' ? 'tracker' : 'fallback';
+      listSectionSub.textContent = nextTasks.length ? nextTasks.length + ' Tasks im aktuellen Filter.' : 'Keine Tasks im aktuellen Filter.';
+    }
+
+    function renderTaskList(){
+      const sorted = sortTasks(tasks);
+      if(!sorted.length){
+        taskList.innerHTML = '<p class="listEmpty">Keine Tasks fuer diese Auswahl gefunden.</p>';
+        return;
+      }
+      taskList.innerHTML = sorted.map(task => {
+        const selected = task.task_id === selectedTaskId ? ' is-selected' : '';
+        const resultCode = task.result_code || '—';
+        return `
+          <button class="taskCard${selected}" type="button" data-task-id="${esc(task.task_id)}">
+            <div class="taskCard__top">
+              <h3 class="taskCard__title">${esc(task.title || '—')}</h3>
+              ${badgeHtml(task.state)}
+            </div>
+            <div class="taskCard__meta">
+              <span class="taskMetaPill">${esc(task.type || 'task')}</span>
+              <span class="taskMetaPill">Prio ${esc(task.priority || 3)}</span>
+              <span class="taskMetaPill">${esc(resultCode)}</span>
+            </div>
+            <div class="taskCard__grid">
+              <div class="taskCard__field">
+                <span>Zugewiesen</span>
+                <strong>${esc(task.assigned_to || '—')}</strong>
+              </div>
+              <div class="taskCard__field">
+                <span>Ersteller</span>
+                <strong>${esc(task.created_by || '—')}</strong>
+              </div>
+              <div class="taskCard__field">
+                <span>Erstellt</span>
+                <strong>${esc(fmtDate(task.created_at))}</strong>
+              </div>
+              <div class="taskCard__field">
+                <span>Dauer</span>
+                <strong>${esc(fmtDuration(calcDuration(task)))}</strong>
+              </div>
+            </div>
+          </button>
+        `;
+      }).join('');
+      taskList.querySelectorAll('.taskCard').forEach(button => {
+        button.addEventListener('click', () => {
+          const task = tasks.find(entry => entry.task_id === button.dataset.taskId);
+          if(task) openDetail(task);
+        });
+      });
+    }
+
+    function openDetail(task){
+      selectedTaskId = task.task_id;
+      renderTaskList();
+      detailTitle.textContent = task.title || '—';
+      const fields = [
+        { label:'Task ID', value:task.task_id },
+        { label:'Typ', value:task.type || '—' },
+        { label:'Status', html:badgeHtml(task.state) },
+        { label:'Prioritaet', value:task.priority || '—' },
+        { label:'Ersteller', value:task.created_by || '—' },
+        { label:'Zugewiesen', value:task.assigned_to || '—' },
+        { label:'Erstellt', value:fmtDate(task.created_at) },
+        { label:'Claimed', value:fmtDate(task.claimed_at) },
+        { label:'Acked', value:fmtDate(task.acked_at) },
+        { label:'Fertig', value:fmtDate(task.done_at) },
+        { label:'Dauer', value:fmtDuration(calcDuration(task)) },
+        { label:'Ergebnis-Code', value:task.result_code || '—' },
+        { label:'Ergebnis', value:task.result_summary || (task.result && task.result.summary) || '—', pre:true },
+        { label:'Evidenz-Typ', value:task.evidence ? task.evidence.type : '—' },
+        { label:'Evidenz-Ref', value:task.evidence ? task.evidence.ref : '—', pre:true },
+        { label:'Labels', value:(task.labels || []).join(', ') || '—' },
+        { label:'Beschreibung', value:task.description || (task.payload && task.payload.description) || '—', pre:true }
+      ];
+      detailContent.innerHTML = fields.map(field => `
+        <div class="detailField">
+          <div class="detailField__label">${esc(field.label)}</div>
+          <div class="detailField__value">${field.html || (field.pre ? `<pre>${esc(field.value)}</pre>` : esc(field.value))}</div>
+        </div>
+      `).join('');
+      detailLayer.hidden = false;
+    }
+
+    function closeDetail(){
+      detailLayer.hidden = true;
+      selectedTaskId = null;
+      renderTaskList();
+    }
+
+    async function fetchTasks(){
+      clearFeedback();
+      const params = buildTrackerParams();
+      params.set('limit', '500');
+      try {
+        const response = await fetch(API_BASE + '/task/tracker?' + params.toString());
+        if(!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        tasks = data.tasks || [];
+        trackerEndpoint = '/task/tracker';
+      } catch (error){
+        try {
+          const fallbackParams = buildTrackerParams();
+          fallbackParams.set('limit', '500');
+          const fallbackResponse = await fetch(API_BASE + '/task/queue?' + fallbackParams.toString());
+          if(!fallbackResponse.ok) throw new Error('HTTP ' + fallbackResponse.status);
+          const data = await fallbackResponse.json();
+          tasks = data.tasks || [];
+          trackerEndpoint = '/task/queue';
+          setFeedback('warn', 'Tracker nicht direkt erreichbar. Fallback auf /task/queue aktiv.');
+        } catch (fallbackError){
+          tasks = [];
+          trackerEndpoint = '/task/tracker';
+          updateSummary([]);
+          renderTaskList();
+          setFeedback('error', 'Fehler beim Laden: ' + fallbackError.message);
+          return;
+        }
+      }
+      populateAgentFilter(tasks);
+      updateSummary(tasks);
+      renderTaskList();
+    }
+
+    async function downloadTrackerExport(format){
+      const params = buildTrackerParams(format);
+      const response = await fetch(API_BASE + trackerEndpoint + '?' + params.toString());
+      if(!response.ok) throw new Error('HTTP ' + response.status);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = format === 'csv' ? 'mobile_tasks.csv' : 'mobile_tasks.json';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    function startAutoRefresh(){
+      stopAutoRefresh();
+      refreshInterval = window.setInterval(fetchTasks, 30000);
+    }
+
+    function stopAutoRefresh(){
+      if(refreshInterval){
+        window.clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+    }
+
+    document.getElementById('btnFilter').addEventListener('click', fetchTasks);
+    document.getElementById('btnRefreshNow').addEventListener('click', fetchTasks);
+    document.getElementById('btnExportCsv').addEventListener('click', async () => {
+      try {
+        await downloadTrackerExport('csv');
+      } catch (error){
+        setFeedback('error', 'CSV-Export fehlgeschlagen: ' + error.message);
+      }
+    });
+    document.getElementById('btnExportJson').addEventListener('click', async () => {
+      try {
+        await downloadTrackerExport('json');
+      } catch (error){
+        setFeedback('error', 'JSON-Export fehlgeschlagen: ' + error.message);
+      }
+    });
+    autoRefreshToggle.addEventListener('change', () => {
+      if(autoRefreshToggle.checked) startAutoRefresh();
+      else stopAutoRefresh();
+    });
+    detailBackdrop.addEventListener('click', closeDetail);
+    detailClose.addEventListener('click', closeDetail);
+    backBtn.addEventListener('click', () => {
+      if(window.history.length > 1){
+        window.history.back();
+        return;
+      }
+      window.location.href = 'mobile_buddy.html';
+    });
+
+    async function init(){
+      applyStoredTheme();
+      await fetchTasks();
+      if(autoRefreshToggle.checked) startAutoRefresh();
+    }
+
+    init();
+  </script>
+  <script>
+    window.BRIDGE_BUDDY_WIDGET_CONFIG = {
+      autoOpenOnInit: false,
+      openOnIncoming: true,
+      mountSelector: '#shell',
+      cloudMode: true,
+      storageNamespace: 'mobile_tasks_surface',
+      defaultPosition: {
+        right: 14,
+        top: 12
+      }
+    };
+  </script>
+  <script src="buddy_widget.js"></script>
+</body>
+</html>

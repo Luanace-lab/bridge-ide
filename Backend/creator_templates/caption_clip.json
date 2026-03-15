@@ -1,0 +1,15 @@
+{
+  "name": "caption_clip",
+  "description": "Clip mit grossem Caption-Overlay am unteren Bildrand",
+  "render_type": "clip_with_title",
+  "defaults": {
+    "font_size": 36,
+    "font_color": "yellow",
+    "bg_opacity": 0.7,
+    "title_duration_s": 999,
+    "fade_in_s": 0.3,
+    "fade_out_s": 0.3,
+    "width": 1080,
+    "height": 1920
+  }
+}

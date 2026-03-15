@@ -1,0 +1,117 @@
+{
+  "_meta": {
+    "version": 1,
+    "description": "Role-based memory retrieval profiles. Each role defines how memory is weighted, what kinds are preferred, and TTL tendencies.",
+    "created_at": "2026-03-15"
+  },
+  "backend": {
+    "description": "Backend/Server/API development",
+    "retrieval_weights": {
+      "agent_local": 0.3,
+      "shared_coordination": 0.2,
+      "durable_knowledge": 0.5
+    },
+    "preferred_kinds": ["api_contract", "data_model", "migration", "service_boundary", "code_artifact"],
+    "ttl_tendency": "long",
+    "semantic_boost": 0.3
+  },
+  "frontend": {
+    "description": "Frontend/UI/CSS development",
+    "retrieval_weights": {
+      "agent_local": 0.3,
+      "shared_coordination": 0.3,
+      "durable_knowledge": 0.4
+    },
+    "preferred_kinds": ["decision", "ui_state", "component_contract", "design_token", "user_flow"],
+    "ttl_tendency": "medium",
+    "semantic_boost": 0.4
+  },
+  "coordinator": {
+    "description": "Orchestration/Onboarding/Delegation",
+    "retrieval_weights": {
+      "agent_local": 0.1,
+      "shared_coordination": 0.6,
+      "durable_knowledge": 0.3
+    },
+    "preferred_kinds": ["task_assignment", "handoff", "blocker", "priority", "open_loop"],
+    "ttl_tendency": "short",
+    "semantic_boost": 0.5
+  },
+  "security": {
+    "description": "Security/Pentest/Vulnerability assessment",
+    "retrieval_weights": {
+      "agent_local": 0.2,
+      "shared_coordination": 0.2,
+      "durable_knowledge": 0.6
+    },
+    "preferred_kinds": ["finding", "risk", "vulnerability", "exception", "sensitive_boundary"],
+    "ttl_tendency": "until_resolved",
+    "semantic_boost": 0.2
+  },
+  "architect": {
+    "description": "System architecture/Design/Standards",
+    "retrieval_weights": {
+      "agent_local": 0.1,
+      "shared_coordination": 0.2,
+      "durable_knowledge": 0.7
+    },
+    "preferred_kinds": ["adr", "invariant", "module_boundary", "principle", "long_term_decision"],
+    "ttl_tendency": "very_long",
+    "semantic_boost": 0.2
+  },
+  "senior": {
+    "description": "General senior developer",
+    "retrieval_weights": {
+      "agent_local": 0.3,
+      "shared_coordination": 0.3,
+      "durable_knowledge": 0.4
+    },
+    "preferred_kinds": [],
+    "ttl_tendency": "medium",
+    "semantic_boost": 0.4
+  },
+  "junior": {
+    "description": "Junior developer/assistant",
+    "retrieval_weights": {
+      "agent_local": 0.4,
+      "shared_coordination": 0.3,
+      "durable_knowledge": 0.3
+    },
+    "preferred_kinds": [],
+    "ttl_tendency": "medium",
+    "semantic_boost": 0.5
+  },
+  "concierge": {
+    "description": "Buddy/Concierge/User assistant",
+    "retrieval_weights": {
+      "agent_local": 0.2,
+      "shared_coordination": 0.4,
+      "durable_knowledge": 0.4
+    },
+    "preferred_kinds": ["user_preference", "faq", "workflow", "help"],
+    "ttl_tendency": "medium",
+    "semantic_boost": 0.6
+  },
+  "analyst": {
+    "description": "Data/Research analyst",
+    "retrieval_weights": {
+      "agent_local": 0.2,
+      "shared_coordination": 0.2,
+      "durable_knowledge": 0.6
+    },
+    "preferred_kinds": ["data_source", "report", "finding", "methodology"],
+    "ttl_tendency": "long",
+    "semantic_boost": 0.4
+  },
+  "creator": {
+    "description": "Content creator/Media production",
+    "retrieval_weights": {
+      "agent_local": 0.3,
+      "shared_coordination": 0.3,
+      "durable_knowledge": 0.4
+    },
+    "preferred_kinds": ["campaign", "asset", "caption", "performance", "schedule"],
+    "ttl_tendency": "medium",
+    "semantic_boost": 0.5
+  }
+}

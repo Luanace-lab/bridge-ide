@@ -1,0 +1,119 @@
+{
+  "template_id": "tpl_daily_status",
+  "name": "Taeglicher Status-Report",
+  "description": "Sendet jeden Morgen eine Zusammenfassung: Wie viele Agents online, offene Tasks, erledigte Tasks. Susi weiss immer Bescheid.",
+  "category": "reports",
+  "difficulty": "einfach",
+  "icon": "chart",
+  "variables": [
+    {
+      "key": "cron_time",
+      "label": "Uhrzeit in Server-Zeitzone (HH:MM)",
+      "type": "time",
+      "default": "08:00"
+    },
+    {
+      "key": "bridge_url",
+      "label": "Bridge Server URL",
+      "type": "url",
+      "default": "http://localhost:9111"
+    }
+  ],
+  "n8n_workflow": {
+    "name": "Bridge: Daily Status Report",
+    "active": true,
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {"field": "cronExpression", "expression": "{{cron_minute}} {{cron_hour}} * * *"}
+            ]
+          }
+        },
+        "name": "Schedule",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [250, 300]
+      },
+      {
+        "parameters": {
+          "url": "{{bridge_url}}/agents",
+          "options": {}
+        },
+        "name": "Get Agents",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [470, 200]
+      },
+      {
+        "parameters": {
+          "url": "{{bridge_url}}/task/queue",
+          "options": {}
+        },
+        "name": "Get Tasks",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [470, 400]
+      },
+      {
+        "parameters": {
+          "jsCode": "const agents = $('Get Agents').first().json;\nconst tasks = $('Get Tasks').first().json;\n\nconst managed = (agents.agents || []).filter((agent) => agent.active !== false);\nconst online = managed.filter((agent) => !['offline', 'disconnected'].includes(String(agent.status || '').toLowerCase())).length;\nconst total = managed.length;\nconst openTasks = (tasks.tasks || []).filter(t => t.state !== 'done' && t.state !== 'failed').length;\nconst doneTasks = (tasks.tasks || []).filter(t => t.state === 'done').length;\n\nreturn [{\n  json: {\n    body: `Bridge Status: ${online}/${total} Agents online, ${openTasks} Tasks offen, ${doneTasks} erledigt.`\n  }\n}];"
+        },
+        "name": "Build Report",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [690, 300]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "{{bridge_url}}/send",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {"name": "from", "value": "system"},
+              {"name": "to", "value": "user"},
+              {"name": "content", "value": "={{$json.body}}"}
+            ]
+          },
+          "options": {}
+        },
+        "name": "Bridge Notify",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [910, 300]
+      }
+    ],
+    "connections": {
+      "Schedule": {
+        "main": [
+          [
+            {"node": "Get Agents", "type": "main", "index": 0}
+          ]
+        ]
+      },
+      "Get Agents": {
+        "main": [
+          [{"node": "Get Tasks", "type": "main", "index": 0}]
+        ]
+      },
+      "Get Tasks": {
+        "main": [
+          [{"node": "Build Report", "type": "main", "index": 0}]
+        ]
+      },
+      "Build Report": {
+        "main": [
+          [{"node": "Bridge Notify", "type": "main", "index": 0}]
+        ]
+      }
+    }
+  },
+  "setup_steps": [
+    "Uhrzeit in der n8n-/Server-Zeitzone anpassen (Standard: 08:00)",
+    "Template deployen (1-Klick im Workflow-Wizard)",
+    "Report erscheint im Bridge Chat"
+  ],
+  "bridge_subscription": null
+}
