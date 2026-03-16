@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 
 
-_VALID_AGENT_ID = re.compile(r"^[a-zA-Z0-9_]+$")
+_VALID_AGENT_ID = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 @dataclass(frozen=True)
@@ -21,7 +21,7 @@ class TmuxEngineSpec:
 def validate_agent_id(agent_id: str) -> None:
     """Validate agent_id against whitelist (alphanumeric + underscore)."""
     if not agent_id or not _VALID_AGENT_ID.match(agent_id):
-        raise ValueError(f"invalid agent_id: {agent_id!r} (must be alphanumeric + underscore)")
+        raise ValueError(f"invalid agent_id: {agent_id!r} (must be alphanumeric, underscore, or hyphen)")
 
 
 def tmux_engine_spec(engine: str) -> TmuxEngineSpec:

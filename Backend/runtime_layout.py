@@ -8,7 +8,7 @@ from typing import Any
 KNOWN_ENGINES = ["claude", "codex", "gemini", "qwen"]
 DEFAULT_TEAM_LEAD_ID = "teamlead"
 _RUNTIME_CLASSIC_SLOTS = {"a", "b", "lead"}
-_RUNTIME_AGENT_ID_RE = re.compile(r"^[A-Za-z0-9_]+$")
+_RUNTIME_AGENT_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def detect_available_engines(known_engines: list[str] | None = None) -> set[str]:
@@ -284,7 +284,7 @@ def build_explicit_runtime_layout(
             agent_id = f"{engine}_{engine_counts[engine]}"
         if not _RUNTIME_AGENT_ID_RE.match(agent_id):
             raise ValueError(
-                f"invalid runtime agent id: {agent_id!r} (must be alphanumeric + underscore)"
+                f"invalid runtime agent id: {agent_id!r} (must be alphanumeric, underscore, or hyphen)"
             )
         if agent_id in seen_ids:
             raise ValueError(f"duplicate runtime agent id: {agent_id}")

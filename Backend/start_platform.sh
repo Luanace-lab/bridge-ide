@@ -743,6 +743,7 @@ import os
 import sys
 import urllib.request
 
+sys.path.insert(0, os.environ["BRIDGE_DIR"])
 from start_platform_runtime import build_runtime_configure_payload
 
 server_url = os.environ["SERVER_URL"].rstrip("/")
