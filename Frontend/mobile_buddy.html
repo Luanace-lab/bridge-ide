@@ -1912,9 +1912,39 @@
 
     .boardComposer__shell{
       display:grid;
-      grid-template-columns:48px 1fr 48px;
-      gap:8px;
+      grid-template-columns:44px 44px 1fr 48px;
+      gap:6px;
       align-items:end;
+    }
+
+    .chatCamera{
+      width:44px;
+      height:44px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      border-radius:14px;
+      background:color-mix(in srgb, var(--sidebar) 16%, var(--bgFlat));
+      color:var(--accent);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.08);
+      transition:background .15s ease, transform .12s ease;
+    }
+    .chatCamera svg{
+      width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    }
+    html[data-theme="warm"] .chatCamera,
+    html[data-theme="light"] .chatCamera,
+    html[data-theme="rose"] .chatCamera{
+      border-color:rgba(0,0,0,.08);
+      background:#ffffff;
+      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .chatCamera{
+      color:#2cd8d8;
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.08);
+      box-shadow:0 1px 3px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
     }
 
     .chatAttach{
@@ -2473,6 +2503,13 @@
                 <span class="boardComposer__target">Buddy</span>
               </div>
               <div class="boardComposer__shell">
+                <button class="chatCamera" id="managementCameraBtn" type="button" aria-label="Foto an Buddy senden" title="Foto aufnehmen">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>
+                </button>
+                <input class="boardComposer__attachInput" id="managementCameraInput" type="file" accept="image/*" capture="environment" />
                 <button class="chatAttach" id="managementAttachBtn" type="button" aria-label="Datei an Buddy anhaengen" title="Datei an Buddy anhaengen" data-has-files="false">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 5v14"></path>
@@ -2542,6 +2579,13 @@
                 <span class="boardComposer__target" id="teamTargetLabel">Kein Team</span>
               </div>
               <div class="boardComposer__shell">
+                <button class="chatCamera" id="teamCameraBtn" type="button" aria-label="Foto an Team senden" title="Foto aufnehmen">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>
+                </button>
+                <input class="boardComposer__attachInput" id="teamCameraInput" type="file" accept="image/*" capture="environment" />
                 <button class="chatAttach" id="teamAttachBtn" type="button" aria-label="Datei an Team anhaengen" title="Datei an Team anhaengen" data-has-files="false">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 5v14"></path>
@@ -2588,7 +2632,7 @@
     const API_BASE = runtime.apiBase;
     const BUDDY_ID = 'buddy';
     const USER_ID = 'user';
-    const POLL_MS = 1800;
+    const POLL_MS = 1000;
     const BRIDGE_UI_TOKEN = typeof window.__BRIDGE_UI_TOKEN === 'string' ? window.__BRIDGE_UI_TOKEN : '';
 
     const statusPill = document.getElementById('statusPill');
@@ -3822,6 +3866,23 @@
       const files = Array.from(teamFileInput.files || []);
       files.forEach(file => addAttachment('team', file));
       teamFileInput.value = '';
+    });
+    // Camera buttons
+    const managementCameraBtn = document.getElementById('managementCameraBtn');
+    const managementCameraInput = document.getElementById('managementCameraInput');
+    const teamCameraBtn = document.getElementById('teamCameraBtn');
+    const teamCameraInput = document.getElementById('teamCameraInput');
+    managementCameraBtn.addEventListener('click', () => { managementCameraInput.click(); });
+    teamCameraBtn.addEventListener('click', () => { teamCameraInput.click(); });
+    managementCameraInput.addEventListener('change', () => {
+      const files = Array.from(managementCameraInput.files || []);
+      files.forEach(file => addAttachment('management', file));
+      managementCameraInput.value = '';
+    });
+    teamCameraInput.addEventListener('change', () => {
+      const files = Array.from(teamCameraInput.files || []);
+      files.forEach(file => addAttachment('team', file));
+      teamCameraInput.value = '';
     });
     statusPill.addEventListener('click', () => { void startBuddy(); });
 
