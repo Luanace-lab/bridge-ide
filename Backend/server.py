@@ -3460,6 +3460,9 @@ AUTO_RESTART_AGENTS = True
 _AGENT_LAST_RESTART: dict[str, float] = {}  # agent_id -> timestamp
 _RESTART_LOCK = threading.Lock()  # guards _AGENT_LAST_RESTART check-and-set
 _RESTART_COOLDOWN = 120.0  # 2 min between restarts per agent
+_AGENT_RESTART_FAILURES: dict[str, int] = {}  # agent_id -> consecutive failure count (GEM-020)
+_RESTART_MAX_FAILURES = 3  # block after 3 consecutive failures
+_RESTART_BLOCKED: set[str] = set()  # agents blocked from auto-restart (circuit breaker)
 _AGENT_OAUTH_FAILURES: dict[str, int] = {}  # agent_id -> consecutive OAuth restart count
 _AGENT_AUTH_BLOCKED: set[str] = set()  # agents blocked from auto-restart due to OAuth
 _OAUTH_MAX_RETRIES = 2  # max OAuth restarts before blocking
@@ -3504,14 +3507,21 @@ def _ensure_agent_online(agent_id: str, task_id: str = "", requester: str = "") 
 
     # 3. tmux session dead → try auto-restart
     if AUTO_RESTART_AGENTS:
+        # GEM-020: Circuit breaker — block after repeated failures
+        if agent_id in _RESTART_BLOCKED:
+            return {"online": False, "action": "circuit_breaker", "detail": f"{agent_id} blocked after {_RESTART_MAX_FAILURES} consecutive restart failures"}
         with _RESTART_LOCK:
             last_restart = _AGENT_LAST_RESTART.get(agent_id, 0)
-            if (time.time() - last_restart) < _RESTART_COOLDOWN:
-                remaining = int(_RESTART_COOLDOWN - (time.time() - last_restart))
-                return {"online": False, "action": "cooldown", "detail": f"{agent_id} restart cooldown ({remaining}s remaining)"}
+            # GEM-020: Exponential backoff based on failure count
+            failures = _AGENT_RESTART_FAILURES.get(agent_id, 0)
+            effective_cooldown = _RESTART_COOLDOWN * (2 ** min(failures, 4))  # max 16x = 32min
+            if (time.time() - last_restart) < effective_cooldown:
+                remaining = int(effective_cooldown - (time.time() - last_restart))
+                return {"online": False, "action": "cooldown", "detail": f"{agent_id} restart cooldown ({remaining}s remaining, attempt {failures + 1})"}
             restarted = _auto_restart_agent(agent_id)
             if restarted:
                 _AGENT_LAST_RESTART[agent_id] = time.time()
+                _AGENT_RESTART_FAILURES.pop(agent_id, None)  # reset on success
                 if requester:
                     try:
                         append_message("system", requester,
@@ -3529,10 +3539,15 @@ def _ensure_agent_online(agent_id: str, task_id: str = "", requester: str = "") 
                                        f"[WARNUNG] Agent {agent_id} konnte nicht gestartet werden. Task {task_id} ist zugewiesen aber Agent ist offline.")
                     except Exception:
                         pass
+                # GEM-020: Track failure + circuit breaker
+                _AGENT_RESTART_FAILURES[agent_id] = failures + 1
+                if failures + 1 >= _RESTART_MAX_FAILURES:
+                    _RESTART_BLOCKED.add(agent_id)
+                    print(f"[ensure_online] CIRCUIT BREAKER: {agent_id} blocked after {failures + 1} consecutive failures")
                 _whiteboard_post("system", "alert",
-                                 f"Agent {agent_id} offline — Auto-Start fehlgeschlagen",
+                                 f"Agent {agent_id} offline — Auto-Start fehlgeschlagen (Versuch {failures + 1}/{_RESTART_MAX_FAILURES})",
                                  task_id=task_id, severity="critical", ttl_seconds=600)
-                return {"online": False, "action": "start_failed", "detail": f"{agent_id} auto-start failed"}
+                return {"online": False, "action": "start_failed", "detail": f"{agent_id} auto-start failed (attempt {failures + 1})"}
 
     return {"online": False, "action": "no_auto_restart", "detail": f"{agent_id} is offline, auto-restart disabled"}
 
