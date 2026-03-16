@@ -145,10 +145,43 @@ BRIDGE/
 │   ├── task_tracker.html      # Task management
 │   ├── buddy_landing.html     # Buddy onboarding
 │   ├── landing.html           # Marketing landing page
+│   ├── mobile_buddy.html      # Mobile: Buddy chat + team boards
+│   ├── mobile_projects.html   # Mobile: Project configurator
+│   ├── mobile_tasks.html      # Mobile: Task tracker + export
 │   └── ace_logo.svg           # ACE logo
 └── config/
     └── capability_library.json # MCP tool index (auto-built)
 ```
+
+## Mobile
+
+Bridge ACE includes dedicated mobile-optimized pages for on-the-go management:
+
+| Page | URL | Purpose |
+|------|-----|---------|
+| **Buddy** | `/mobile_buddy.html` | Chat with Buddy and your team, dual-board view |
+| **Projects** | `/mobile_projects.html` | Create projects, configure teams, start agents |
+| **Tasks** | `/mobile_tasks.html` | Filter, sort, export tasks, detail view |
+
+All mobile pages share:
+- Bottom tab navigation (Buddy / Projects / Tasks)
+- Offline banner (auto-detects server connectivity)
+- 5 themes (Warm, Light, Rose, Dark, Black)
+- Touch-optimized controls (48px tap targets)
+- Buddy widget integration
+
+**Access from your phone:** Open `http://<your-machine-ip>:9111/mobile_buddy.html` in any mobile browser on the same network.
+
+## Quick Start
+
+```
+1. Install:    git clone ... && ./install.sh
+2. Start:      ./BRIDGE/Backend/start_platform.sh
+3. Open:       http://localhost:9111
+4. Mobile:     http://<your-ip>:9111/mobile_buddy.html
+```
+
+Buddy greets you on first launch and walks you through team setup.
 
 ## Configuration
 
