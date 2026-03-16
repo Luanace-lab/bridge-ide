@@ -6455,6 +6455,20 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 response_data["warnings"] = warnings
             if agent_status and not agent_status["online"]:
                 response_data["agent_status"] = agent_status
+                # F-004: If agent was just auto-started, delay task notification
+                # to give the agent time to register (~10-20s startup)
+                if agent_status.get("action") == "auto_started" and assigned_to:
+                    def _delayed_task_notify(aid: str, tid: str) -> None:
+                        import time as _t
+                        _t.sleep(15)  # wait for agent startup + registration
+                        if aid in REGISTERED_AGENTS:
+                            try:
+                                append_message("system", aid,
+                                    f"[TASK] Neuer Task fuer dich: {tid}. Pruefe bridge_task_queue.")
+                            except Exception:
+                                pass
+                    _notify_t = threading.Thread(target=_delayed_task_notify, args=(assigned_to, task_id), daemon=True)
+                    _notify_t.start()
             self._respond(201, response_data)
             return
 
