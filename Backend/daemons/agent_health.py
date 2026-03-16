@@ -21,6 +21,7 @@ _get_agent_engine_cb: Callable[[str], str] | None = None
 _check_codex_health_cb: Callable[[str], dict[str, Any]] | None = None
 _auto_restart_agents_cb: Callable[[], bool] | None = None
 _agent_last_restart: dict[str, float] | None = None
+_restart_lock: "threading.Lock | None" = None
 _restart_cooldown_cb: Callable[[], float] | None = None
 _auto_restart_agent_cb: Callable[[str], bool] | None = None
 _start_agent_from_conf_cb: Callable[[str], bool] | None = None
@@ -63,6 +64,7 @@ def init(
     check_codex_health: Callable[[str], dict[str, Any]],
     auto_restart_agents: Callable[[], bool],
     agent_last_restart: dict[str, float],
+    restart_lock: "threading.Lock",
     restart_cooldown: Callable[[], float],
     auto_restart_agent: Callable[[str], bool],
     start_agent_from_conf: Callable[[str], bool],
@@ -92,7 +94,7 @@ def init(
     global _team_config_getter, _all_tmux_agent_ids_cb, _agent_state_lock
     global _registered_agents, _agent_busy, _agent_last_seen, _is_session_alive_cb
     global _get_agent_engine_cb, _check_codex_health_cb, _auto_restart_agents_cb
-    global _agent_last_restart, _restart_cooldown_cb, _auto_restart_agent_cb
+    global _agent_last_restart, _restart_lock, _restart_cooldown_cb, _auto_restart_agent_cb
     global _start_agent_from_conf_cb, _send_health_alert_cb, _is_agent_at_oauth_prompt_cb
     global _agent_auth_blocked, _agent_oauth_failures, _append_message_cb
     global _plan_mode_rescue_check_cb, _agent_last_auto_register, _auto_register_cooldown_cb
@@ -116,6 +118,7 @@ def init(
     _check_codex_health_cb = check_codex_health
     _auto_restart_agents_cb = auto_restart_agents
     _agent_last_restart = agent_last_restart
+    _restart_lock = restart_lock
     _restart_cooldown_cb = restart_cooldown
     _auto_restart_agent_cb = auto_restart_agent
     _start_agent_from_conf_cb = start_agent_from_conf
@@ -240,25 +243,26 @@ def _agent_health_tick(cleanup_counter: int) -> int:
                         break
                 if not _should_restart:
                     continue
-                last_restart = _agent_last_restart.get(agent_id, 0)
-                if (time.time() - last_restart) >= _restart_cooldown_cb():
-                    restarted = False
-                    if agent_id in runtime_agent_ids:
-                        restarted = _auto_restart_agent_cb(agent_id)
-                    else:
-                        has_config = False
-                        for agent in team_config.get("agents", []):
-                            if agent.get("id") == agent_id and agent.get("home_dir"):
-                                has_config = True
-                                break
-                        if not has_config:
-                            conf = _load_agents_conf_cb().get(agent_id, {})
-                            has_config = bool(str(conf.get("prompt_file", "")).strip())
-                        if has_config:
-                            print(f"[health] Auto-restart: {agent_id}")
-                            restarted = _start_agent_from_conf_cb(agent_id)
-                    if restarted:
-                        _agent_last_restart[agent_id] = time.time()
+                with _restart_lock:
+                    last_restart = _agent_last_restart.get(agent_id, 0)
+                    if (time.time() - last_restart) >= _restart_cooldown_cb():
+                        restarted = False
+                        if agent_id in runtime_agent_ids:
+                            restarted = _auto_restart_agent_cb(agent_id)
+                        else:
+                            has_config = False
+                            for agent in team_config.get("agents", []):
+                                if agent.get("id") == agent_id and agent.get("home_dir"):
+                                    has_config = True
+                                    break
+                            if not has_config:
+                                conf = _load_agents_conf_cb().get(agent_id, {})
+                                has_config = bool(str(conf.get("prompt_file", "")).strip())
+                            if has_config:
+                                print(f"[health] Auto-restart: {agent_id}")
+                                restarted = _start_agent_from_conf_cb(agent_id)
+                        if restarted:
+                            _agent_last_restart[agent_id] = time.time()
 
         if _is_session_alive_cb(agent_id):
             with _agent_state_lock:
