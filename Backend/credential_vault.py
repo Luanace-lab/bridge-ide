@@ -28,39 +28,30 @@ from typing import Any
 
 
 # ---------------------------------------------------------------------------
-# Encryption helpers — using stdlib only (no cryptography dependency)
+# Encryption helpers — Fernet symmetric encryption (cryptography package)
 # ---------------------------------------------------------------------------
 
-def _derive_key(passphrase: str, salt: bytes) -> bytes:
-    """Derive a 32-byte key from passphrase using PBKDF2-HMAC-SHA256."""
-    return hashlib.pbkdf2_hmac(
+def _derive_fernet_key(passphrase: str, salt: bytes) -> bytes:
+    """Derive a Fernet-compatible 32-byte key from passphrase using PBKDF2-HMAC-SHA256."""
+    raw = hashlib.pbkdf2_hmac(
         "sha256",
         passphrase.encode("utf-8"),
         salt,
         iterations=100_000,
         dklen=32,
     )
-
-
-def _xor_encrypt(data: bytes, key: bytes) -> bytes:
-    """Simple XOR encryption with key cycling.
-
-    This is NOT cryptographically strong on its own but provides
-    basic obfuscation. For production, use Fernet from the
-    cryptography package.
-    """
-    key_len = len(key)
-    return bytes(b ^ key[i % key_len] for i, b in enumerate(data))
+    return base64.urlsafe_b64encode(raw)
 
 
 def _encrypt(plaintext: str, passphrase: str) -> str:
-    """Encrypt plaintext with passphrase. Returns base64-encoded string."""
+    """Encrypt plaintext with passphrase using Fernet. Returns base64-encoded string."""
+    from cryptography.fernet import Fernet
     salt = os.urandom(16)
-    key = _derive_key(passphrase, salt)
-    data = plaintext.encode("utf-8")
-    encrypted = _xor_encrypt(data, key)
-    # Format: salt (16 bytes) + encrypted data, base64-encoded
-    combined = salt + encrypted
+    key = _derive_fernet_key(passphrase, salt)
+    f = Fernet(key)
+    token = f.encrypt(plaintext.encode("utf-8"))
+    # Format: salt (16 bytes) + Fernet token, base64-encoded
+    combined = salt + token
     return base64.b64encode(combined).decode("ascii")
 
 
@@ -69,14 +60,15 @@ def _decrypt(ciphertext: str, passphrase: str) -> str:
 
     Returns empty string if decryption fails (wrong passphrase).
     """
+    from cryptography.fernet import Fernet
     try:
         combined = base64.b64decode(ciphertext)
         salt = combined[:16]
-        encrypted = combined[16:]
-        key = _derive_key(passphrase, salt)
-        data = _xor_encrypt(encrypted, key)  # XOR is symmetric
-        return data.decode("utf-8")
-    except (UnicodeDecodeError, ValueError):
+        token = combined[16:]
+        key = _derive_fernet_key(passphrase, salt)
+        f = Fernet(key)
+        return f.decrypt(token).decode("utf-8")
+    except Exception:
         return ""
 
 
