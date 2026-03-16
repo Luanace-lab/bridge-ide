@@ -12,3 +12,12 @@ Backend/pids/
 Backend/logs/
 Backend/agent_state/
 Backend/execution_runs/
+tasks.json
+whiteboard.json
+task_transition_wal.jsonl
+Backend/agent_state/
+Backend/execution_runs/
+build/
+dist/
+*.egg-info/
+.tmp_*/

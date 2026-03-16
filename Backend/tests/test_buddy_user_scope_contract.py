@@ -28,6 +28,10 @@ import server as srv  # noqa: E402
 class TestBuddyUserScopeContract(unittest.TestCase):
     def setUp(self):
         self._orig_ke = sys.modules.get("knowledge_engine")
+        self._orig_sm = sys.modules.get("semantic_memory")
+        if self._orig_sm is None:
+            import semantic_memory
+            self._orig_sm = semantic_memory
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
 
@@ -36,6 +40,8 @@ class TestBuddyUserScopeContract(unittest.TestCase):
             sys.modules["knowledge_engine"] = self._orig_ke
         elif "knowledge_engine" in sys.modules:
             del sys.modules["knowledge_engine"]
+        # Always restore the real semantic_memory module
+        sys.modules["semantic_memory"] = self._orig_sm
 
     def _load_isolated_ke(self):
         import importlib.util
