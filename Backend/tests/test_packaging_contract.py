@@ -47,7 +47,10 @@ class TestPackagingContract(unittest.TestCase):
         self.assertIn('WS_PORT = _env_int("WS_PORT", 9112)', server_raw)
         self.assertIn('HTTP_HOST = _env_host("BRIDGE_HTTP_HOST", "127.0.0.1")', server_raw)
         self.assertIn('WS_HOST = _env_host("BRIDGE_WS_HOST", HTTP_HOST)', server_raw)
-        self.assertIn('(HTTP_HOST, PORT)', server_raw)
+        # Binding uses getter lambdas; verify server.py declares HTTP_HOST and
+        # server_main.py performs the actual bind via the getter pattern.
+        main_raw = (ROOT / "Backend" / "server_main.py").read_text(encoding="utf-8")
+        self.assertIn('(_HTTP_HOST_GETTER(), _PORT_GETTER())', main_raw)
         self.assertIn("async with websockets.asyncio.server.serve(", ws_raw)
         self.assertIn("_ws_host_getter()", ws_raw)
         self.assertIn("_ws_port_getter()", ws_raw)

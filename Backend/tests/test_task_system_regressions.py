@@ -18,9 +18,32 @@ TASK_TRACKER_PATH = os.path.join(REPO_ROOT, "Frontend", "task_tracker.html")
 BASE_URL = "http://127.0.0.1:9111"
 TASK_WAL_PATH = os.path.join(BACKEND_DIR, "task_transition_wal.jsonl")
 TASK_LIFECYCLE_PATH = os.path.join(BACKEND_DIR, "logs", "task_lifecycle.jsonl")
+TOKEN_CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".config", "bridge", "tokens.json")
 
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
+
+
+def _load_tokens() -> dict[str, str]:
+    """Load auth tokens from the Bridge token config file."""
+    try:
+        with open(TOKEN_CONFIG_FILE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+_TOKENS: dict[str, str] = _load_tokens()
+_SESSION_TOKEN_CACHE: dict[str, str] = {}
+
+
+def _register_token() -> str:
+    return _TOKENS.get("register_token", "")
+
+
+def _user_token() -> str:
+    return _TOKENS.get("user_token", "")
+
 
 class BridgeLiveTaskRegressionTests(unittest.TestCase):
     """Live HTTP regression tests against the running Bridge server."""
@@ -32,6 +55,10 @@ class BridgeLiveTaskRegressionTests(unittest.TestCase):
         body: dict | None = None,
         headers: dict[str, str] | None = None,
     ) -> tuple[int, dict | str]:
+        merged_headers: dict[str, str] = {}
+        if _user_token():
+            merged_headers["X-Bridge-Token"] = _user_token()
+        merged_headers.update(headers or {})
         cmd = [
             "curl",
             "-sS",
@@ -43,7 +70,7 @@ class BridgeLiveTaskRegressionTests(unittest.TestCase):
             "-w",
             "\n%{http_code}",
         ]
-        for key, value in (headers or {}).items():
+        for key, value in merged_headers.items():
             cmd.extend(["-H", f"{key}: {value}"])
         if body is not None:
             cmd.extend(["--data", json.dumps(body)])
@@ -81,11 +108,15 @@ class BridgeLiveTaskRegressionTests(unittest.TestCase):
         timeout: int = 10,
     ) -> tuple[int, dict | str]:
         payload = json.dumps(body).encode("utf-8") if body is not None else None
+        merged_headers: dict[str, str] = {"Content-Type": "application/json"}
+        if _user_token():
+            merged_headers["X-Bridge-Token"] = _user_token()
+        merged_headers.update(headers or {})
         req = urllib.request.Request(
             f"{BASE_URL}{path}",
             data=payload,
             method=method,
-            headers={"Content-Type": "application/json", **(headers or {})},
+            headers=merged_headers,
         )
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -426,6 +457,9 @@ class BridgeLiveTaskRegressionTests(unittest.TestCase):
         tag = f"reg_parallel_agents_{int(time.time() * 1000)}"
 
         def register(idx: int) -> dict:
+            reg_headers: dict[str, str] = {}
+            if _register_token():
+                reg_headers["X-Bridge-Register-Token"] = _register_token()
             status, body = self.request_stdlib(
                 "POST",
                 "/register",
@@ -434,6 +468,7 @@ class BridgeLiveTaskRegressionTests(unittest.TestCase):
                     "role": "worker",
                     "capabilities": ["synthetic"],
                 },
+                headers=reg_headers,
                 timeout=10,
             )
             return {"kind": "register", "idx": idx, "status": status, "body": body}
@@ -463,10 +498,14 @@ class BridgeLiveTaskRegressionTests(unittest.TestCase):
         task_pairs: list[tuple[str, str]] = []
 
         for agent_id in agent_ids:
+            reg_headers: dict[str, str] = {}
+            if _register_token():
+                reg_headers["X-Bridge-Register-Token"] = _register_token()
             register_status, register_body = self.request_stdlib(
                 "POST",
                 "/register",
                 {"agent_id": agent_id, "role": "worker", "capabilities": ["synthetic"]},
+                headers=reg_headers,
                 timeout=10,
             )
             self.assertEqual(register_status, 200, register_body)
@@ -532,16 +571,18 @@ class BridgeLiveTaskRegressionTests(unittest.TestCase):
 class TaskTrackerContractTests(unittest.TestCase):
     def test_task_tracker_fallback_preserves_filters(self) -> None:
         raw = Path(TASK_TRACKER_PATH).read_text(encoding="utf-8")
-        self.assertIn("fetch(API_BASE + '/task/tracker?' + params.toString())", raw)
-        self.assertIn("params.set('agent', filterAgent.value)", raw)
-        self.assertIn("params.set('status', filterStatus.value)", raw)
+        # Primary endpoint uses bridgeFetch with tracker params
+        self.assertIn("bridgeFetch(API_BASE + '/task/tracker?' + params.toString())", raw)
+        # Filter params are set conditionally via buildTrackerParams helper
+        self.assertIn("buildTrackerParams()", raw)
+        self.assertIn("usesQueueFallback ? 'agent_id' : 'agent'", raw)
+        self.assertIn("usesQueueFallback ? 'state' : 'status'", raw)
+        # Fallback uses /task/queue with the same param builder
         self.assertIn(
-            "fetch(API_BASE + '/task/queue?' + fallbackParams.toString())",
+            "bridgeFetch(API_BASE + '/task/queue?' + fallbackParams.toString())",
             raw,
             "Fallback must preserve equivalent filters when /task/tracker is unavailable.",
         )
-        self.assertIn("fallbackParams.set('agent_id', filterAgent.value)", raw)
-        self.assertIn("fallbackParams.set('state', filterStatus.value)", raw)
 
     def test_task_tracker_failed_duration_uses_failed_at(self) -> None:
         raw = Path(TASK_TRACKER_PATH).read_text(encoding="utf-8")

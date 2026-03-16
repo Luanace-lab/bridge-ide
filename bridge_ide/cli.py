@@ -94,6 +94,9 @@ def cmd_start(_: argparse.Namespace) -> int:
         return _run_script(_backend_script("start_platform.sh"))
     except FileNotFoundError:
         pass
+    except subprocess.CalledProcessError as exc:
+        print(f"bridge-ide start failed with exit code {exc.returncode}", file=sys.stderr)
+        return 1
 
     server_py = backend_dir() / "server.py"
     if not server_py.exists():
