@@ -10699,7 +10699,7 @@
 function closeWelcome(){document.getElementById('welcomeOverlay').style.display='none';localStorage.setItem('bridge_welcome_seen','1');}
 if(!localStorage.getItem('bridge_welcome_seen')){document.getElementById('welcomeOverlay').style.display='flex';}
 </script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
 <script>
 (function initMobileQr(){
   var container = document.getElementById('mobileQrCode');
