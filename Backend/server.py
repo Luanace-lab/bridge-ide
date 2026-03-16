@@ -3837,23 +3837,21 @@ def _nudge_idle_agent(agent_id: str, reason: str = "at_prompt") -> bool:
 # so the agent's bridge_receive loop can resume.
 
 _PLAN_RESCUE_PATTERNS: tuple[str, ...] = (
-    # Plan-mode related
-    "plan mode",
+    # Plan-mode related — only genuine plan-mode blocks
     "Do you want to enter plan mode",
     "Do you want to exit plan mode",
     "Exit plan mode?",
-    # Permission / approval prompts with numbered options
-    "1. Always allow",
-    "2. Allow for this session",
-    "3. Allow once",
-    "4. Deny",
-    "allow for this session",
     # Plan feedback input prompt
     "Give feedback on this plan",
-    "Press Escape to cancel",
-    # Generic interactive prompts that block the loop
-    "Do you want to proceed",
     "approve this plan",
+    # NOTE: The following patterns were REMOVED because they match normal
+    # tool-permission dialogs that appear while the agent is actively working:
+    # - "1. Always allow", "2. Allow for this session", "3. Allow once", "4. Deny"
+    # - "Press Escape to cancel"
+    # - "Do you want to proceed"
+    # - "plan mode" (too broad — matches "permission-mode" etc.)
+    # - "allow for this session"
+    # These caused false rescues that interrupted running agents.
 )
 
 # Track last rescue time per agent to avoid spamming

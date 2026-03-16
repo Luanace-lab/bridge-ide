@@ -1090,17 +1090,13 @@ async def inject_with_retry(agent_id: str, sender: str, content: str, msg_id: st
             jitter = random.uniform(0.0, 1.0)
             await asyncio.sleep(base_delay + jitter)
 
-    # Fallback: force-inject after all retries exhausted.
-    # Better to risk interrupting an agent than to silently drop messages.
-    ok = await asyncio.to_thread(smart_inject, agent_id, notification)
+    # Agent is not at prompt after all retries — do NOT force-inject.
+    # The message stays in the MCP buffer; the agent will receive it
+    # on its next bridge_receive() call. Force-injecting while a command
+    # is running corrupts the agent's terminal and interrupts work.
     latency_ms = int((time.perf_counter() - started) * 1000)
-    if ok:
-        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: FALLBACK force-injiziert nach {MAX_RETRIES} Retries")
-        _log_event(msg_id, sender, agent_id, "fallback_injected", latency_ms)
-        return True
-
-    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: ALLE VERSUCHE FEHLGESCHLAGEN (inkl. Fallback)")
-    _log_event(msg_id, sender, agent_id, "all_failed", latency_ms)
+    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: Agent nicht am Prompt nach {MAX_RETRIES} Retries — Nachricht bleibt im Buffer (bridge_receive)")
+    _log_event(msg_id, sender, agent_id, "buffered_no_force", latency_ms)
     return False
 
 
