@@ -2075,6 +2075,7 @@ def _write_codex_poll_state() -> None:
 _BUSY_PATTERNS = (
     "Working", "esc to interrupt", "Thinking", "Reading",
     "Editing", "Running", "Searching", "Explored", "Called",
+    "plan mode on",
 )
 
 # V3: Track last-seen activity per agent to enforce cooldown
@@ -2292,26 +2293,10 @@ def _write_claude_poll_state() -> None:
 def _is_claude_idle_for_poll(agent_id: str) -> bool:
     """Check if a Claude agent is idle and at prompt.
 
-    Uses /activity API for idle duration + tmux capture for prompt detection.
-    Returns True only if agent is idle > _CLAUDE_IDLE_THRESHOLD AND at prompt.
+    Uses tmux capture-pane as single source of truth for idle detection.
+    Returns True if agent is at prompt (❯) and no busy patterns visible.
     """
-    # 1. Check idle via /activity API
-    try:
-        payload = http_get_json(
-            f"{BRIDGE_HTTP}/activity?agent_id={quote(agent_id)}",
-            timeout=5.0,
-        )
-        activities = payload.get("activities", [])
-        if isinstance(activities, list) and activities:
-            first = activities[0]
-            idle_seconds = first.get("idle_since_seconds", 0)
-            if idle_seconds < _CLAUDE_IDLE_THRESHOLD:
-                return False  # Recently active
-        # No activity data = treat as idle
-    except Exception:
-        return False  # Can't verify, skip
-
-    # 2. Check tmux for Claude prompt (❯)
+    # tmux capture-pane is SoT — check prompt directly
     session_name = _get_session_name(agent_id)
     try:
         result = subprocess.run(
@@ -2378,12 +2363,12 @@ async def _claude_poll_daemon(interval: int = CLAUDE_POLL_INTERVAL) -> None:
                 mode = agent.get("mode", "")
                 status = agent.get("status", "")
 
-                # Claude and Gemini engines, auto/normal mode, online
+                # Claude and Gemini engines, auto/normal mode, not offline
                 if engine not in ("claude", "gemini"):
                     continue
                 if mode not in ("auto", "normal"):
                     continue
-                if status != "online":
+                if status in ("offline", "disconnected"):
                     continue
 
                 # Idle + prompt check
