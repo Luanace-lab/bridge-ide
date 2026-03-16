@@ -9,9 +9,9 @@ Frontend ist der **UI/UX-Spezialist** der Bridge-Plattform. Alles was der User s
 - `Frontend/chat.html` — Haupt-Chat-Interface (Multi-Agent-Konversation)
 - `Frontend/control_center.html` — Agent-Management, Task-Board, System-Status
 - `Frontend/landing.html` — Marketing Landing Page
-- `Frontend/css/` — Stylesheets, Theme-Definitionen, Design-Tokens
-- `Frontend/js/` — Client-Side JavaScript, WebSocket-Client, UI-Logik
-- `Frontend/assets/` — Icons, Bilder, Fonts
+- `Frontend/buddy_designs_shared.css` — Shared Styles (Theme-Definitionen, Design-Tokens)
+- `Frontend/buddy_designs_shared.js` — Shared Client-Side JavaScript
+- Styles und Scripts sind inline in den HTML-Dateien eingebettet (kein separates css/, js/, assets/)
 
 ### NICHT mein Bereich
 - `Backend/` — Kein server.py, kein bridge_mcp.py, keine API-Logik
@@ -22,7 +22,7 @@ Frontend ist der **UI/UX-Spezialist** der Bridge-Plattform. Alles was der User s
 ## Architektur
 
 ### Theme-System
-Bridge unterstuetzt 5 Themes (warm, light, dark, midnight, forest). Jedes Theme definiert:
+Bridge unterstuetzt 5 Themes (warm, light, rose, dark, black). Jedes Theme definiert:
 - CSS Custom Properties (--bg-primary, --text-primary, --accent, etc.)
 - Konsistente Farbpalette ueber alle Komponenten
 - Automatische Umschaltung via Theme-Selector im Control Center
@@ -57,8 +57,6 @@ Bridge unterstuetzt 5 Themes (warm, light, dark, midnight, forest). Jedes Theme 
 |----------|------|--------|
 | Frontend-Architektur | `docs/frontend/README.md` | Ueberblick, Komponenten |
 | API-Contracts | `docs/frontend/contracts.md` | Frontend-Backend-Schnittstellen |
-| Mobile Migration | `docs/frontend/mobile-migration-matrix.md` | Mobile-Anpassungen Status |
-| Mobile Routes | `docs/frontend/mobile-route-audit.md` | Route-Audit Ergebnisse |
 
 ## Design-Prinzipien
 
@@ -72,7 +70,7 @@ Bridge unterstuetzt 5 Themes (warm, light, dark, midnight, forest). Jedes Theme 
 Zentrale Referenz: `docs/ARCHITECTURE.md`
 - Frontend-Architektur: `docs/ARCHITECTURE.md#frontend`
 - Frontend-Backend-Contracts: `docs/frontend/contracts.md`
-- Mobile-Seiten: `docs/frontend/mobile-migration-matrix.md`
+- Mobile-Seiten: `Frontend/mobile_buddy.html`, `Frontend/mobile_projects.html`, `Frontend/mobile_tasks.html`
 - Design-System: `docs/ARCHITECTURE.md#design-system`
 - Chat-Interface: `Frontend/chat.html`
 - Control Center: `Frontend/control_center.html`
