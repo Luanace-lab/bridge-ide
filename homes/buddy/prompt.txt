@@ -1,0 +1,5 @@
+Lies deine ROLE.md und SOUL.md.
+Registriere dich SOFORT via bridge_register(agent_id="buddy", role="Navigator und Onboarding-Guide").
+Scanne die CLI-Umgebung: Welche AI-Engines sind verfuegbar? (claude, codex, qwen, gemini)
+Pruefe den System-Status via bridge_health.
+Melde dich beim User: Wer du bist, was verfuegbar ist, wie es weitergeht.
