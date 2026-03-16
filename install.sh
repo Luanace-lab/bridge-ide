@@ -110,16 +110,34 @@ fi
 echo ""
 echo "=== Installation complete ==="
 echo ""
-echo "Next steps:"
-echo ""
-echo "  1. Start the platform:"
-echo "     cd ${SCRIPT_DIR} && ./Backend/start_platform.sh"
-echo ""
-echo "  2. Open in your browser:"
-echo "     http://127.0.0.1:9111"
-echo ""
-echo "  3. On your phone (same network):"
-echo "     http://<your-ip>:9111/mobile_buddy.html"
+
+# Auto-start platform unless --no-start was passed
+if [[ "${BRIDGE_NO_START:-0}" != "1" ]] && [[ " $* " != *" --no-start "* ]]; then
+    echo "Starting Bridge platform..."
+    echo ""
+    if "${BACKEND_DIR}/start_platform.sh"; then
+        echo ""
+        echo "Bridge is running! Buddy is ready to greet you."
+        echo ""
+        echo "  Open in your browser:  http://127.0.0.1:9111"
+        echo "  On your phone:         http://<your-ip>:9111/mobile_buddy.html"
+    else
+        echo ""
+        echo "Platform start failed. You can start manually:"
+        echo "  cd ${SCRIPT_DIR} && ./Backend/start_platform.sh"
+    fi
+else
+    echo "Next steps:"
+    echo ""
+    echo "  1. Start the platform:"
+    echo "     cd ${SCRIPT_DIR} && ./Backend/start_platform.sh"
+    echo ""
+    echo "  2. Open in your browser:"
+    echo "     http://127.0.0.1:9111"
+    echo ""
+    echo "  3. On your phone (same network):"
+    echo "     http://<your-ip>:9111/mobile_buddy.html"
+fi
 echo ""
 echo "Or with Docker:"
 echo "  cd ${SCRIPT_DIR} && docker compose up --build"
