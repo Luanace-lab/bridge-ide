@@ -1090,24 +1090,17 @@ async def inject_with_retry(agent_id: str, sender: str, content: str, msg_id: st
             jitter = random.uniform(0.0, 1.0)
             await asyncio.sleep(base_delay + jitter)
 
-    # Agent is not at prompt after all retries.
-    # Only Claude with bypassPermissions reliably calls bridge_receive().
-    # Codex, Gemini, Qwen and Claude without bypass need force-inject.
-    latency_ms = int((time.perf_counter() - started) * 1000)
-    if engine == "claude":
-        # Claude agents with bypassPermissions reliably use bridge_receive()
-        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: Agent nicht am Prompt — Nachricht bleibt im Buffer (bridge_receive)")
-        _log_event(msg_id, sender, agent_id, "buffered_no_force", latency_ms)
-        return False
-
-    # Codex/Gemini/Qwen: force-inject is the only reliable delivery path
+    # Fallback: force-inject after all retries exhausted.
+    # Better to risk interrupting an agent than to silently drop messages.
     ok = await asyncio.to_thread(smart_inject, agent_id, notification)
+    latency_ms = int((time.perf_counter() - started) * 1000)
     if ok:
-        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: FALLBACK force-injiziert ({engine})")
-        _log_event(msg_id, sender, agent_id, f"fallback_injected_{engine}", latency_ms)
+        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: FALLBACK force-injiziert nach {MAX_RETRIES} Retries")
+        _log_event(msg_id, sender, agent_id, "fallback_injected", latency_ms)
         return True
-    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: ALLE VERSUCHE FEHLGESCHLAGEN ({engine})")
-    _log_event(msg_id, sender, agent_id, f"all_failed_{engine}", latency_ms)
+
+    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: ALLE VERSUCHE FEHLGESCHLAGEN (inkl. Fallback)")
+    _log_event(msg_id, sender, agent_id, "all_failed", latency_ms)
     return False
 
 
