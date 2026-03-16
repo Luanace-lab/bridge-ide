@@ -754,7 +754,17 @@ HTTP_HOST = _env_host("BRIDGE_HTTP_HOST", "127.0.0.1")
 WS_HOST = _env_host("BRIDGE_WS_HOST", HTTP_HOST)
 MAX_WAIT_SECONDS = 60.0
 MAX_LIMIT = 1000
-ALLOWED_ORIGINS = ["http://127.0.0.1:9111", "http://127.0.0.1:8765", "http://127.0.0.1:8787", "http://localhost:8765", "http://localhost:8787", "http://localhost:9111", "http://localhost:8083", "http://127.0.0.1:8083", "http://localhost:8082", "http://127.0.0.1:8082"]
+_DEFAULT_ORIGINS = [
+    "http://127.0.0.1:9111", "http://127.0.0.1:8765", "http://127.0.0.1:8787",
+    "http://localhost:8765", "http://localhost:8787", "http://localhost:9111",
+    "http://localhost:8083", "http://127.0.0.1:8083",
+    "http://localhost:8082", "http://127.0.0.1:8082",
+]
+_extra_origins_raw = os.environ.get("BRIDGE_ALLOWED_ORIGINS", "").strip()
+if _extra_origins_raw:
+    ALLOWED_ORIGINS = _DEFAULT_ORIGINS + [o.strip() for o in _extra_origins_raw.split(",") if o.strip()]
+else:
+    ALLOWED_ORIGINS = _DEFAULT_ORIGINS
 
 # S9: Rate-limiting (per IP + endpoint, sliding window 60s)
 RATE_LIMITER = _RateLimiter()
@@ -9430,6 +9440,7 @@ _init_server_http_io(
     rate_limit_exempt=RATE_LIMIT_EXEMPT,
     rate_limits=RATE_LIMITS,
     rate_limiter=RATE_LIMITER,
+    ws_port=WS_PORT,
 )
 
 _init_server_frontend_serve(
