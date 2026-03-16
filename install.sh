@@ -66,17 +66,32 @@ if [[ ! -f "${BACKEND_DIR}/automations.json" ]]; then
 fi
 
 echo ""
+
+# Check Node.js (optional but recommended)
+if command -v node &>/dev/null; then
+    NODE_VER=$(node --version 2>/dev/null || echo "unknown")
+    echo "[OK] Node.js found: ${NODE_VER}"
+else
+    echo "[WARN] Node.js not found — some features may be limited"
+    echo "       Install: https://nodejs.org/ or: sudo apt install nodejs"
+fi
+
+echo ""
 echo "=== Installation complete ==="
 echo ""
-echo "Start Bridge IDE:"
-echo "  ${PYTHON} -u ${BACKEND_DIR}/server.py"
+echo "Next steps:"
+echo ""
+echo "  1. Start the platform:"
+echo "     cd ${SCRIPT_DIR} && ./Backend/start_platform.sh"
+echo ""
+echo "  2. Open in your browser:"
+echo "     http://127.0.0.1:9111"
+echo ""
+echo "  3. On your phone (same network):"
+echo "     http://<your-ip>:9111/mobile_buddy.html"
 echo ""
 echo "Or with Docker:"
 echo "  cd ${SCRIPT_DIR} && docker compose up --build"
-echo ""
-echo "Access UI: http://127.0.0.1:9111"
-echo "API:       http://127.0.0.1:9111/status"
-echo "WebSocket: ws://127.0.0.1:9112"
 echo ""
 echo "Optional WhatsApp setup:"
 echo "  ${SCRIPT_DIR}/docs/whatsapp-setup.md"

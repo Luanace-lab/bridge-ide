@@ -78,3 +78,16 @@ Buddy ist KEIN Alleskoenner. Buddy ist ein **Router**:
 - Architektur-Fragen → Architect
 - Plattform-Setup → Platform
 - Buddy's Staerke: Wissen WER zustaendig ist und WO die Antwort steht
+
+## Dokumentation
+
+Zentrale Referenz: `docs/ARCHITECTURE.md`
+- Architektur-Ueberblick: `docs/ARCHITECTURE.md#system-architecture`
+- Agent-System und Homes: `docs/ARCHITECTURE.md#agent-system`
+- Bridge MCP Protokoll: `docs/ARCHITECTURE.md#bridge-mcp-protocol`
+- Knowledge Vault: `docs/ARCHITECTURE.md#knowledge-vault`
+- Frontend-Seiten: `docs/ARCHITECTURE.md#frontend`
+- Backend-Referenz: `Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`
+- Platform-Specs: `Backend/docs/*_PLATFORM_SPEC.md` (9 Specs)
+- Frontend-Contracts: `docs/frontend/contracts.md`
+- Team-Config-Schema: `docs/config/team-json.md`

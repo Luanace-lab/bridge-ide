@@ -16,7 +16,6 @@ Platform ist der **Plattform- und Branchen-Experte** der Bridge-Plattform. Kennt
 |-----------|-----------|--------|-------------|
 | Finanzbuchhaltung | `Backend/docs/ACCOUNTING_PLATFORM_SPEC.md` | 748 | DATEV, Buchungssaetze, Kontenrahmen |
 | Big Data Analyse | `Backend/docs/BIG_DATA_ANALYSIS_PLATFORM_SPEC.md` | 817 | Datenanalyse, Pipelines, Visualisierung |
-| Creator Platform | `Backend/docs/CREATOR_PLATFORM_RELIABILITY_SPEC.md` | 1018 | Content-Erstellung, Zuverlaessigkeit |
 | Customer Support | `Backend/docs/CUSTOMER_SUPPORT_PLATFORM_SPEC.md` | 244 | Ticket-System, Eskalation, SLA |
 | Cybersecurity | `Backend/docs/CYBERSECURITY_PLATFORM_SPEC.md` | 709 | Security-Simulation, Threat-Analyse |
 | DevOps & Incident | `Backend/docs/DEVOPS_INCIDENT_PLATFORM_SPEC.md` | 468 | CI/CD, Incident-Management, Monitoring |
@@ -25,7 +24,7 @@ Platform ist der **Plattform- und Branchen-Experte** der Bridge-Plattform. Kennt
 | Marketing & Campaign | `Backend/docs/MARKETING_CAMPAIGN_PLATFORM_SPEC.md` | 266 | Kampagnen, SEO, Content-Strategie |
 | Voice & Secretary | `Backend/docs/VOICE_SECRETARY_PLATFORM_SPEC.md` | 517 | Sprachagent, Terminverwaltung |
 
-**Gesamt: 10 Plattform-Specs, ~5.744 Zeilen Spezifikation**
+**Gesamt: 9 Plattform-Specs, ~4.726 Zeilen Spezifikation**
 
 ## Workflow
 
@@ -65,10 +64,6 @@ Plattform-spezifischer Code befindet sich in:
 - CI/CD-Pipeline-Management
 - Incident-Severity-Klassifikation, Runbook-Automation
 
-### Creator Platform
-- Content-Pipeline, Multi-Format-Output
-- Zuverlaessigkeits-Metriken, A/B-Testing
-
 ### Customer Support
 - Ticket-Routing, SLA-Tracking
 - Eskalations-Workflow, Sentiment-Analyse
@@ -94,3 +89,20 @@ Plattform-spezifischer Code befindet sich in:
 - **Kein Core-Infra**: Keine Aenderungen an server.py Routing, Lock-Ordnung, Task-System
 - **Kein UI-Pattern**: Nur plattform-spezifische Komponenten, in Abstimmung mit Frontend
 - **Keine Architektur**: Trade-off-Entscheidungen gehen an den Architect
+
+## Dokumentation
+
+Zentrale Referenz: `docs/ARCHITECTURE.md`
+- Platform-Specs-Uebersicht: `docs/ARCHITECTURE.md#platform-specifications`
+- Einzelne Specs:
+  - Accounting: `Backend/docs/ACCOUNTING_PLATFORM_SPEC.md`
+  - Big Data: `Backend/docs/BIG_DATA_ANALYSIS_PLATFORM_SPEC.md`
+  - Customer Support: `Backend/docs/CUSTOMER_SUPPORT_PLATFORM_SPEC.md`
+  - Cybersecurity: `Backend/docs/CYBERSECURITY_PLATFORM_SPEC.md`
+  - DevOps: `Backend/docs/DEVOPS_INCIDENT_PLATFORM_SPEC.md`
+  - Finance: `Backend/docs/FINANCE_ANALYSIS_PLATFORM_SPEC.md`
+  - Legal: `Backend/docs/LEGAL_CONTRACT_PLATFORM_SPEC.md`
+  - Marketing: `Backend/docs/MARKETING_CAMPAIGN_PLATFORM_SPEC.md`
+  - Voice: `Backend/docs/VOICE_SECRETARY_PLATFORM_SPEC.md`
+- Backend-Referenz: `Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`
+- Marketplace: `Backend/docs/MARKETPLACE_ANALYSIS.md`
