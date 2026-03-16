@@ -39,13 +39,14 @@
     /* ─── Matrix Background ─── */
     .matrix-bg {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 0; pointer-events: none; opacity: .45;
+      z-index: 0; pointer-events: none; opacity: .85;
     }
     .matrix-col {
       position: absolute; top: -100%; font-family: var(--font-mono);
-      font-size: 13px; color: var(--accent); writing-mode: vertical-rl;
+      font-size: 14px; color: var(--accent); writing-mode: vertical-rl;
       animation: matrix-fall linear infinite;
-      opacity: .4;
+      opacity: .6;
+      text-shadow: 0 0 8px rgba(44,216,216,.6), 0 0 20px rgba(44,216,216,.3);
     }
     @keyframes matrix-fall {
       from { transform: translateY(-100%); }
@@ -80,6 +81,26 @@
       transition: all .2s; letter-spacing: .03em;
     }
     .nav__cta:hover { box-shadow: 0 0 20px rgba(44,216,216,.3); }
+
+    /* ─── Mobile Hamburger ─── */
+    .nav__burger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+    .nav__burger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; }
+    .nav__burger[aria-expanded="true"] .burger-open { display: none; }
+    .nav__burger[aria-expanded="true"] .burger-close { display: block; }
+    .nav__burger[aria-expanded="false"] .burger-close { display: none; }
+    @media (max-width: 640px) {
+      .nav__burger { display: flex; }
+      .nav__links {
+        position: fixed; top: 62px; left: 0; right: 0;
+        flex-direction: column; gap: 0; padding: 8px 0;
+        background: rgba(6,10,16,.95); backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+        transform: translateY(-120%); transition: transform .25s ease;
+      }
+      .nav__links--open { display: flex; transform: translateY(0); }
+      .nav__link, .nav__cta { display: block; padding: 12px 24px; text-align: left; width: 100%; }
+      .nav__cta { margin: 4px 16px; width: auto; text-align: center; }
+    }
 
     /* ─── Hero ─── */
     .hero {
@@ -141,27 +162,36 @@
       display: flex; flex-direction: column; justify-content: center; align-items: center;
       position: relative;
     }
+    .hero__visual::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 300px; height: 300px; border-radius: 50%;
+      transform: translate(-50%, -40%);
+      background: radial-gradient(circle, rgba(44,216,216,.25) 0%, rgba(128,255,208,.1) 40%, transparent 70%);
+      animation: glow-pulse 4s ease-in-out infinite;
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes glow-pulse {
+      0%,100% { opacity: .6; transform: translate(-50%,-40%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%,-40%) scale(1.3); }
+    }
     .hero__creature {
       width: 100%; max-width: 680px;
-      filter: drop-shadow(0 0 60px rgba(44,216,216,.2)) brightness(1);
-      animation: float 6s ease-in-out infinite, buddy-glow 4s ease-in-out infinite;
-      mix-blend-mode: lighten;
-      -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, #000 30%, transparent 75%);
-      mask-image: radial-gradient(ellipse 70% 70% at center, #000 30%, transparent 75%);
+      animation: float 6s ease-in-out infinite;
+      position: relative; z-index: 1;
     }
     @keyframes float {
       0%,100% { transform: translateY(0); }
       50% { transform: translateY(-12px); }
     }
     @keyframes buddy-glow {
-      0%,100% { filter: drop-shadow(0 0 40px rgba(44,216,216,.15)) brightness(1); }
-      30% { filter: drop-shadow(0 0 50px rgba(44,216,216,.2)) brightness(1.05); }
-      50% { filter: drop-shadow(0 0 80px rgba(128,255,208,.4)) brightness(1.25); }
-      70% { filter: drop-shadow(0 0 50px rgba(44,216,216,.2)) brightness(1.05); }
+      0%,100% { filter: drop-shadow(0 0 60px rgba(44,216,216,.3)) brightness(1.05); }
+      30% { filter: drop-shadow(0 0 80px rgba(44,216,216,.4)) brightness(1.15); }
+      50% { filter: drop-shadow(0 0 130px rgba(128,255,208,.65)) brightness(1.45); }
+      70% { filter: drop-shadow(0 0 80px rgba(44,216,216,.4)) brightness(1.15); }
     }
     .hero__buddy-label {
       font-size: clamp(22px, 3vw, 32px); font-weight: 800;
-      text-align: center; margin-bottom: 24px;
+      text-align: center; margin-bottom: 2px;
       letter-spacing: -.01em;
       background: linear-gradient(135deg, #22c55e, #2cd8d8, #818cf8, #c084fc);
       background-size: 200% 200%;
@@ -305,9 +335,8 @@
     }
     .cta__box {
       max-width: 600px; margin: 0 auto; padding: 48px 40px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, var(--accent-glow), rgba(99,102,241,.03));
-      border: 1px solid var(--border);
+      background: transparent;
+      border: none;
     }
     .cta__title { font-size: clamp(22px, 3vw, 30px); font-weight: 700; margin-bottom: 12px; letter-spacing: -.02em; }
     .cta__sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
@@ -333,7 +362,6 @@
     }
     @media (max-width: 640px) {
       .nav { padding: 12px 20px; }
-      .nav__links { display: none; }
       .hero__creature { max-width: 260px; }
     }
   </style>
@@ -349,6 +377,10 @@
       <img class="nav__logo" src="ace_logo_clean.png" alt="ACE Logo">
       Bridge ACE
     </a>
+    <button class="nav__burger" aria-expanded="false" aria-label="Menu" onclick="var l=this.nextElementSibling;var o=l.classList.toggle('nav__links--open');this.setAttribute('aria-expanded',o)">
+      <svg class="burger-open" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <svg class="burger-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    </button>
     <div class="nav__links">
       <a class="nav__link" href="#features">Features</a>
       <a class="nav__link" href="https://github.com/Luanace-lab/bridge-ide" target="_blank" rel="noopener">GitHub</a>
@@ -518,7 +550,7 @@
         col.style.left = (i * 28 + Math.random() * 14) + 'px';
         col.style.animationDuration = (8 + Math.random() * 12) + 's';
         col.style.animationDelay = (-Math.random() * 20) + 's';
-        col.style.opacity = (0.15 + Math.random() * 0.3).toFixed(2);
+        col.style.opacity = (0.35 + Math.random() * 0.5).toFixed(2);
         let text = '';
         for (let j = 0; j < 40; j++) text += chars[Math.floor(Math.random() * chars.length)] + '\n';
         col.textContent = text;
@@ -550,12 +582,16 @@
       }
 
       cmdEl.addEventListener('click', function() {
-        navigator.clipboard.writeText(cmdEl.textContent).then(function() {
-          var orig = cmdEl.textContent;
-          cmdEl.textContent = '✓ Copied to clipboard';
-          cmdEl.style.borderColor = '#22c55e';
-          setTimeout(function() { cmdEl.textContent = orig; cmdEl.style.borderColor = ''; }, 2000);
-        });
+        var text = cmdEl.textContent;
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(ta);
+        var orig = text;
+        cmdEl.textContent = '\u2713 Copied to clipboard';
+        cmdEl.style.borderColor = '#22c55e';
+        setTimeout(function() { cmdEl.textContent = orig; cmdEl.style.borderColor = ''; }, 2000);
       });
     })();
   </script>
