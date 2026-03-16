@@ -209,6 +209,67 @@ Manages persistent tmux sessions for each agent. Session naming convention: `acw
 - Codex sandbox blocks network — no curl fallback for Bridge API
 - Codex has no PostToolUse-Hook — uses `bridge_activity` instead
 
+#### Engine-Specific CLI Commands (tmux_engine_policy.py)
+
+Each engine is defined as a `TmuxEngineSpec` dataclass with 5 fields: `engine`, `instruction_filename`, `start_shell`, `ready_prompt_regex`, `submit_enter_count`. The `tmux_engine_spec()` function returns the spec for a given engine name.
+
+| Engine | `start_shell` (base command) | `ready_prompt_regex` | `submit_enter_count` |
+|--------|------------------------------|---------------------|---------------------|
+| claude | `unset CLAUDECODE CODEX_MANAGED_BY_NPM CODEX_THREAD_ID CODEX_CI CODEX_SANDBOX_NETWORK_DISABLED && claude` | `^\s*[>⏵❯]\s*(?!\d+\.)` | 2 |
+| codex | `unset CLAUDECODE CODEX_MANAGED_BY_NPM CODEX_THREAD_ID CODEX_CI CODEX_SANDBOX_NETWORK_DISABLED && codex --no-alt-screen` | `^\s*›\s*(?!\d+\.)` | 1 |
+| qwen | `qwen` | `^\s*(?:[>⏵❯]\s*(?!\d+\.)|\*\s+Type your message)` | 2 |
+| gemini | `gemini` | `^\s*(?:[>⏵❯]\s*(?!\d+\.)|\*\s+Type your message)` | 2 |
+
+The base `start_shell` is extended at runtime with engine-specific flags. The full command construction flow in `create_agent_session()` (line 2100+) is:
+
+1. **Resume flag:** Claude appends `--resume {id}`. Codex replaces `codex --no-alt-screen` with `codex resume {id} --no-alt-screen`. Gemini appends `--resume latest` if `~/.gemini/projects/{mangled}/` contains `.jsonl` files. Qwen appends `--resume {id}`.
+2. **Model flag:** `--model` (claude), `-m` (codex/gemini/qwen) with the model string from team.json.
+3. **Permission mode:** Claude uses `--permission-mode {mode}`. Codex uses `-s {sandbox_mode} -a {approval_policy}` (mapped via `codex_runtime_policy()`). Qwen uses `--approval-mode`. Gemini uses `--approval-mode`.
+4. **Environment exports:** `_bridge_cli_identity_exports()` prepends `export BRIDGE_CLI_AGENT_ID=... BRIDGE_CLI_ENGINE=... && ` to the entire command string.
+5. **Engine-specific env:** Claude prepends `CLAUDE_CONFIG_DIR=... BROWSER=false`. Codex prepends `CODEX_HOME=...`. Qwen prepends `QWEN_CODE_TRUSTED_FOLDERS_PATH=...`. Gemini prepends `GEMINI_CLI_TRUSTED_FOLDERS_PATH=...`.
+6. **Include directories:** Qwen and Gemini append `--include-directories {project_path},{bridge_root}`.
+
+#### tmux Environment Variables (_bridge_cli_identity_env, line 1711)
+
+Every agent session exports these variables into the tmux environment and as shell exports before the CLI command. These are read by `bridge_mcp.py` during agent registration to identify which agent it is serving.
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `BRIDGE_CLI_AGENT_ID` | agent_id | Agent identifier for MCP registration |
+| `BRIDGE_CLI_ENGINE` | claude/codex/qwen/gemini | Engine type |
+| `BRIDGE_CLI_HOME_DIR` | workspace path | Agent workspace absolute path |
+| `BRIDGE_CLI_WORKSPACE` | workspace path | Same as HOME_DIR (canonical) |
+| `BRIDGE_CLI_PROJECT_ROOT` | project root path | Parent of `.agent_sessions/` |
+| `BRIDGE_CLI_INSTRUCTION_PATH` | full path to instruction file | e.g. `.../CLAUDE.md` |
+| `BRIDGE_CLI_SESSION_NAME` | `acw_{agent_id}` | tmux session name |
+| `BRIDGE_CLI_INCARNATION_ID` | UUID-based ID | Unique per session start (distinguishes restarts) |
+| `BRIDGE_CLI_RESUME_SOURCE` | source string | How the resume ID was determined |
+| `BRIDGE_RESUME_ID` | session UUID or empty | Resume ID for session continuity |
+
+Additionally, `_bridge_runtime_env()` injects server-level variables (port, auth tokens, etc.) that are merged into the same export block.
+
+#### Startup Stabilization
+
+After `tmux send-keys` launches the CLI, engine-specific stabilization functions handle interactive dialogs that block autonomous startup. Each function polls the tmux pane content with a 20-second timeout:
+
+**Claude** (`_stabilize_claude_startup`, line 698):
+- "Quick safety check" + "Yes, I trust this folder" dialog: Presses Enter to confirm.
+- "Bypass Permissions mode" + "Yes, I accept" dialog (only in bypassPermissions mode): Presses Down then Enter to accept.
+- Waits for the ready prompt regex match.
+
+**Codex** (`_stabilize_codex_startup`, line 761):
+- "Update available!" + "Skip until next version" dialog: Presses Down twice then Enter to skip.
+- "Select Reasoning Level" dialog: Presses Enter to confirm default.
+- Waits for ready prompt regex.
+
+**Gemini** (`_stabilize_gemini_startup`, line 731):
+- "Usage limit reached for all Pro models." + "Switch to gemini-2.5-flash" dialog: Presses Enter to accept the fallback model.
+- Waits for ready prompt regex (with additional check that the usage-limit message is gone).
+
+**Qwen:** No dedicated stabilization function. Uses the generic ready-prompt wait via the initial prompt script.
+
+After stabilization, Claude sessions with a resume ID additionally check for a usage-limit screen. If detected, the resume ID is blocked via `_block_resume_id()`, the session is killed, and `create_agent_session()` is called recursively with `_skip_resume_once=True` to start fresh.
+
 ### Soul Engine (soul_engine.py)
 
 Manages persistent agent identities. The soul defines WHO an agent IS (not what it does).
@@ -247,6 +308,87 @@ Manages persistent agent identities. The soul defines WHO an agent IS (not what 
 - `project_root` — parent of `.agent_sessions`
 
 **Instruction file mapping** (`instruction_filename_for_engine()`): Returns the correct filename for each engine. Default is `CLAUDE.md`.
+
+### Persistence & Context Lifecycle
+
+The persistence system ensures agent state survives context window compaction (when the LLM's context fills up) and session restarts. Three files form the persistence layer, stored in the agent workspace (`{project}/.agent_sessions/{agent_id}/`):
+
+#### CONTEXT_BRIDGE.md
+
+**What it is:** A machine-generated snapshot of the agent's current state, written by `bridge_watcher.py` (`_write_context_bridge()`, line 1455). It contains:
+- `## HANDOFF` — Agent identity, registration command, instruction to read SOUL.md
+- `## STATUS` — Server health, agent status, mode, context usage %, last activity
+- `## OFFENE TASKS` — Active tasks from `/task/queue` (limit: 10 per `CONTEXT_BRIDGE_TASK_LIMIT`)
+- `## LETZTE 5 NACHRICHTEN` — Recent messages from `/messages` or `/history` (limit: 5 per `CONTEXT_BRIDGE_MESSAGE_LIMIT`)
+- `## CLI DIARY` — Terminal transcript snapshot (last 120 lines via `_capture_cli_session_log`)
+- `## NAECHSTER SCHRITT` — Instruction to call `bridge_receive()` and continue last activity
+
+**When it is written:**
+1. **Seed creation:** `_ensure_context_bridge()` (tmux_manager.py line 933) creates a minimal seed at session start if the file does not exist.
+2. **Periodic refresh:** `_context_bridge_refresh_daemon()` rewrites it for all agents every 300 seconds (`CONTEXT_BRIDGE_REFRESH_INTERVAL`).
+3. **Context pressure stages:** Written at 80% (warning), 85% (bridge save), and 95% (hard stop) context usage by `_context_monitor()`.
+4. **Manual compact detection:** Written when `_detect_manual_compact()` observes the agent typing `/compact` or `/compress`.
+
+**What survives compact:** Everything in CONTEXT_BRIDGE.md survives because it is on disk. After compaction clears the LLM's in-context memory, the agent reads CONTEXT_BRIDGE.md to restore awareness of its identity, tasks, and last activity.
+
+#### SOUL.md
+
+Immutable agent identity file. Created once by `save_soul()` (soul_engine.py line 366) — never overwritten (the function returns `False` if the file exists). Contains personality, values, communication style, boundaries. Resolution cascade: `homes/{role}/SOUL.md` (from team.json `home_dir`) > workspace SOUL.md > `.soul_meta.json` > `DEFAULT_SOULS` dict > generic fallback.
+
+#### MEMORY.md
+
+Persistent agent memory managed by `persistence_utils.py`. Contains architecture knowledge, user decisions, patterns, errors/fixes — structured sections the agent updates over time. Location resolution (`find_agent_memory_path()`, line 170) searches:
+1. Workspace: `{workspace}/MEMORY.md`
+2. Claude config memory: `{config_dir}/projects/{mangled_cwd}/memory/MEMORY.md`
+3. Glob fallback: `{config_dir}/projects/*-{agent_id}/memory/MEMORY.md` (newest by mtime)
+
+Cross-account linking: `_ensure_persistent_symlinks()` (tmux_manager.py line 952) symlinks `{alt_config_dir}/projects/` to `~/.claude/projects/` so agents running on different subscription accounts share the same memory directory. Claude Code stores auto-memory under `{config_dir}/projects/{mangled_cwd}/memory/`, so the symlink ensures all accounts see the same data.
+
+#### Compact Cycle (Context Window Full)
+
+The context monitor (`_context_monitor()` in bridge_watcher.py, line 1944) runs every 15 seconds and implements a 4-stage escalation:
+
+| Stage | Threshold | Action |
+|-------|-----------|--------|
+| 1 | 80% | Warning: write CONTEXT_BRIDGE.md, set activity to `context_warning` |
+| 2 | 85% | Save state: write CONTEXT_BRIDGE.md again, set activity to `context_saving` |
+| 3 | 90% | Inject message into tmux: "CONTEXT BEI {pct}%. State gesichert. Beende deinen aktuellen Gedanken." |
+| 4 | 95% | Hard stop: `_force_context_stop()` sends engine-specific compact command |
+
+`_force_context_stop()` (line 1812) executes the engine compact command:
+- Claude: `/compact`
+- Gemini: `/compress`
+- Codex: no compact available (auto-managed threads)
+- Qwen: no compact available
+
+The function polls for 60 seconds (12 x 5s) waiting for the agent to reach a prompt, then sends the compact command via `tmux send-keys`. If the agent is not at a prompt after 60s, it sends Ctrl+C followed by the compact command.
+
+**Auto-resume after compact:** When context drops below 70% (indicating successful compaction), the monitor injects: "Du wurdest compacted. Lies CONTEXT_BRIDGE.md und arbeite an deiner letzten Aktivitaet weiter." and sets activity to `resuming`.
+
+#### Resume Mechanism
+
+Resume IDs allow sessions to continue from where they left off after restart. Each engine handles resume differently:
+
+- **Claude:** UUID-based session ID. Persisted to `pids/session_ids.json` via `_persist_session_id()`. Extracted at next start via `_extract_resume_lineage()` (line 1475). Appended as `--resume {id}` to the CLI command. Validated against `{config_dir}/projects/` before use — invalid IDs are silently dropped.
+- **Codex:** UUID-based session ID. Stored in both `pids/session_ids.json` and `CODEX_HOME`. Uses `codex resume {id} --no-alt-screen` subcommand syntax. Validated against local CODEX_HOME directory.
+- **Gemini:** Index-based resume (`--resume latest`). No UUID stored. Presence of `.jsonl` files in `~/.gemini/projects/{mangled}/` triggers resume.
+- **Qwen:** UUID-based, same pattern as Claude. Appended as `--resume {id}`.
+
+Resume IDs can be blocked via `_block_resume_id()` when they cause errors (e.g., usage limit screens), preventing retry loops.
+
+#### What Survives Restart
+
+| Artifact | Location | Survives Restart | Survives Compact |
+|----------|----------|-----------------|-----------------|
+| SOUL.md | workspace | Yes | Yes (on disk) |
+| CONTEXT_BRIDGE.md | workspace | Yes | Yes (on disk, re-read after compact) |
+| MEMORY.md | workspace or config dir | Yes | Yes (on disk) |
+| Instruction file (CLAUDE.md etc.) | workspace | Yes (regenerated at start) | Yes (on disk) |
+| .mcp.json | workspace | Yes (regenerated at start) | Yes (on disk) |
+| Resume ID | pids/session_ids.json | Yes | N/A |
+| In-context working state | LLM memory | No (lost on restart) | No (lost on compact) |
+| WebSocket message buffer | bridge_mcp.py deque | No (lost on restart) | N/A |
+| tmux pane content | tmux scrollback | Yes (survives compact) | Yes |
 
 ### Daemons
 
@@ -520,7 +662,87 @@ Knowledge/
 
 **Initialization:** `knowledge_engine.init_vault()` creates the directory structure and calls `init_agent_vault`, `init_user_vault`, `init_project_vault`.
 
+### Capability Library & MCP Ecosystem
+
+The capability library is a curated index of 5,387 MCP tools from the broader ecosystem, stored as a JSON file at `config/capability_library.json`. It enables agents to discover and evaluate tools beyond the 204 built-in Bridge tools.
+
+#### How capability_library.py Builds the Index
+
+`capability_library.py` reads the JSON index from `config/capability_library.json` (default path, overridable via `BRIDGE_CAPABILITY_LIBRARY_PATH` env). The file is loaded with mtime-based caching (`_read_library()`, line 36) — re-read only when the file changes on disk. Each entry contains:
+- `id`, `name`, `title`, `vendor`, `owner`, `summary`
+- `type` (tool/server/plugin)
+- `engine_compatibility` — per-engine compatibility status (`documented`, `inferred`)
+- `task_tags` — categorization tags
+- `trust_tier` — `official`, `bridge`, `registry`, `legacy` (affects sort priority)
+- `install_methods` — how to install/activate the tool
+- `official_vendor`, `runtime_verified`, `reproducible` — quality flags
+
+Search uses tokenized matching (`_match_tokens()`, line 142) with weighted scoring: name matches (8.0) > tag matches (6.0) > vendor matches (4.0) > summary matches (2.0) > general matches (1.0). Official vendor and runtime-verified entries get bonus scores.
+
+#### Agent Tool Discovery (MCP Tools)
+
+Agents discover tools through 4 MCP tools exposed by `bridge_mcp.py`, backed by `capability_library.py`:
+
+| MCP Tool | Backend Function | Purpose |
+|----------|-----------------|---------|
+| `bridge_capability_library_recommend` | `recommend_entries(task, engine, top_k)` | Task-based recommendation: "what tools help with X?" |
+| `bridge_capability_library_search` | `search_entries(query, filters...)` | Filtered search with scoring, pagination |
+| `bridge_capability_library_list` | `list_entries(filters...)` | Browse with filters (type, vendor, cli, tag, status, trust_tier) |
+| `bridge_capability_library_get` | `get_entry(entry_id)` | Retrieve full details for a specific entry |
+
+`recommend_entries()` (line 358) wraps `search_entries()` with the agent's task description as query and engine as CLI filter, returning the top-k matches.
+
+#### Skills to MCPs Mapping (mcp_catalog.py)
+
+The `mcp_catalog.py` module manages the runtime MCP server catalog (`config/mcp_catalog.json`) and maps agent skills to required MCP servers.
+
+**`resolve_mcps_for_skills(skills)`** (line 235): Given a list of skill IDs (from team.json `skills` array), looks up each skill in `config/skill_mcp_map.json`. For skills with `auto_attach: true`, collects their `preferred_mcps` entries. Only MCPs that exist in the runtime catalog are included. Returns a sorted, deduplicated list of MCP names.
+
+This is called during session creation (tmux_manager.py line 2049-2058): agent skills are read from team.json, skill-derived MCPs are resolved, and merged into the `mcp_servers` string. The resulting `.mcp.json` file includes both explicitly configured MCPs and skill-derived MCPs.
+
+**Runtime MCP catalog** (`config/mcp_catalog.json`): Defines available MCP servers with:
+- `runtime_servers` — launchable servers (bridge, playwright, ghost, aase, etc.) with `command`, `args`, `env` templates. Placeholders (`{backend_dir}`, `{root_dir}`, `{home}`) are resolved at runtime via `_resolve_template()`.
+- `planned_servers` — metadata-only entries for servers not yet available.
+
+`build_client_mcp_config(mcp_servers)` (line 147) produces the `.mcp.json` payload by resolving requested MCP names against the runtime catalog. `mcp_servers="all"` includes all servers with `include_in_all: true`. Empty or `"bridge"` includes bridge only.
+
+#### Capability-Bootstrap-Pflicht (Mandatory Tool Discovery)
+
+Every agent instruction file includes a mandatory work rule (rule 8 in `generate_agent_claude_md()`, tmux_manager.py line 2750):
+
+> "Capability-Bootstrap (PFLICHT): Vor der ersten Aufgabe jeder Session: bridge_capability_library_recommend + bridge_capability_library_search ausfuehren. Eigenes Toolset aktiv verifizieren. Du bist verantwortlich fuer deine eigenen Tools."
+
+The initial activation prompt (line 918-923) also includes step 4: `bridge_capability_library_recommend(task='<deine Rolle>')`. This ensures every agent discovers its available tools at session start, before processing any tasks.
+
 ## Platform Specifications
+
+### What a "Platform" Is
+
+A platform in Bridge ACE is a vertical industry solution built on three layers:
+
+1. **Spec document** (`Backend/docs/*_PLATFORM_SPEC.md`): A detailed requirements document defining the domain, user workflows, agent roles, data models, API contracts, and acceptance criteria. Example: `ACCOUNTING_PLATFORM_SPEC.md` (748 lines) defines DATEV-compatible bookkeeping with automatic receipt categorization, dual-agent verification, and UStVA reporting. Specs are authored by agents/users and marked with revision status (e.g., "FREIGEGEBEN — Implementierungsgrundlage").
+
+2. **Backend modules** (`Backend/data_platform/`, `Backend/handlers/`): Python modules implementing the platform's data layer and API endpoints. The `data_platform/` module provides the reference implementation:
+   - `source_registry.py` — Data source CRUD (register, ingest, profile, query). Supports CSV, Excel, JSON, SQLite, Parquet. Uses two-phase DuckDB: privileged ingestion into canonical Parquet format, then sandboxed read-only queries. Storage under `~/.bridge/data_platform/`.
+   - `analysis_pipeline.py` — 10-stage analysis run engine. Creates runs with questions against dataset versions, executes deterministic analysis stages (agents are control-plane only for stages A1, A1B, A9), produces evidence and reports. Uses the `creator_job.py` worker/queue infrastructure.
+   - Handler modules in `Backend/handlers/` expose these as REST endpoints (e.g., `bridge_data_query`, `bridge_data_source_register`).
+
+3. **Frontend components**: Platform-specific UI elements in the frontend pages (e.g., platform start/stop controls in `chat.html`).
+
+### How a User Activates a Platform
+
+- **Start:** `POST /platform/start` (server.py line 5912). Starts all agents with `auto_start: true` in team.json, launches the bridge_watcher, and starts the output_forwarder. The `platform_status_snapshot()` function (line 3988) provides current state.
+- **Stop:** `POST /platform/stop` (server.py line 6006). Gracefully stops all agents, watcher, forwarder, and optionally the server itself.
+- **Status:** `GET /platform/status` returns agent states, health, and runtime info.
+
+Both endpoints require platform operator auth (`_require_platform_operator()`, level 0-1).
+
+### Platform Spec Structure
+
+Spec documents follow a consistent format (visible in ACCOUNTING_PLATFORM_SPEC.md):
+- Section 1: Goal, product differentiation, target audience, 6-month vision
+- Section 2+: Domain-specific workflows, data models, agent roles, API contracts, error handling, acceptance criteria
+- Metadata header: date, author, revision history, approval status
 
 10 pre-built industry platform specs:
 
