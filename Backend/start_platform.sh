@@ -853,11 +853,28 @@ echo
 
 # --- Watcher (bridge_watcher.py) ---
 # Watcher MUST start before agents (monitors context, coordinates agents)
+# GEM-001: Health-check after start to prevent boot-sequence race
 start_process watcher python3 -u "${BRIDGE_DIR}/bridge_watcher.py"
-sleep 1
-if ! is_pid_running "$(cat "${PID_DIR}/watcher.pid" 2>/dev/null)"; then
-  echo "WATCHER FAILED - keine Agents ohne Watcher" >&2
-  exit 1
+WATCHER_READY=0
+for i in $(seq 1 10); do
+  sleep 1
+  if is_pid_running "$(cat "${PID_DIR}/watcher.pid" 2>/dev/null)"; then
+    # Check if server reports watcher as connected (WebSocket)
+    WATCHER_STATUS="$(curl -sf "${SERVER_URL}/health" 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("watcher",{}).get("status","unknown"))' 2>/dev/null || echo "unknown")"
+    if [[ "${WATCHER_STATUS}" == "connected" || "${WATCHER_STATUS}" == "ok" ]]; then
+      echo "watcher ready (attempt ${i})"
+      WATCHER_READY=1
+      break
+    fi
+    echo "watcher starting... (attempt ${i}, status=${WATCHER_STATUS})"
+  fi
+done
+if [[ "${WATCHER_READY}" -eq 0 ]]; then
+  if ! is_pid_running "$(cat "${PID_DIR}/watcher.pid" 2>/dev/null)"; then
+    echo "WATCHER FAILED - keine Agents ohne Watcher" >&2
+    exit 1
+  fi
+  echo "WATCHER: PID alive but health-check inconclusive — proceeding with caution"
 fi
 
 # --- Output Forwarder (captures manager terminal output -> Bridge UI) ---
