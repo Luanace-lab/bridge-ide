@@ -1827,6 +1827,41 @@
       border-top:1px solid rgba(255,255,255,.7);
     }
 
+    /* Long-press context menu for messages */
+    .msgContextMenu{
+      position:fixed;z-index:9999;
+      display:flex;gap:2px;padding:4px 6px;
+      border-radius:10px;
+      background:rgba(245,245,240,.95);
+      box-shadow:0 4px 16px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1);
+      backdrop-filter:blur(12px);
+      animation:ctxFadeIn .12s ease;
+    }
+    @keyframes ctxFadeIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+    html:is([data-theme="dark"],[data-theme="black"]) .msgContextMenu{
+      background:rgba(10,12,20,.96);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 8px 24px rgba(0,0,0,.6);
+    }
+    .msgContextMenu__btn{
+      border:none;background:transparent;cursor:pointer;
+      width:34px;height:34px;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      color:var(--text);opacity:.7;transition:all .12s;
+      font-size:16px;
+    }
+    .msgContextMenu__btn:hover,.msgContextMenu__btn:active{
+      opacity:1;background:rgba(0,0,0,.06);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .msgContextMenu__btn:hover,
+    html:is([data-theme="dark"],[data-theme="black"]) .msgContextMenu__btn:active{
+      background:rgba(255,255,255,.08);
+    }
+    .msgContextMenu__btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+    .msgContextMenu__btn--up.msgContextMenu__btn--active{color:#22c55e;opacity:1;}
+    .msgContextMenu__btn--down.msgContextMenu__btn--active{color:#ef4444;opacity:1;}
+    .chatMsg--longpress{outline:2px solid var(--accent,#2cd8d8);outline-offset:-2px;border-radius:12px;}
+
     .boardEmptyState{
       min-height:auto;
       display:flex;
@@ -3684,7 +3719,137 @@
         }
         node.appendChild(wrap);
       }
+      if (message && message.id) {
+        node.dataset.msgId = message.id;
+        node.dataset.msgFrom = message.from || '';
+        node.dataset.msgTo = message.to || '';
+        setupLongPress(node, message);
+      }
       return node;
+    }
+
+    /* ── Long-press context menu ── */
+    let activeContextMenu = null;
+    function dismissContextMenu() {
+      if (activeContextMenu) { activeContextMenu.remove(); activeContextMenu = null; }
+      document.querySelectorAll('.chatMsg--longpress').forEach(el => el.classList.remove('chatMsg--longpress'));
+    }
+    document.addEventListener('click', dismissContextMenu);
+    document.addEventListener('touchstart', (e) => {
+      if (activeContextMenu && !activeContextMenu.contains(e.target)) dismissContextMenu();
+    });
+
+    function setupLongPress(node, message) {
+      let timer = null;
+      let startX = 0, startY = 0;
+      const HOLD_MS = 500;
+      const MOVE_THRESHOLD = 10;
+
+      node.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        timer = setTimeout(() => {
+          e.preventDefault();
+          showContextMenu(node, message, startX, startY);
+        }, HOLD_MS);
+      }, { passive: false });
+
+      node.addEventListener('touchmove', (e) => {
+        if (!timer) return;
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
+        if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) { clearTimeout(timer); timer = null; }
+      });
+
+      node.addEventListener('touchend', () => { clearTimeout(timer); timer = null; });
+      node.addEventListener('touchcancel', () => { clearTimeout(timer); timer = null; });
+    }
+
+    function showContextMenu(msgNode, message, x, y) {
+      dismissContextMenu();
+      msgNode.classList.add('chatMsg--longpress');
+
+      const menu = document.createElement('div');
+      menu.className = 'msgContextMenu';
+
+      // Copy button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'msgContextMenu__btn';
+      copyBtn.title = 'Kopieren';
+      copyBtn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = message.content || msgNode.querySelector('.chatMsg__content')?.textContent || '';
+        navigator.clipboard.writeText(text).then(() => {
+          copyBtn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+          copyBtn.style.color = '#22c55e';
+          setTimeout(dismissContextMenu, 600);
+        });
+      });
+
+      // Thumbs up
+      const upBtn = document.createElement('button');
+      upBtn.className = 'msgContextMenu__btn msgContextMenu__btn--up';
+      upBtn.title = 'Gut';
+      upBtn.textContent = '\uD83D\uDC4D';
+      upBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sendReaction(message.id, 'thumbs_up', message.from);
+        upBtn.classList.add('msgContextMenu__btn--active');
+        setTimeout(dismissContextMenu, 400);
+      });
+
+      // Thumbs down
+      const downBtn = document.createElement('button');
+      downBtn.className = 'msgContextMenu__btn msgContextMenu__btn--down';
+      downBtn.title = 'Schlecht';
+      downBtn.textContent = '\uD83D\uDC4E';
+      downBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sendReaction(message.id, 'thumbs_down', message.from);
+        downBtn.classList.add('msgContextMenu__btn--active');
+        setTimeout(dismissContextMenu, 400);
+      });
+
+      // Reply button
+      const replyBtn = document.createElement('button');
+      replyBtn.className = 'msgContextMenu__btn';
+      replyBtn.title = 'Antworten';
+      replyBtn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>';
+      replyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dismissContextMenu();
+        const board = msgNode.closest('[id$="Board"]') || msgNode.closest('.boardSection');
+        const isManagement = !!(board && board.id && board.id.includes('management'));
+        const targetInput = isManagement
+          ? document.getElementById('managementComposerInput')
+          : document.getElementById('teamComposerInput');
+        if (targetInput) {
+          targetInput.focus();
+          targetInput.dataset.replyTo = message.id;
+          targetInput.placeholder = `Antwort an ${message.from || 'Agent'}...`;
+        }
+      });
+
+      menu.append(copyBtn, upBtn, downBtn, replyBtn);
+
+      // Position near touch point
+      document.body.appendChild(menu);
+      const mw = menu.offsetWidth;
+      const mh = menu.offsetHeight;
+      let left = x - mw / 2;
+      let top = y - mh - 12;
+      if (left < 8) left = 8;
+      if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+      if (top < 8) top = y + 20;
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+      activeContextMenu = menu;
+    }
+
+    function sendReaction(msgId, reaction, toAgent) {
+      const payload = { from: USER_ID, to: toAgent || 'system', content: reaction === 'thumbs_up' ? '\uD83D\uDC4D' : '\uD83D\uDC4E', meta: { type: 'reaction', reaction: reaction, original_msg_id: msgId } };
+      fetch(API_BASE + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
     }
 
     function createEmptyState(text) {
