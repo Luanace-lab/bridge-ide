@@ -73,6 +73,28 @@ Drag-and-drop agent hierarchy. Define who reports to whom. Visualize your entire
   <img src="docs/screenshots/hierarchie.png" alt="Agent Hierarchy" width="800">
 </p>
 
+### Agent Coordination — Autonomous Multi-Agent Workflow
+
+Agents delegate tasks, review code, and verify results — self-organized, without human intervention. Real-time communication via Bridge MCP.
+
+<p align="center">
+  <img src="marketing/agent_coordination/agent_coordination_1.png" alt="Agent coordination in action" width="800">
+</p>
+
+<p align="center">
+  <img src="marketing/agent_coordination/agent_coordination_2.png" alt="Agent task delegation and results" width="800">
+</p>
+
+### Buddy Film — AI-Generated Promotional Video
+
+Claude Code autonomously created a 35-second promotional film using Bridge MCPs: ChatGPT for script + storyboard, Sora for video generation, ffmpeg for assembly. No human intervention in the creative process.
+
+https://github.com/Luanace-lab/bridge-ide/raw/main/marketing/buddy_film/buddy_bridge_ace_film.mp4
+
+<p align="center">
+  <img src="marketing/buddy_film/screenshots/chatgpt_buddy_reference_design.png" alt="ChatGPT generating Buddy storyboard" width="800">
+</p>
+
 ### Team-Up — Project Configurator
 
 Create a project, assign a team lead, add agents, configure engines and models — all from one page.
