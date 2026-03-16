@@ -307,6 +307,24 @@ def _agent_health_tick(cleanup_counter: int) -> int:
                         )
                     except Exception:
                         pass
+                # P0-FIX: OAuth rescue — kill stuck session + restart with resume
+                _oauth_key = f"oauth_rescue:{agent_id}"
+                _oauth_count = int(_agent_oauth_failures.get(agent_id, {}).get("count", 0)) if isinstance(_agent_oauth_failures.get(agent_id), dict) else 0
+                _last_oauth = _agent_last_restart.get(_oauth_key, 0)
+                if _oauth_count < 2 and (time.time() - _last_oauth) > 120:
+                    with _restart_lock:
+                        _agent_last_restart[_oauth_key] = time.time()
+                    _agent_oauth_failures[agent_id] = {"count": str(_oauth_count + 1), "last": str(time.time())}
+                    print(f"[health] OAuth-rescue #{_oauth_count + 1} for {agent_id}: kill + restart")
+                    try:
+                        import subprocess as _sp
+                        session_name = f"acw_{agent_id}"
+                        _sp.run(["tmux", "kill-session", "-t", session_name], capture_output=True, timeout=5)
+                        time.sleep(1)
+                        # Restart via server API (handles resume, config_dir, etc.)
+                        _auto_restart_agent_cb(agent_id)
+                    except Exception as exc:
+                        print(f"[health] OAuth-rescue failed for {agent_id}: {exc}")
             elif agent_id in _agent_auth_blocked:
                 _agent_auth_blocked.discard(agent_id)
                 _agent_oauth_failures.pop(agent_id, None)
