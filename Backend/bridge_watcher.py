@@ -858,12 +858,48 @@ def _inject_into_session(session_name: str, text: str) -> bool:
         return False
 
 
+def _is_at_prompt(session_name: str) -> bool:
+    """GEM-014: Check if session is at a CLI prompt (safe to inject).
+
+    Returns True if the last non-empty line ends with a prompt indicator
+    ($, >, ❯, %, or engine-specific patterns). Returns False if agent
+    appears to be in an editor, pager, or modal UI.
+    """
+    try:
+        r = subprocess.run(
+            ["tmux", "capture-pane", "-t", session_name, "-p"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if r.returncode != 0:
+            return False
+        lines = [l for l in r.stdout.rstrip().split("\n") if l.strip()]
+        if not lines:
+            return True  # empty screen = probably prompt
+        last = lines[-1].rstrip()
+        # Prompt indicators
+        if last.endswith(("$", ">", "❯", "%", ">>> ")) or last.strip().startswith("❯"):
+            return True
+        # Engine-specific: Codex shows "codex>" or "$", Claude shows "❯"
+        if any(p in last for p in ("codex>", "$ ", "> ", "❯ ")):
+            return True
+        # Editor indicators (vi/vim/nano/less) — do NOT inject
+        if any(p in last for p in ("-- INSERT --", "-- NORMAL --", "~", "(END)", "lines 1-")):
+            return False
+        return True  # default: allow (may be non-standard prompt)
+    except Exception:
+        return True  # fail-open
+
+
 def _inject_via_send_keys(session_name: str, text: str) -> bool:
     """Inject text via tmux send-keys -l + Enter.
 
     Used for CLIs that don't process paste-buffer (e.g., Codex).
     send-keys -l sends text literally, bypassing key interpretation.
+    GEM-014: Checks prompt status before injection to avoid editor corruption.
     """
+    if not _is_at_prompt(session_name):
+        print(f"[watcher] GEM-014: Skipping injection to {session_name} — not at prompt", file=sys.stderr)
+        return False
     try:
         send = subprocess.run(
             ["tmux", "send-keys", "-t", session_name, "-l", text],
