@@ -1,0 +1,25 @@
+# Bridge IDE — Caddy Reverse Proxy
+# Auto-TLS via Let's Encrypt when BRIDGE_DOMAIN is set.
+# Usage: BRIDGE_DOMAIN=bridgeide.com docker compose up
+
+{$BRIDGE_DOMAIN:localhost} {
+	# HTTP API + Frontend → bridge-server:9111
+	reverse_proxy /ws bridge-server:9112
+	reverse_proxy bridge-server:9111
+
+	# Forward proto so CSP can detect HTTPS
+	header_up X-Forwarded-Proto {scheme}
+
+	# Security headers (Caddy adds most by default)
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	# Logging
+	log {
+		output stdout
+		format console
+	}
+}
