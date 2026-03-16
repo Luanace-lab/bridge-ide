@@ -6974,6 +6974,14 @@
         return true;
       });
 
+      // Inject synthetic alert for high blocked-task count
+      const blockedCount = lbTaskQueueData.filter(t => t.state !== 'done' && (t.blocker_reason || (t.state === 'failed' && t.error))).length;
+      if(blockedCount >= 10){
+        const sev = blockedCount >= 100 ? 'critical' : 'warning';
+        const exists = alerts.some(a => a.id === '_synthetic_blocked');
+        if(!exists) alerts.push({ id:'_synthetic_blocked', type:'alert', severity:sev, agent_id:'system', content: blockedCount + ' Tasks blockiert', created_at: new Date().toISOString() });
+      }
+
       const sevOrder = { critical:0, warning:1, info:2 };
       alerts.sort((a, b) => {
         const sa = sevOrder[a.severity] ?? 2;
