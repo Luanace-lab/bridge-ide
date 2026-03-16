@@ -164,7 +164,7 @@ def test_sup_01_watcher_kill():
         with patch.object(server, '_pid_alive', return_value=False):
             # Supervisor State vorbereiten
             original_pid_file = server._PROCESS_SUPERVISOR_STATE["watcher"]["pid_file"]
-            test_pid_file = os.path.join("/home/leo/Desktop/CC/BRIDGE/Backend/pids", "test_watchdog_watcher.pid")
+            test_pid_file = os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pids"), "test_watchdog_watcher.pid")
             server._PROCESS_SUPERVISOR_STATE["watcher"]["pid_file"] = test_pid_file
             
             # Fake PID-File erstellen
@@ -202,7 +202,7 @@ def test_sup_01_watcher_kill():
     print("  [LIVE MODE] Führe echten SIGKILL aus - ACHTUNG!")
     
     # 1. Watcher PID lesen
-    watcher_pid_file = "/home/leo/Desktop/CC/BRIDGE/Backend/pids/watcher.pid"
+    watcher_pid_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pids", "watcher.pid")
     try:
         old_pid = int(Path(watcher_pid_file).read_text().strip())
     except (FileNotFoundError, ValueError):
@@ -251,7 +251,7 @@ def test_sup_02_forwarder_kill():
         print("  [MOCK MODE] Verwende Mock statt echtem SIGKILL")
         
         with patch.object(server, '_pid_alive', return_value=False):
-            pid_dir = "/home/leo/Desktop/CC/BRIDGE/Backend/pids"
+            pid_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pids")
             original_pid_file = server._PROCESS_SUPERVISOR_STATE["forwarder"]["pid_file"]
             test_pid_file = os.path.join(pid_dir, "test_output_forwarder.pid")
             server._PROCESS_SUPERVISOR_STATE["forwarder"]["pid_file"] = test_pid_file
@@ -285,7 +285,7 @@ def test_sup_02_forwarder_kill():
     # LIVE MODE: Echter destruktiver Test
     print("  [LIVE MODE] Führe echten SIGKILL aus - ACHTUNG!")
     
-    pid_dir = "/home/leo/Desktop/CC/BRIDGE/Backend/pids"
+    pid_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pids")
     forwarder_pid_file = os.path.join(pid_dir, "output_forwarder.pid")
     
     try:
@@ -407,7 +407,7 @@ def test_sup_05a_pid_file_missing_process_running():
     import server
     
     # 1. Echte PID-File löschen (Backup erstellen)
-    pid_file = "/home/leo/Desktop/CC/BRIDGE/Backend/pids/watcher.pid"
+    pid_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pids", "watcher.pid")
     backup_file = pid_file + ".bak"
     
     try:

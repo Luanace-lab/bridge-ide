@@ -1,7 +1,7 @@
 # team.json
 
 ## Zweck
-Aktuelle Source-of-Truth-Dokumentation fuer Team-, Agent- und Runtime-Overlay-Konfiguration im Root-Workspace von `/home/leo/Desktop/CC/BRIDGE`.
+Aktuelle Source-of-Truth-Dokumentation fuer Team-, Agent- und Runtime-Overlay-Konfiguration im Root-Workspace von `./BRIDGE`.
 
 ## Aktueller Pfadstand
 - Persistierte Basiskonfiguration: `Backend/team.json`

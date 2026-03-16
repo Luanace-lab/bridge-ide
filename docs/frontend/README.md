@@ -4,7 +4,7 @@
 
 `docs/frontend/` is the active frontend audit home in the root working copy.
 Older archived copies still exist under `Archiev/docs/frontend/`.
-This file documents the active frontend paths in `/home/leo/Desktop/CC/BRIDGE/Frontend`.
+This file documents the active frontend paths in `./Frontend`.
 
 ## Runtime model
 

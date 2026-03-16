@@ -43,7 +43,7 @@ test.describe('frontend clickpath audit', () => {
   });
 
   test('project config page executes safe clickpaths and exports JSON', async ({ page }) => {
-    const tmpRoot = `/home/leo/Desktop/bridge_frontend_audit_${Date.now()}`;
+    const tmpRoot = `/tmp/bridge-test/bridge_frontend_audit_${Date.now()}`;
     const projectName = `frontend-audit-${Date.now()}`;
     const projectTarget = path.join(tmpRoot, projectName);
     fs.rmSync(tmpRoot, { recursive: true, force: true });
@@ -63,7 +63,7 @@ test.describe('frontend clickpath audit', () => {
     await expect(page.locator('#projPath')).toBeVisible();
 
     await page.locator('#projName').fill('BRIDGE');
-    await page.locator('#projPath').fill('/home/leo/Desktop/CC/BRIDGE');
+    await page.locator('#projPath').fill('.');
     await page.locator('#scanBtn').click();
     await expect(page.getByText('SCAN-ERGEBNISSE')).toBeVisible();
     await expect(page.getByText('Projekt erkannt.')).toBeVisible();
@@ -82,7 +82,7 @@ test.describe('frontend clickpath audit', () => {
     await page.locator('#projName').fill(projectName);
     await page.locator('#projPath').fill('/tmp');
     await page.locator('#createBtn').click();
-    await expect(page.getByText('Projekt-Erstellung ist nur innerhalb von /home/leo/Desktop erlaubt.')).toBeVisible();
+    await expect(page.getByText('Projekt-Erstellung ist nur innerhalb von /tmp/bridge-test erlaubt.')).toBeVisible();
 
     await page.locator('#projName').fill(projectName);
     await page.locator('#projPath').fill(tmpRoot);

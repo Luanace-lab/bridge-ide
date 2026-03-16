@@ -23,7 +23,7 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 
 # ---------------------------------------------------------------------------
-# Config — load from env or /home/leo/.config/bridge/n8n.env
+# Config — load from env or ~/.config/bridge/n8n.env
 # ---------------------------------------------------------------------------
 _N8N_ENV_FILE = os.path.expanduser("~/.config/bridge/n8n.env")
 

@@ -193,7 +193,7 @@ def test_unregistered_agent_messaging():
 def test_tmux_session_detection():
     """Test: is_session_alive correctly detects existing sessions."""
     print("\n=== tmux Session Detection ===")
-    sys.path.insert(0, "/home/leo/Desktop/CC/BRIDGE/Backend")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from tmux_manager import is_session_alive
 
     # Known sessions
