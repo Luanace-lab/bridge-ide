@@ -53,7 +53,7 @@ def _inject_ui_token(body: bytes) -> bytes:
 def _serve_frontend_request(self, path: str) -> bool:
     """Serve root UI and static frontend assets. Returns True when handled."""
     if path in {"/", "/ui"}:
-        landing = os.path.join(_frontend_dir, "control_center.html")
+        landing = os.path.join(_frontend_dir, "landing.html")
         if not os.path.exists(landing):
             self._respond(404, {"error": "ui not found"})
             return True

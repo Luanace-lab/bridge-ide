@@ -112,3 +112,16 @@ Bridge ACE
 | Frontend-Architektur | `docs/frontend/README.md` | UI-Architektur |
 | API-Contracts | `docs/frontend/contracts.md` | Frontend-Backend-Schnittstellen |
 | Alle Platform-Specs | `Backend/docs/*_PLATFORM_SPEC.md` | Branchenloesungen |
+
+## Dokumentation
+
+Zentrale Referenz: `docs/ARCHITECTURE.md` (VOLLSTAENDIG lesen)
+- Gesamtarchitektur: `docs/ARCHITECTURE.md#system-architecture`
+- Backend-Details: `docs/ARCHITECTURE.md#backend`
+- Frontend-Details: `docs/ARCHITECTURE.md#frontend`
+- Agent-System: `docs/ARCHITECTURE.md#agent-system`
+- Kommunikation: `docs/ARCHITECTURE.md#communication`
+- Sicherheit: `docs/ARCHITECTURE.md#security`
+- Backend-Infrastruktur: `Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`
+- Frontend-Contracts: `docs/frontend/contracts.md`
+- Alle Platform-Specs: `Backend/docs/*_PLATFORM_SPEC.md`

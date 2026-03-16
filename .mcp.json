@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "bridge": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["Backend/bridge_mcp.py"],
+      "env": {}
+    }
+  }
+}
