@@ -30,7 +30,7 @@
 
 Auth-relevante Anker in `server.py`:
 
-- L185: `BRIDGE_STRICT_AUTH = _env_flag("BRIDGE_STRICT_AUTH", False)`
+- L185: `BRIDGE_STRICT_AUTH = _env_flag("BRIDGE_STRICT_AUTH", True)` — **Default is True (strict mode)**. Set to False only for local development without tokens.
 - L11013: `def _extract_auth_token(self) -> str:`
 - L11022: `def _resolve_auth_identity(self) -> tuple[str, str | None]:`
 - L11023: `token = self._extract_auth_token()`
