@@ -67,3 +67,14 @@ Backend ist der **Server- und API-Spezialist** der Bridge-Plattform. Alles was a
 - Message-Reihenfolge muss pro Agent garantiert sein
 - Heartbeat-Timeout: 60 Sekunden, dann Agent als offline markiert
 - Task-State-Machine: Nur gueltige Transitions erlaubt
+
+## Dokumentation
+
+Zentrale Referenz: `docs/ARCHITECTURE.md`
+- Server-Architektur: `docs/ARCHITECTURE.md#server-serverpy`
+- Lock-Ordnung: `docs/ARCHITECTURE.md#server-serverpy` (GLOBAL → AGENT → TASK)
+- MCP-Server: `docs/ARCHITECTURE.md#mcp-server-bridge_mcppy`
+- Session-Manager: `docs/ARCHITECTURE.md#agent-session-manager-tmux_managerpy`
+- Backend-Infrastruktur: `Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`
+- API-Contracts: `docs/frontend/contracts.md`
+- Daemons: `docs/ARCHITECTURE.md#daemons`
