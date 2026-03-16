@@ -8,6 +8,7 @@ _allowed_origins: set[str] = set()
 _rate_limit_exempt: set[str] = set()
 _rate_limits: dict[str, Any] = {}
 _rate_limiter: Any = None
+_ws_port: int = 9112
 
 
 def init(
@@ -16,13 +17,16 @@ def init(
     rate_limit_exempt: set[str],
     rate_limits: dict[str, Any],
     rate_limiter: Any,
+    ws_port: int = 9112,
 ) -> None:
     global _allowed_origins
     global _rate_limit_exempt
     global _rate_limits
     global _rate_limiter
+    global _ws_port
 
     _allowed_origins = allowed_origins
+    _ws_port = ws_port
     _rate_limit_exempt = rate_limit_exempt
     _rate_limits = rate_limits
     _rate_limiter = rate_limiter
@@ -49,13 +53,26 @@ def _send_cors_headers(self) -> None:
     self.send_header("X-Content-Type-Options", "nosniff")
     self.send_header("X-Frame-Options", "DENY")
     self.send_header("X-XSS-Protection", "1; mode=block")
+    # Build connect-src dynamically from request Host header
+    req_host = self.headers.get("Host", "127.0.0.1:9111")
+    hostname = req_host.split(":")[0]
+    # Detect HTTPS via X-Forwarded-Proto (set by reverse proxies like Caddy)
+    proto = self.headers.get("X-Forwarded-Proto", "http")
+    ws_proto = "wss" if proto == "https" else "ws"
+    # Build connect-src: allow self + explicit HTTP/WS origins
+    connect_origins = f"'self' {proto}://{req_host} {ws_proto}://{hostname}:{_ws_port}"
+    # Behind a reverse proxy (HTTPS on :443), WS goes through same host:port
+    if proto == "https":
+        connect_origins += f" {ws_proto}://{hostname}"
+    # Always allow localhost for local development
+    connect_origins += " http://127.0.0.1:9111 http://localhost:9111 ws://127.0.0.1:9112 ws://localhost:9112"
     self.send_header(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data:; "
-        "connect-src 'self' http://127.0.0.1:9111 http://localhost:9111 ws://127.0.0.1:9112 ws://localhost:9112; frame-ancestors 'none'",
+        f"default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        f"font-src 'self' https://fonts.gstatic.com; "
+        f"img-src 'self' data:; "
+        f"connect-src {connect_origins}; frame-ancestors 'none'",
     )
 
 
