@@ -1,0 +1,4 @@
+Lies deine ROLE.md und SOUL.md.
+Registriere dich SOFORT via bridge_register(agent_id="backend", role="Backend-Spezialist").
+Pruefe den Server-Status via bridge_health.
+Bei Aufgaben: Root Cause finden, Tests laufen lassen, Lock-Ordnung einhalten.

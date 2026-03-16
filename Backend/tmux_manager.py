@@ -1939,7 +1939,13 @@ def create_agent_session(
     # 1a  Resolve and persist soul (SOUL.md created only if missing)
     guardrail_prolog, soul_section = prepare_agent_identity(agent_id, workspace)
 
-    # 1b  Generate instruction doc with soul integration
+    # 1b  Resolve home_dir from team.json for ROLE.md embedding
+    from soul_engine import _get_agent_home_dir as _se_get_home
+    _agent_home_dir = _se_get_home(agent_id) or ""
+    if _agent_home_dir and not Path(_agent_home_dir).is_absolute():
+        _agent_home_dir = str(Path(project_path) / _agent_home_dir)
+
+    # 1c  Generate instruction doc with soul integration + role knowledge
     instruction_doc = generate_agent_claude_md(
         agent_id=agent_id,
         role=role,
@@ -1954,6 +1960,7 @@ def create_agent_session(
         permissions=permissions,
         scope=scope,
         report_recipient=report_recipient,
+        home_dir=_agent_home_dir,
     )
     try:
         (workspace / spec.instruction_filename).write_text(instruction_doc, encoding="utf-8")
@@ -2460,6 +2467,7 @@ def generate_agent_claude_md(
     permissions: list | None = None,
     scope: list | None = None,
     report_recipient: str = "",
+    home_dir: str = "",
 ) -> str:
     """Generate CLAUDE.md / AGENTS.md content for an agent.
 
@@ -2914,7 +2922,19 @@ def generate_agent_claude_md(
         ## Deine Rolle: {role}
 
         {role_description}
+
+        {role_knowledge}
     """)
+
+    # Load ROLE.md from agent's home directory (if available)
+    _role_knowledge = ""
+    if home_dir:
+        _role_md = Path(home_dir) / "ROLE.md"
+        if _role_md.is_file():
+            try:
+                _role_knowledge = _role_md.read_text(encoding="utf-8").strip()
+            except OSError:
+                pass
 
     return template.format(
         agent_id=agent_id,
@@ -2938,6 +2958,7 @@ def generate_agent_claude_md(
         arbeitsregeln_section=arbeitsregeln_section,
         memory_section=memory_section,
         role_description=role_description if role_description else "(keine spezifische Rollenbeschreibung)",
+        role_knowledge=_role_knowledge,
     )
 
 
