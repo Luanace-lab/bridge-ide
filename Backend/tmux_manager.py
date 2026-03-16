@@ -696,8 +696,12 @@ def _capture_has_claude_usage_limit(capture: str) -> bool:
 
 
 _LOGIN_SCREEN_PATTERNS = (
-    "Sign in",
-    "Log in",
+    # Specific OAuth patterns (from oauth_rescue.py)
+    "Paste code here if prompted",
+    "oauth/authorize",
+    "Browser didn't open",
+    "Use the url below to sign in",
+    # Generic login patterns
     "Enter your email",
     "API key",
     "authentication required",
