@@ -265,34 +265,39 @@ def _agent_health_tick(cleanup_counter: int) -> int:
                             _agent_last_restart[agent_id] = time.time()
 
         if _is_session_alive_cb(agent_id):
+            # GEM-019: Snapshot under lock, I/O outside lock to prevent deadlock
+            _hb_age = 0.0
+            _needs_nudge = False
             with _agent_state_lock:
                 reg = _registered_agents.get(agent_id)
                 if reg is not None:
                     last_hb = reg.get("last_heartbeat", 0)
-                    hb_age = time.time() - last_hb
-                    if hb_age > 120:
-                        _send_health_alert_cb(
-                            f"agent:{agent_id}:no_heartbeat",
-                            "warn",
-                            f"[WARN] Agent {agent_id}: tmux lebt, aber kein Heartbeat seit {int(hb_age)}s. "
-                            f"Moeglicherweise Registrierung verloren.",
-                            time.time(),
-                        )
-                        # Active recovery: nudge agent to re-register after >5min no heartbeat
-                        if hb_age > 300:
-                            _nudge_key = f"recovery_nudge:{agent_id}"
-                            _last_nudge = _agent_last_restart.get(_nudge_key, 0)
-                            if (time.time() - _last_nudge) > 120:  # cooldown 2min between nudges
-                                _agent_last_restart[_nudge_key] = time.time()
-                                session_name = f"acw_{agent_id}"
-                                try:
-                                    import subprocess as _sp
-                                    _sp.run(["tmux", "send-keys", "-t", session_name,
-                                             "Lies deine Dokumentation. Registriere dich via bridge_register.",
-                                             "Enter"], capture_output=True, timeout=3)
-                                    print(f"[health] Recovery-nudge sent to {agent_id} (no heartbeat {int(hb_age)}s)")
-                                except Exception:
-                                    pass
+                    _hb_age = time.time() - last_hb
+            # I/O outside lock
+            if _hb_age > 120:
+                _send_health_alert_cb(
+                    f"agent:{agent_id}:no_heartbeat",
+                    "warn",
+                    f"[WARN] Agent {agent_id}: tmux lebt, aber kein Heartbeat seit {int(_hb_age)}s. "
+                    f"Moeglicherweise Registrierung verloren.",
+                    time.time(),
+                )
+                if _hb_age > 300:
+                    _nudge_key = f"recovery_nudge:{agent_id}"
+                    _last_nudge = _agent_last_restart.get(_nudge_key, 0)
+                    if (time.time() - _last_nudge) > 120:
+                        _agent_last_restart[_nudge_key] = time.time()
+                        _needs_nudge = True
+            if _needs_nudge:
+                session_name = f"acw_{agent_id}"
+                try:
+                    import subprocess as _sp
+                    _sp.run(["tmux", "send-keys", "-t", session_name,
+                             "Lies deine Dokumentation. Registriere dich via bridge_register.",
+                             "Enter"], capture_output=True, timeout=3)
+                    print(f"[health] Recovery-nudge sent to {agent_id} (no heartbeat {int(_hb_age)}s)")
+                except Exception:
+                    pass
 
         if _is_session_alive_cb(agent_id) and agent_id in conf_ids:
             if _is_agent_at_oauth_prompt_cb(agent_id):
