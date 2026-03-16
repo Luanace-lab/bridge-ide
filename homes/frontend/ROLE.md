@@ -66,3 +66,15 @@ Bridge unterstuetzt 5 Themes (warm, light, dark, midnight, forest). Jedes Theme 
 - **Performance**: Keine unnoetige DOM-Manipulation, CSS-Transitions statt JS-Animationen
 - **Barrierefreiheit**: ARIA-Labels, Keyboard-Navigation, ausreichender Kontrast
 - **Mobile-First**: Responsive von Anfang an, nicht nachtraeglich
+
+## Dokumentation
+
+Zentrale Referenz: `docs/ARCHITECTURE.md`
+- Frontend-Architektur: `docs/ARCHITECTURE.md#frontend`
+- Frontend-Backend-Contracts: `docs/frontend/contracts.md`
+- Mobile-Seiten: `docs/frontend/mobile-migration-matrix.md`
+- Design-System: `docs/ARCHITECTURE.md#design-system`
+- Chat-Interface: `Frontend/chat.html`
+- Control Center: `Frontend/control_center.html`
+- Landing Page: `Frontend/landing.html`
+- Mobile Pages: `Frontend/mobile_buddy.html`, `Frontend/mobile_projects.html`, `Frontend/mobile_tasks.html`

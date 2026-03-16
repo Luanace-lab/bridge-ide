@@ -94,3 +94,21 @@ Plattform-spezifischer Code befindet sich in:
 - **Kein Core-Infra**: Keine Aenderungen an server.py Routing, Lock-Ordnung, Task-System
 - **Kein UI-Pattern**: Nur plattform-spezifische Komponenten, in Abstimmung mit Frontend
 - **Keine Architektur**: Trade-off-Entscheidungen gehen an den Architect
+
+## Dokumentation
+
+Zentrale Referenz: `docs/ARCHITECTURE.md`
+- Platform-Specs-Uebersicht: `docs/ARCHITECTURE.md#platform-specifications`
+- Einzelne Specs:
+  - Accounting: `Backend/docs/ACCOUNTING_PLATFORM_SPEC.md`
+  - Big Data: `Backend/docs/BIG_DATA_ANALYSIS_PLATFORM_SPEC.md`
+  - Creator: `Backend/docs/CREATOR_PLATFORM_RELIABILITY_SPEC.md`
+  - Customer Support: `Backend/docs/CUSTOMER_SUPPORT_PLATFORM_SPEC.md`
+  - Cybersecurity: `Backend/docs/CYBERSECURITY_PLATFORM_SPEC.md`
+  - DevOps: `Backend/docs/DEVOPS_INCIDENT_PLATFORM_SPEC.md`
+  - Finance: `Backend/docs/FINANCE_ANALYSIS_PLATFORM_SPEC.md`
+  - Legal: `Backend/docs/LEGAL_CONTRACT_PLATFORM_SPEC.md`
+  - Marketing: `Backend/docs/MARKETING_CAMPAIGN_PLATFORM_SPEC.md`
+  - Voice: `Backend/docs/VOICE_SECRETARY_PLATFORM_SPEC.md`
+- Backend-Referenz: `Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`
+- Marketplace: `Backend/docs/MARKETPLACE_ANALYSIS.md`
