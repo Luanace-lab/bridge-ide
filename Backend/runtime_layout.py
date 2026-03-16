@@ -130,14 +130,14 @@ def runtime_pair_mode_for_layout(
     known_engines: list[str] | None = None,
 ) -> str:
     if not runtime_layout_is_valid(layout, known_engines=known_engines):
-        return "codex-claude"
+        return "claude-codex"
     slots = {str(spec.get("slot", "")).strip() for spec in layout}
     if slots.issubset(_RUNTIME_CLASSIC_SLOTS):
         by_slot = {str(spec.get("slot", "")).strip(): spec for spec in layout}
         if "a" in by_slot and "b" in by_slot:
             return pair_mode_of(
-                str(by_slot["a"].get("engine", "codex")).strip().lower() or "codex",
-                str(by_slot["b"].get("engine", "claude")).strip().lower() or "claude",
+                str(by_slot["a"].get("engine", "claude")).strip().lower() or "claude",
+                str(by_slot["b"].get("engine", "codex")).strip().lower() or "codex",
             )
     return "multi"
 
@@ -226,8 +226,8 @@ def runtime_layout_from_state(
     if not configured:
         return []
 
-    agent_a_engine = str(state.get("agent_a_engine", "codex"))
-    agent_b_engine = str(state.get("agent_b_engine", "claude"))
+    agent_a_engine = str(state.get("agent_a_engine", "claude"))
+    agent_b_engine = str(state.get("agent_b_engine", "codex"))
     team_lead_cli_enabled = bool(state.get("team_lead_cli_enabled", False))
     team_lead_engine = str(state.get("team_lead_engine", "codex"))
     team_lead_scope_file = str(state.get("team_lead_scope_file", ""))
@@ -243,8 +243,8 @@ def runtime_layout_from_state(
         )
     except ValueError:
         return resolve_layout(
-            "codex",
             "claude",
+            "codex",
             available_engines=available_engines,
         )
 

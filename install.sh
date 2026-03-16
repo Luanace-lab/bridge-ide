@@ -76,6 +76,37 @@ else
     echo "       Install: https://nodejs.org/ or: sudo apt install nodejs"
 fi
 
+# Scan for AI CLI tools
+echo ""
+echo "=== AI CLI Detection ==="
+_cli_found=0
+_cli_list=""
+for cli_name in claude codex gemini qwen; do
+    cli_path="$(command -v "${cli_name}" 2>/dev/null || true)"
+    if [[ -n "${cli_path}" ]]; then
+        if [[ "${cli_name}" == "claude" ]]; then
+            echo "[OK] ${cli_name} (recommended) — ${cli_path}"
+        else
+            echo "[OK] ${cli_name} — ${cli_path}"
+        fi
+        _cli_found=$((_cli_found + 1))
+        _cli_list="${_cli_list:+${_cli_list}, }${cli_name}"
+    else
+        echo "[--] ${cli_name} — not found"
+    fi
+done
+echo ""
+if [[ "${_cli_found}" -eq 0 ]]; then
+    echo "WARNING: No AI CLI found. You need at least one to run agents."
+    echo "  Install Claude Code: npm install -g @anthropic-ai/claude-code"
+    echo "  Install Codex:       npm install -g @openai/codex"
+elif [[ "${_cli_found}" -eq 1 ]]; then
+    echo "Detected ${_cli_found} AI CLI: ${_cli_list}"
+else
+    echo "Detected ${_cli_found} AI CLIs: ${_cli_list}"
+    echo "Claude Code is the recommended default engine."
+fi
+
 echo ""
 echo "=== Installation complete ==="
 echo ""

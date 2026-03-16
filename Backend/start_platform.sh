@@ -27,7 +27,7 @@ if [ -z "${BRIDGE_CRED_KEY:-}" ]; then
   fi
 fi
 
-PAIR_MODE="${PAIR_MODE:-codex-claude}"
+PAIR_MODE="${PAIR_MODE:-claude-codex}"
 AGENT_A_ENGINE="${AGENT_A_ENGINE:-}"
 AGENT_B_ENGINE="${AGENT_B_ENGINE:-}"
 PROJECT_PATH="${PROJECT_PATH:-${BRIDGE_PROJECT_ROOT}}"
@@ -649,6 +649,28 @@ if ! wait_for_stable_server 240 0.5 3 "${SERVER_CONFIGURE_UPTIME}"; then
 fi
 
 ensure_bridge_user_token
+
+# --- AI CLI Detection ---
+echo ""
+echo "=== AI CLI Detection ==="
+_cli_count=0
+for cli_name in claude codex gemini qwen; do
+    cli_path="$(command -v "${cli_name}" 2>/dev/null || true)"
+    if [[ -n "${cli_path}" ]]; then
+        if [[ "${cli_name}" == "claude" ]]; then
+            echo "  [OK] ${cli_name} (recommended) — ${cli_path}"
+        else
+            echo "  [OK] ${cli_name} — ${cli_path}"
+        fi
+        _cli_count=$((_cli_count + 1))
+    fi
+done
+if [[ "${_cli_count}" -eq 0 ]]; then
+    echo "  [WARN] No AI CLI found. Install at least one:"
+    echo "         Claude Code: npm install -g @anthropic-ai/claude-code"
+    echo "         Codex:       npm install -g @openai/codex"
+fi
+echo ""
 
 # Capability Library: rebuild if stale (>24h) or missing
 CAP_LIB="${BRIDGE_PROJECT_ROOT}/config/capability_library.json"
