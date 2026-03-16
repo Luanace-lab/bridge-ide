@@ -62,19 +62,23 @@ def _agent_state_path(agent_id: str) -> str:
 
 
 def _load_agent_state(agent_id: str) -> dict[str, Any]:
-    """Load agent state from disk with TTL cache. Returns empty dict if not found."""
-    now = time.monotonic()
-    cached = _AGENT_STATE_CACHE.get(agent_id)
-    if cached is not None and (now - cached[0]) < _AGENT_STATE_CACHE_TTL:
-        return cached[1].copy()
-    path = _agent_state_path(agent_id)
-    try:
-        with open(path, encoding="utf-8") as fh:
-            state = json.load(fh)
-    except (FileNotFoundError, json.JSONDecodeError):
-        state = {}
-    _AGENT_STATE_CACHE[agent_id] = (now, state)
-    return state.copy()
+    """Load agent state from disk with TTL cache. Returns empty dict if not found.
+
+    GEM-030: Uses _AGENT_STATE_WRITE_LOCK for cache-coherent reads.
+    """
+    with _AGENT_STATE_WRITE_LOCK:
+        now = time.monotonic()
+        cached = _AGENT_STATE_CACHE.get(agent_id)
+        if cached is not None and (now - cached[0]) < _AGENT_STATE_CACHE_TTL:
+            return cached[1].copy()
+        path = _agent_state_path(agent_id)
+        try:
+            with open(path, encoding="utf-8") as fh:
+                state = json.load(fh)
+        except (FileNotFoundError, json.JSONDecodeError):
+            state = {}
+        _AGENT_STATE_CACHE[agent_id] = (now, state)
+        return state.copy()
 
 
 def _save_agent_state(agent_id: str, updates: dict[str, Any]) -> None:
@@ -86,11 +90,11 @@ def _save_agent_state(agent_id: str, updates: dict[str, Any]) -> None:
         state.update(updates)
         path = _agent_state_path(agent_id)
         tmp_path = path + ".tmp"
+        _AGENT_STATE_CACHE.pop(agent_id, None)  # GEM-030: clear BEFORE write to prevent stale reads
         try:
             with open(tmp_path, "w", encoding="utf-8") as fh:
                 json.dump(state, fh, ensure_ascii=False, indent=2)
             os.replace(tmp_path, path)
-            _AGENT_STATE_CACHE.pop(agent_id, None)
         except OSError as exc:
             print(f"[agent_state] ERROR writing {path}: {exc}")
 
