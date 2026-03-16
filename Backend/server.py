@@ -3844,14 +3844,9 @@ _PLAN_RESCUE_PATTERNS: tuple[str, ...] = (
     # Plan feedback input prompt
     "Give feedback on this plan",
     "approve this plan",
-    # NOTE: The following patterns were REMOVED because they match normal
-    # tool-permission dialogs that appear while the agent is actively working:
-    # - "1. Always allow", "2. Allow for this session", "3. Allow once", "4. Deny"
-    # - "Press Escape to cancel"
-    # - "Do you want to proceed"
-    # - "plan mode" (too broad — matches "permission-mode" etc.)
-    # - "allow for this session"
-    # These caused false rescues that interrupted running agents.
+    # Plan-approval dialog — agent has finished planning and waits for approval
+    "Would you like to proceed",
+    "Ready to code",
 )
 
 # Track last rescue time per agent to avoid spamming
@@ -3900,16 +3895,25 @@ def _plan_mode_rescue_check(agent_id: str) -> bool:
         if not matched_pattern:
             return False
 
-        # Rescue: send Enter to ACCEPT (not Escape which REJECTS)
+        # Rescue: for plan-approval dialogs send "2" + Enter (Option 2 = keep context)
+        # Option 1 clears context — FORBIDDEN. Option 2 preserves context.
         _PLAN_RESCUE_LAST[agent_id] = now
-        rescue_desc = "Enter (accept/proceed)"
+        is_plan_approval = any(p.lower() in matched_pattern.lower() for p in
+                               ("would you like to proceed", "ready to code"))
+        if is_plan_approval:
+            rescue_keys = ["2", "Enter"]
+            rescue_desc = "2+Enter (Option 2: keep context, bypass permissions)"
+        else:
+            rescue_keys = ["Enter"]
+            rescue_desc = "Enter (accept/proceed)"
         print(f"[plan-mode-rescue] Agent {agent_id} stuck at interactive prompt "
               f"(pattern: {matched_pattern!r}). Sending {rescue_desc}.")
 
-        subprocess.run(
-            ["tmux", "send-keys", "-t", session_name, "Enter"],
-            capture_output=True, timeout=3,
-        )
+        for key in rescue_keys:
+            subprocess.run(
+                ["tmux", "send-keys", "-t", session_name, key],
+                capture_output=True, timeout=3,
+            )
         time.sleep(2)
 
         # Re-check if agent is freed
