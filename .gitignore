@@ -34,3 +34,16 @@ escalation_state.json
 test-results/
 *.flock
 whatsapp_config.json
+agents.conf
+projects.json
+scope_locks.json
+standing_approvals.json
+event_subscriptions.json
+automations.json
+guardrails.json
+workflow_registry.json
+creator_job_registry.json
+Backend/data/git_locks.json
+.mcp.json
+config/capability_library.json
+Knowledge/
