@@ -14,6 +14,7 @@ setup(
         "httpx>=0.25,<1.0",
         "mcp>=0.1",
         "watchdog>=3.0,<5.0",
+        "cryptography>=41.0",
     ],
     extras_require={
         "full": ["numpy>=1.26", "chromadb>=0.5", "playwright>=1.50"],
