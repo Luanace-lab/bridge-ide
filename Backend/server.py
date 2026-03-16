@@ -1151,7 +1151,7 @@ HTTP_REQUEST_QUEUE_SIZE = max(32, int(os.environ.get("BRIDGE_HTTP_REQUEST_QUEUE_
 # ===== STRUCTURED TASK PROTOCOL (Codex-Architektur Phase 3) =====
 # In-memory task store. Thread-safe via TASK_LOCK.
 # Lifecycle: created → claimed → acked → done | failed
-# Spec: /home/user/bridge/Viktor/CODEX_BRIDGE_ARCHITEKTUR.md
+# Spec: docs/CODEX_BRIDGE_ARCHITEKTUR.md
 TASKS: dict[str, dict[str, Any]] = {}       # task_id → task object
 TASK_LOCK = threading.Lock()
 VALID_TASK_TYPES = {"code_change", "review", "test", "research", "general", "task"}

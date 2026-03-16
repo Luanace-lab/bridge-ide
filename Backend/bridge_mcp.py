@@ -4406,7 +4406,7 @@ async def bridge_whatsapp_read(limit: int = 20, contact: str = "") -> str:
 
 # ---------------------------------------------------------------------------
 # Todoist Integration
-# Spec: /home/user/bridge/Nova/TODOIST_INTEGRATION_SPEC.md
+# Spec: docs/TODOIST_INTEGRATION_SPEC.md
 # ---------------------------------------------------------------------------
 
 _TODOIST_TOKEN_PATH: str = os.path.expanduser("~/.config/bridge/todoist_token")

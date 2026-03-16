@@ -6,7 +6,7 @@ test('project config surfaces runtime configure feedback from the live backend',
   await page.goto(`${BASE_URL}/project_config.html`, { waitUntil: 'domcontentloaded' });
 
   await page.locator('#projName').fill('BRIDGE');
-  await page.locator('#projPath').fill('/home/user/bridge/BRIDGE');
+  await page.locator('#projPath').fill('./BRIDGE');
 
   const configurePromise = page.waitForResponse(
     (resp) => resp.url() === `${BASE_URL}/runtime/configure` && resp.request().method() === 'POST'
