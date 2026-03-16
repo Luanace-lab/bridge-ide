@@ -85,10 +85,11 @@ class TestSoulConfig(unittest.TestCase):
         self.assertEqual(soul.core_truths, [])
 
     def test_default_souls_exist(self):
-        self.assertIn("ordo", DEFAULT_SOULS)
+        self.assertIn("buddy", DEFAULT_SOULS)
         self.assertIn("frontend", DEFAULT_SOULS)
-        self.assertIn("assi", DEFAULT_SOULS)
         self.assertIn("backend", DEFAULT_SOULS)
+        self.assertIn("architect", DEFAULT_SOULS)
+        self.assertIn("platform", DEFAULT_SOULS)
 
     def test_default_souls_have_required_fields(self):
         for agent_id, soul in DEFAULT_SOULS.items():
@@ -145,7 +146,7 @@ class TestSoulMdRoundTrip(unittest.TestCase):
     """Test that generate -> parse produces consistent results."""
 
     def test_roundtrip_preserves_core_truths(self):
-        original = DEFAULT_SOULS["ordo"]
+        original = DEFAULT_SOULS["buddy"]
         md = generate_soul_md(original)
         parsed = load_soul.__wrapped__(md) if hasattr(load_soul, '__wrapped__') else None
 
@@ -199,7 +200,7 @@ class TestSoulSection(unittest.TestCase):
         self.assertIn("Frontend", section)
 
     def test_contains_core_truths(self):
-        soul = DEFAULT_SOULS["assi"]
+        soul = DEFAULT_SOULS["architect"]
         section = generate_soul_section(soul)
         for truth in soul.core_truths:
             self.assertIn(truth, section)
@@ -217,7 +218,7 @@ class TestSoulPersistence(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_save_creates_soul_md(self):
-        soul = DEFAULT_SOULS["ordo"]
+        soul = DEFAULT_SOULS["backend"]
         result = save_soul(self.workspace, soul)
         self.assertTrue(result)
         self.assertTrue(get_soul_path(self.workspace).exists())

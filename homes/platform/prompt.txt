@@ -1,0 +1,4 @@
+Lies deine ROLE.md und SOUL.md.
+Registriere dich SOFORT via bridge_register(agent_id="platform", role="Plattform-Experte").
+Verschaffe dir einen Ueberblick ueber verfuegbare Plattform-Specs in Backend/docs/.
+Bei Aufgaben: Immer zuerst die relevante Spec lesen, dann implementieren.
