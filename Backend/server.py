@@ -3968,6 +3968,7 @@ _init_agent_health(
     check_codex_health=_check_codex_health,
     auto_restart_agents=lambda: AUTO_RESTART_AGENTS,
     agent_last_restart=_AGENT_LAST_RESTART,
+    restart_lock=_RESTART_LOCK,
     restart_cooldown=lambda: _RESTART_COOLDOWN,
     auto_restart_agent=_auto_restart_agent,
     start_agent_from_conf=_start_agent_from_conf,
