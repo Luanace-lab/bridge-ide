@@ -715,6 +715,7 @@ from websocket_server import (
     run_websocket_server,
     init as _init_websocket_server,
 )
+from telephony_integration import TelephonyClient
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -809,6 +810,25 @@ ALLOWED_APPROVAL_ACTIONS = {
     "browser_login",
     "browser_action",
 }
+
+# ---------------------------------------------------------------------------
+# Telephony singleton — graceful degradation: None if keys are missing
+# ---------------------------------------------------------------------------
+_TWILIO_SID = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
+_TWILIO_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
+_TWILIO_FROM = os.environ.get("TWILIO_PHONE_NUMBER", "").strip()
+_ELEVENLABS_KEY = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+_ELEVENLABS_VOICE = os.environ.get("ELEVENLABS_VOICE_ID", "").strip()
+
+TELEPHONY_CLIENT: TelephonyClient | None = None
+if _TWILIO_SID or _ELEVENLABS_KEY:
+    TELEPHONY_CLIENT = TelephonyClient(
+        twilio_account_sid=_TWILIO_SID,
+        twilio_auth_token=_TWILIO_TOKEN,
+        twilio_from_number=_TWILIO_FROM,
+        elevenlabs_api_key=_ELEVENLABS_KEY,
+        elevenlabs_voice_id=_ELEVENLABS_VOICE or "21m00Tcm4TlvDq8ikWAM",
+    )
 
 _HTTP_SERVER_INSTANCE: ThreadingHTTPServer | None = None
 CONTROL_PLANE_PID_FILES = {
@@ -5239,6 +5259,40 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if _handle_creator_get(self, path):
             return
 
+        # ===== VOICE / TELEPHONY GET ENDPOINTS =====
+
+        if path == "/voice/status":
+            if TELEPHONY_CLIENT is None:
+                self._respond(200, {
+                    "available": False,
+                    "twilio": False,
+                    "elevenlabs": False,
+                    "reason": "No telephony credentials configured",
+                })
+            else:
+                status = TELEPHONY_CLIENT.status()
+                self._respond(200, {
+                    "available": status["twilio_configured"] or status["elevenlabs_configured"],
+                    "twilio": status["twilio_configured"],
+                    "elevenlabs": status["elevenlabs_configured"],
+                    "from_number": status["from_number"],
+                    "total_calls": status["total_calls"],
+                    "total_sms": status["total_sms"],
+                })
+            return
+
+        if path.startswith("/voice/call/"):
+            call_sid = path[len("/voice/call/"):]
+            if not call_sid:
+                self._respond(400, {"error": "missing call_sid"})
+                return
+            if TELEPHONY_CLIENT is None:
+                self._respond(200, {"available": False, "error": "Telephony not configured"})
+                return
+            result = TELEPHONY_CLIENT.get_call_status(call_sid)
+            self._respond(200, result.to_dict())
+            return
+
         if _handle_execution_get(self, path, split.query):
             return
 
@@ -5828,6 +5882,58 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         if _handle_creator_post(self, path):
+            return
+
+        # ===== VOICE / TELEPHONY POST ENDPOINTS =====
+
+        if path == "/voice/call":
+            if TELEPHONY_CLIENT is None:
+                self._respond(200, {"available": False, "error": "Telephony not configured"})
+                return
+            data = self._parse_json_body()
+            if data is None:
+                self._respond(400, {"error": "invalid or missing JSON body"})
+                return
+            to_number = str(data.get("to", "")).strip()
+            if not to_number:
+                self._respond(400, {"error": "missing 'to' phone number"})
+                return
+            message = str(data.get("message", "")).strip()
+            twiml = str(data.get("twiml", "")).strip()
+            agent_id = str(data.get("agent_id", "")).strip() or str(self.headers.get("X-Bridge-Agent", "")).strip()
+            skip_safety = bool(data.get("approved", False))
+            result = TELEPHONY_CLIENT.make_call(
+                to_number=to_number,
+                twiml=twiml,
+                message=message,
+                agent_id=agent_id,
+                skip_safety=skip_safety,
+            )
+            self._respond(200, result.to_dict())
+            return
+
+        if path == "/voice/sms":
+            if TELEPHONY_CLIENT is None:
+                self._respond(200, {"available": False, "error": "Telephony not configured"})
+                return
+            data = self._parse_json_body()
+            if data is None:
+                self._respond(400, {"error": "invalid or missing JSON body"})
+                return
+            to_number = str(data.get("to", "")).strip()
+            body = str(data.get("body", "")).strip()
+            if not to_number or not body:
+                self._respond(400, {"error": "missing 'to' or 'body'"})
+                return
+            agent_id = str(data.get("agent_id", "")).strip() or str(self.headers.get("X-Bridge-Agent", "")).strip()
+            skip_safety = bool(data.get("approved", False))
+            result = TELEPHONY_CLIENT.send_sms(
+                to_number=to_number,
+                body=body,
+                agent_id=agent_id,
+                skip_safety=skip_safety,
+            )
+            self._respond(200, result.to_dict())
             return
 
         # ===== SYSTEM SHUTDOWN/RESUME ENDPOINTS =====
