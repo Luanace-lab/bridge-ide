@@ -1090,12 +1090,22 @@ async def inject_with_retry(agent_id: str, sender: str, content: str, msg_id: st
             jitter = random.uniform(0.0, 1.0)
             await asyncio.sleep(base_delay + jitter)
 
-    # Agent is not at prompt after all retries — do NOT force-inject.
-    # The message stays in the MCP buffer; the agent will receive it
-    # on its next bridge_receive() call. Force-injecting while a command
-    # is running corrupts the agent's terminal and interrupts work.
+    # Agent is not at prompt after all retries.
+    # Codex has no bridge_receive() — force-inject is the ONLY delivery path.
+    # Claude/Qwen/Gemini have bridge_receive() and pick up buffered messages.
     latency_ms = int((time.perf_counter() - started) * 1000)
-    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: Agent nicht am Prompt nach {MAX_RETRIES} Retries — Nachricht bleibt im Buffer (bridge_receive)")
+    if engine == "codex":
+        ok = await asyncio.to_thread(smart_inject, agent_id, notification)
+        if ok:
+            _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: FALLBACK force-injiziert (Codex, kein bridge_receive)")
+            _log_event(msg_id, sender, agent_id, "fallback_injected_codex", latency_ms)
+            return True
+        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: ALLE VERSUCHE FEHLGESCHLAGEN (Codex)")
+        _log_event(msg_id, sender, agent_id, "all_failed_codex", latency_ms)
+        return False
+
+    # Non-Codex: buffer the message, agent picks it up via bridge_receive()
+    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: Agent nicht am Prompt — Nachricht bleibt im Buffer (bridge_receive)")
     _log_event(msg_id, sender, agent_id, "buffered_no_force", latency_ms)
     return False
 
