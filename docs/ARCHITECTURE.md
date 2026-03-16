@@ -35,7 +35,7 @@ Bridge ACE (Agentic Collab Engine) is a local multi-agent platform. Multiple AI 
  | - soul_engine.py (agent identity)        |
  | - knowledge_engine.py (knowledge vault)  |
  | - 15 background daemons                  |
- | - 38+ HTTP handler modules               |
+ | - 37 HTTP handler modules               |
  +------------------------------------------+
       |
       v
@@ -89,7 +89,7 @@ bridge-ide/
 │   ├── common.py             # Shared utilities
 │   ├── team.json             # Agent/team definitions (Single Source of Truth)
 │   ├── daemons/              # 15 background monitoring threads
-│   ├── handlers/             # 38+ HTTP handler modules
+│   ├── handlers/             # 37 HTTP handler modules
 │   ├── docs/                 # Platform specs, infra reference
 │   ├── start_platform.sh     # One-command platform start
 │   └── stop_platform.sh      # Platform stop
@@ -140,10 +140,10 @@ bridge-ide/
 The HTTP server is a single-file Python `http.server.BaseHTTPRequestHandler` subclass.
 
 - **Route table:** `_ROUTE_TABLE` dictionary mapping paths to handler functions. 206 explicit path checks (exact, prefix, regex) across GET/POST/PATCH/PUT/DELETE.
-- **Lock ordering:** `_GLOBAL_LOCK` -> `_AGENT_LOCK` -> `_TASK_LOCK`. This order must never be reversed.
+- **Lock ordering:** `AGENT_STATE_LOCK` -> `TEAM_CONFIG_LOCK` -> `TASK_LOCK`. This order must never be reversed. Additional locks: `SCOPE_LOCK_LOCK`, `WHITEBOARD_LOCK`, `CLI_SETUP_STATE_LOCK`, `TEAM_LEAD_LOCK`, `RUNTIME_LOCK`, `_GRACEFUL_SHUTDOWN_LOCK`, `_AGENT_STATE_WRITE_LOCK`.
 - **Auth:** Token-based. Token sources: `X-Bridge-Token` header or `Authorization: Bearer <token>`. Token types: user token, UI session token, agent session token (with grace-token window). GET requests are public by default; POST/PATCH/DELETE are authenticated per tier/path. Sensitive endpoints use `_require_platform_operator()`.
 - **Frontend serving:** `server_frontend_serve.py` injects `window.__BRIDGE_UI_TOKEN` into HTML responses so the browser can authenticate subsequent API calls.
-- **Handler modules:** 38+ modules in `Backend/handlers/` — agents, approvals, automation, boards, capabilities, chat files, CLI, credentials, data, domain, events, execution, federation, git locks, guardrails, health, logs, MCP catalog, media, memory, messages, meta, metrics, onboarding, projects, runtime, scope locks, shared tools, skills, subscriptions, system status, tasks, team lead scope, teams, whiteboard, workflows.
+- **Handler modules:** 37 modules in `Backend/handlers/` — agents, approvals, automation, boards, capabilities, chat files, CLI, credentials, data, domain, events, execution, federation, git locks, guardrails, health, logs, MCP catalog, media, memory, messages, meta, metrics, onboarding, projects, runtime, scope locks, shared tools, skills, subscriptions, system status, tasks, team lead scope, teams, whiteboard, workflows.
 - **Data sources:** `team.json`, `runtime_team.json`, `tasks.json`, `messages/bridge.jsonl`, `automations.json`.
 
 ### MCP Server (bridge_mcp.py)
@@ -447,7 +447,7 @@ The frontend is plain HTML/CSS/JS without a build step or framework. All pages a
 - Local dev: pages on `127.0.0.1:9111` or `127.0.0.1:9112` resolve API to `http://127.0.0.1:9111` and WS to `ws://127.0.0.1:9112`
 - Non-local: same-origin HTTP, same-host WebSocket (`wss` when `https`)
 
-**Auth injection:** `chat.html`, `control_center.html`, `project_config.html`, `task_tracker.html`, `buddy_landing.html`, `mobile_projects.html`, `mobile_tasks.html` override `window.fetch` to attach `X-Bridge-Token` from `window.__BRIDGE_UI_TOKEN`.
+**Auth injection:** `chat.html`, `control_center.html`, `project_config.html`, `task_tracker.html`, `mobile_projects.html`, `mobile_tasks.html` override `window.fetch` to attach `X-Bridge-Token` from `window.__BRIDGE_UI_TOKEN`.
 
 **Live update model:**
 - `chat.html` and `control_center.html`: hybrid REST + WebSocket
@@ -456,7 +456,7 @@ The frontend is plain HTML/CSS/JS without a build step or framework. All pages a
 **Key API endpoints used by the frontend:**
 
 Platform:
-- `GET /platform/status`, `POST /platform/start`, `POST /platform/stop`
+- `GET /status`, `POST /platform/start`, `POST /platform/stop`
 
 Agents:
 - `GET /agents`, `GET /agents?source=team`, `GET /agents/{id}`
@@ -664,7 +664,7 @@ Knowledge/
 
 ### Capability Library & MCP Ecosystem
 
-The capability library is a curated index of 5,387 MCP tools from the broader ecosystem, stored as a JSON file at `config/capability_library.json`. It enables agents to discover and evaluate tools beyond the 204 built-in Bridge tools.
+The capability library is a curated index of 5,387 MCP tools from the broader ecosystem, stored as a JSON file at `config/capability_library.json`. It enables agents to discover and evaluate tools beyond the 204 built-in Bridge tools. **Note:** `config/capability_library.json` is auto-generated at runtime and not shipped in the repo (listed in `.gitignore`).
 
 #### How capability_library.py Builds the Index
 
@@ -733,7 +733,7 @@ A platform in Bridge ACE is a vertical industry solution built on three layers:
 
 - **Start:** `POST /platform/start` (server.py line 5912). Starts all agents with `auto_start: true` in team.json, launches the bridge_watcher, and starts the output_forwarder. The `platform_status_snapshot()` function (line 3988) provides current state.
 - **Stop:** `POST /platform/stop` (server.py line 6006). Gracefully stops all agents, watcher, forwarder, and optionally the server itself.
-- **Status:** `GET /platform/status` returns agent states, health, and runtime info.
+- **Status:** `GET /status` returns agent states, health, and runtime info.
 
 Both endpoints require platform operator auth (`_require_platform_operator()`, level 0-1).
 
@@ -744,13 +744,12 @@ Spec documents follow a consistent format (visible in ACCOUNTING_PLATFORM_SPEC.m
 - Section 2+: Domain-specific workflows, data models, agent roles, API contracts, error handling, acceptance criteria
 - Metadata header: date, author, revision history, approval status
 
-10 pre-built industry platform specs:
+9 pre-built industry platform specs:
 
 | Platform | File | Lines |
 |----------|------|-------|
 | Accounting (DATEV) | `Backend/docs/ACCOUNTING_PLATFORM_SPEC.md` | 748 |
 | Big Data Analysis | `Backend/docs/BIG_DATA_ANALYSIS_PLATFORM_SPEC.md` | 817 |
-| Creator Platform | `Backend/docs/CREATOR_PLATFORM_RELIABILITY_SPEC.md` | 1,018 |
 | Customer Support | `Backend/docs/CUSTOMER_SUPPORT_PLATFORM_SPEC.md` | 244 |
 | Cybersecurity | `Backend/docs/CYBERSECURITY_PLATFORM_SPEC.md` | 709 |
 | DevOps & Incident | `Backend/docs/DEVOPS_INCIDENT_PLATFORM_SPEC.md` | 468 |
@@ -758,7 +757,7 @@ Spec documents follow a consistent format (visible in ACCOUNTING_PLATFORM_SPEC.m
 | Legal & Contract | `Backend/docs/LEGAL_CONTRACT_PLATFORM_SPEC.md` | 287 |
 | Marketing & Campaign | `Backend/docs/MARKETING_CAMPAIGN_PLATFORM_SPEC.md` | 266 |
 | Voice & Secretary | `Backend/docs/VOICE_SECRETARY_PLATFORM_SPEC.md` | 517 |
-| **Total** | | **5,744** |
+| **Total** | | **4,726** |
 
 ## Configuration
 

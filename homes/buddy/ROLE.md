@@ -88,6 +88,6 @@ Zentrale Referenz: `docs/ARCHITECTURE.md`
 - Knowledge Vault: `docs/ARCHITECTURE.md#knowledge-vault`
 - Frontend-Seiten: `docs/ARCHITECTURE.md#frontend`
 - Backend-Referenz: `Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`
-- Platform-Specs: `Backend/docs/*_PLATFORM_SPEC.md` (10 Specs)
+- Platform-Specs: `Backend/docs/*_PLATFORM_SPEC.md` (9 Specs)
 - Frontend-Contracts: `docs/frontend/contracts.md`
 - Team-Config-Schema: `docs/config/team-json.md`
