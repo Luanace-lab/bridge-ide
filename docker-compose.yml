@@ -17,8 +17,7 @@ services:
       - ./Backend/automations.json:/app/Backend/automations.json
       - ./Backend/workflow_registry.json:/app/Backend/workflow_registry.json
       - ./Backend/event_subscriptions.json:/app/Backend/event_subscriptions.json
-      - bridge-tokens:/data
-      - ${HOME}/.config/bridge/n8n.env:/root/.config/bridge/n8n.env:ro
+      - bridge-tokens:/root/.config/bridge
     environment:
       - PORT=9111
       - WS_PORT=9112
