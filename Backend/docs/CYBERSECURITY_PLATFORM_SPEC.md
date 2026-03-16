@@ -80,7 +80,7 @@ In 6 Monaten soll ein User:
 | **Session-System** | session.py | 300+ | HANDOFF, LEDGER, TRACE, Evidence |
 | **Gesamt** | 120+ Module | **67.811** | **12 Security-Domaenen** |
 
-Pfad: `/home/user/Desktop/ACE_SEC/`
+Pfad: `~/Desktop/ACE_SEC/`
 
 ### 2.2 Bridge-Infrastruktur (existiert, verifiziert)
 
@@ -93,8 +93,8 @@ Pfad: `/home/user/Desktop/ACE_SEC/`
 | Semantic Memory | JA | Historische Schwachstellen-Suche |
 | Scheduling | JA | bridge_cron_create fuer regelmaessige Scans |
 | Multi-Channel | JA | Email, Telegram, WhatsApp, Slack — fuer Alerts |
-| Ghost MCP | SEPARATER MCP-SERVER | Existiert als `ghost_mcp_server.py` unter `/home/user/Desktop/ghost/`. Status: `legacy_custom`, `production_ready: false` laut mcp_catalog.json. 13% implementiert (8/60 ACs). Wird von allen Agents geladen, aber nicht produktionsreif. |
-| AASE MCP Tools | SEPARATER MCP-SERVER | Existiert als `aase_mcp.py` unter `/home/user/Desktop/ACE_SEC/`. Status: `legacy_custom`, `production_ready: false`, `reproducible: false` laut mcp_catalog.json. 4 Tools funktional (aase_api_scan, aase_attack, aase_recon, aase_web_scan), aber nicht in bridge_mcp.py integriert. |
+| Ghost MCP | SEPARATER MCP-SERVER | Existiert als `ghost_mcp_server.py` unter `~/Desktop/ghost/`. Status: `legacy_custom`, `production_ready: false` laut mcp_catalog.json. 13% implementiert (8/60 ACs). Wird von allen Agents geladen, aber nicht produktionsreif. |
+| AASE MCP Tools | SEPARATER MCP-SERVER | Existiert als `aase_mcp.py` unter `~/Desktop/ACE_SEC/`. Status: `legacy_custom`, `production_ready: false`, `reproducible: false` laut mcp_catalog.json. 4 Tools funktional (aase_api_scan, aase_attack, aase_recon, aase_web_scan), aber nicht in bridge_mcp.py integriert. |
 | Vision-API | JA | bridge_vision_analyze fuer Screenshot-Analyse |
 | Scope Locks | JA | Exklusive Zugriffskontrolle fuer parallele Scans |
 
@@ -164,7 +164,7 @@ Diese Schwaechen sind genau das, was die Cyber-Security-Plattform loesen soll.
 
 ### 3.1 ACE_SEC und Bridge sind getrennte Codebasen
 
-ACE_SEC lebt unter `/home/user/Desktop/ACE_SEC/`, die Bridge unter `/home/user/bridge/BRIDGE/`. Es gibt keine Integration — kein Import, kein Shared State, kein gemeinsamer Workflow. Die AASE MCP Tools (aase_api_scan, aase_attack, aase_recon, aase_web_scan) existieren in der Bridge, aber deren Backend-Implementation und Verbindung zur ACE_SEC Codebasis ist zu verifizieren.
+ACE_SEC lebt unter `~/Desktop/ACE_SEC/`, die Bridge unter `./`. Es gibt keine Integration — kein Import, kein Shared State, kein gemeinsamer Workflow. Die AASE MCP Tools (aase_api_scan, aase_attack, aase_recon, aase_web_scan) existieren in der Bridge, aber deren Backend-Implementation und Verbindung zur ACE_SEC Codebasis ist zu verifizieren.
 
 ### 3.2 Kein Scan-Workflow
 
@@ -221,7 +221,7 @@ User: "Teste meine Web-App unter https://app.example.com"
 #### Option A: ACE_SEC als Python-Package (empfohlen)
 
 ```bash
-pip install -e /home/user/Desktop/ACE_SEC/
+pip install -e ~/Desktop/ACE_SEC/
 ```
 
 Bridge importiert ACE_SEC-Module direkt:
@@ -577,7 +577,7 @@ Vollstaendige Liste in Sektion 2.1. Direkt als Python-Package nutzbar.
 
 #### Slice A1 — ACE_SEC als Python-Package in Bridge
 
-- `pip install -e /home/user/Desktop/ACE_SEC/` in Bridge-Umgebung
+- `pip install -e ~/Desktop/ACE_SEC/` in Bridge-Umgebung
 - Import-Test: alle 12 Module importierbar
 - AASE MCP Tools Backend verifizieren (aase_api_scan, aase_attack, aase_recon, aase_web_scan → funktionieren sie real?)
 - Wenn AASE MCP Tools nur Stubs: Backend implementieren
@@ -698,10 +698,10 @@ Phase D: Differenzierung und Tiefe.
 
 Recherche durchgefuehrt am 2026-03-14.
 
-- ACE_SEC Codebasis: 67.811 LOC, 120+ Module, 12 Domaenen — /home/user/Desktop/ACE_SEC/
-- ACE_SEC Architecture Spec: 8 Core Engines, Agentic-First Design — /home/user/Desktop/ACE_SEC/ACE_SEC_ARCHITECTURE.md
-- ACE_SEC Feasibility: Code-Reuse 70-80% aus ACE Core — /home/user/Desktop/ACE_SEC/ACE_SEC_FEASIBILITY.md
-- AASE Codebase-Analyse: Kai, 2026-03-01 — /home/user/bridge/BRIDGE/Archiev/Agent_Homes_Gebuendelt/docs/research/ace_sec_analysis.md
+- ACE_SEC Codebasis: 67.811 LOC, 120+ Module, 12 Domaenen — ~/Desktop/ACE_SEC/
+- ACE_SEC Architecture Spec: 8 Core Engines, Agentic-First Design — ~/Desktop/ACE_SEC/ACE_SEC_ARCHITECTURE.md
+- ACE_SEC Feasibility: Code-Reuse 70-80% aus ACE Core — ~/Desktop/ACE_SEC/ACE_SEC_FEASIBILITY.md
+- AASE Codebase-Analyse: Kai, 2026-03-01 — ./Archiev/Agent_Homes_Gebuendelt/docs/research/ace_sec_analysis.md
 - Enterprise BAS Pricing: SafeBreach ab ~$140k/Jahr — trustradius.com, peerspot.com
 - PentAGI: Open-Source AI Pentest Agent, 20+ Tools, Graphiti Knowledge Graph — github.com/vxcontrol/pentagi
 - Impact: WisdomTree Cloud Fund -20%, HubSpot -39%, Figma -40% in 2026 — cnbc.com

@@ -32,7 +32,7 @@ test('mobile projects is a mobile-native replacement for project setup', async (
   await expect(page.locator('#buddyWidget')).toBeVisible();
 
   await page.locator('#projName').fill('BRIDGE');
-  await page.locator('#projPath').fill('/home/user/bridge/BRIDGE');
+  await page.locator('#projPath').fill('.');
   await expect(page.locator('#scanBtn')).toBeEnabled();
   await expect(page.locator('#createBtn')).toBeEnabled();
   await expect(page.locator('#startTeamBtn')).toBeEnabled();

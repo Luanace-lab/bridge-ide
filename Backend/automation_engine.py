@@ -2,7 +2,7 @@
 Bridge Automation Engine — Hierarchie-Integration.
 
 Manages automation rules: schedule triggers, event listeners, action execution.
-Spec: /home/user/bridge/Viktor/AUTOMATION_SPEC.md
+Spec: docs/AUTOMATION_SPEC.md
 
 Storage:
   - automations.json: Automation definitions (atomic R/W)

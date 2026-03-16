@@ -1,30 +1,30 @@
 # BRIDGE Documentation Index
 
-This directory is currently an index for the working-copy documentation layout of `/home/user/bridge/BRIDGE`.
+This directory is currently an index for the working-copy documentation layout of `./BRIDGE`.
 
 ## Verifizierte Dokumentpfade
 
 - Root notes:
-  - [`README.md`](/home/user/bridge/BRIDGE/README.md)
-  - [`CLAUDE.md`](/home/user/bridge/BRIDGE/CLAUDE.md)
-  - [`LAUNCH_CHECKLIST.md`](/home/user/bridge/BRIDGE/LAUNCH_CHECKLIST.md)
-  - [`TEAM_FINDINGS.md`](/home/user/bridge/BRIDGE/TEAM_FINDINGS.md)
-  - [`docs/buddy-bridge-gap-register.md`](/home/user/bridge/BRIDGE/docs/buddy-bridge-gap-register.md) - veraltete Audit-Notiz; relevante Befunde sind in den kanonischen Resume-/Projekt-Doku-Satz integriert
-  - [`docs/frontend/clickpath-verification-matrix.md`](/home/user/bridge/BRIDGE/docs/frontend/clickpath-verification-matrix.md) - veraltete Clickpath-Snapshot-Notiz; relevante Befunde sind in den kanonischen Resume-/Projekt-Doku-Satz integriert
-  - [`docs/frontend/design-theme-consistency-audit.md`](/home/user/bridge/BRIDGE/docs/frontend/design-theme-consistency-audit.md) - veraltete Design-Snapshot-Notiz; relevante Befunde sind in den kanonischen Resume-/Projekt-Doku-Satz integriert
+  - [`README.md`](./README.md)
+  - [`CLAUDE.md`](./CLAUDE.md)
+  - [`LAUNCH_CHECKLIST.md`](./LAUNCH_CHECKLIST.md)
+  - [`TEAM_FINDINGS.md`](./TEAM_FINDINGS.md)
+  - [`docs/buddy-bridge-gap-register.md`](./docs/buddy-bridge-gap-register.md) - veraltete Audit-Notiz; relevante Befunde sind in den kanonischen Resume-/Projekt-Doku-Satz integriert
+  - [`docs/frontend/clickpath-verification-matrix.md`](./docs/frontend/clickpath-verification-matrix.md) - veraltete Clickpath-Snapshot-Notiz; relevante Befunde sind in den kanonischen Resume-/Projekt-Doku-Satz integriert
+  - [`docs/frontend/design-theme-consistency-audit.md`](./docs/frontend/design-theme-consistency-audit.md) - veraltete Design-Snapshot-Notiz; relevante Befunde sind in den kanonischen Resume-/Projekt-Doku-Satz integriert
 - Resume and gap-analysis package:
-  - [`Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Projekt_Dokumentation/`](/home/user/bridge/BRIDGE/Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Projekt_Dokumentation)
-  - [`Fragenkatalog.md`](/home/user/bridge/BRIDGE/Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Fragenkatalog.md)
-  - [`Antworten.md`](/home/user/bridge/BRIDGE/Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Antworten.md)
+  - [`Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Projekt_Dokumentation/`](./Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Projekt_Dokumentation)
+  - [`Fragenkatalog.md`](./Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Fragenkatalog.md)
+  - [`Antworten.md`](./Codex_resume-019cdc3e-4534-7f13-9b0b-979a408e9ead/Antworten.md)
 - Archived detailed docs:
-  - [`Archiev/docs/README.md`](/home/user/bridge/BRIDGE/Archiev/docs/README.md)
-  - [`Archiev/docs/config/team-json.md`](/home/user/bridge/BRIDGE/Archiev/docs/config/team-json.md)
-  - [`Archiev/docs/frontend/README.md`](/home/user/bridge/BRIDGE/Archiev/docs/frontend/README.md)
-  - [`Archiev/docs/frontend/contracts.md`](/home/user/bridge/BRIDGE/Archiev/docs/frontend/contracts.md)
-  - [`Archiev/docs/frontend/gap-analysis-vs-release.md`](/home/user/bridge/BRIDGE/Archiev/docs/frontend/gap-analysis-vs-release.md)
-  - [`Archiev/docs/specs/SPEC_SIMPLE_SETUP.md`](/home/user/bridge/BRIDGE/Archiev/docs/specs/SPEC_SIMPLE_SETUP.md)
+  - [`Archiev/docs/README.md`](./Archiev/docs/README.md)
+  - [`Archiev/docs/config/team-json.md`](./Archiev/docs/config/team-json.md)
+  - [`Archiev/docs/frontend/README.md`](./Archiev/docs/frontend/README.md)
+  - [`Archiev/docs/frontend/contracts.md`](./Archiev/docs/frontend/contracts.md)
+  - [`Archiev/docs/frontend/gap-analysis-vs-release.md`](./Archiev/docs/frontend/gap-analysis-vs-release.md)
+  - [`Archiev/docs/specs/SPEC_SIMPLE_SETUP.md`](./Archiev/docs/specs/SPEC_SIMPLE_SETUP.md)
 - Backend infrastructure reference:
-  - [`Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`](/home/user/bridge/BRIDGE/Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md)
+  - [`Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md`](./Backend/docs/BRIDGE_BACKEND_INFRASTRUCTURE_REFERENCE.md)
 
 ## Aktueller Befund
 
