@@ -14,13 +14,13 @@ PROJECT_CONFIG_PATH = os.path.join(REPO_ROOT, "BRIDGE", "Frontend", "project_con
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-import server as srv  # noqa: E402
+import handlers.projects as projects_mod  # noqa: E402
 
 
 class TestProjectConfigScanServerContract(unittest.TestCase):
     def test_build_context_map_includes_all_wrapped_cli_engines(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
-            context = srv.build_context_map(tmpdir)
+            context = projects_mod.build_context_map(tmpdir)
 
         for engine in ("claude", "codex", "gemini", "qwen"):
             self.assertIn(engine, context)

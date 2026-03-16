@@ -506,7 +506,8 @@ class TestFrontendStatusContracts(unittest.TestCase):
     def test_project_config_uses_status_endpoint_for_status_dot(self):
         raw = self._read("project_config.html")
         self.assertIn("fetch(API_BASE + '/status')", raw)
-        self.assertIn("runtime.configured", raw)
+        # Runtime status is derived from platform online count (not runtime.configured)
+        self.assertIn("data.platform?.online_count", raw)
         self.assertNotIn("fetch(API_BASE + '/agents')", raw)
 
     def test_control_center_top_status_uses_status_snapshot(self):

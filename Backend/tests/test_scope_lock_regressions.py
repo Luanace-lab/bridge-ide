@@ -8,6 +8,22 @@ import unittest
 
 
 BASE_URL = "http://127.0.0.1:9111"
+TOKEN_CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".config", "bridge", "tokens.json")
+
+
+def _load_tokens() -> dict[str, str]:
+    try:
+        with open(TOKEN_CONFIG_FILE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+_TOKENS: dict[str, str] = _load_tokens()
+
+
+def _user_token() -> str:
+    return _TOKENS.get("user_token", "")
 
 
 class ScopeLockRegressionTests(unittest.TestCase):
@@ -18,6 +34,10 @@ class ScopeLockRegressionTests(unittest.TestCase):
         body: dict | None = None,
         headers: dict[str, str] | None = None,
     ) -> tuple[int, dict | str]:
+        merged_headers: dict[str, str] = {}
+        if _user_token():
+            merged_headers["X-Bridge-Token"] = _user_token()
+        merged_headers.update(headers or {})
         cmd = [
             "curl",
             "-sS",
@@ -29,7 +49,7 @@ class ScopeLockRegressionTests(unittest.TestCase):
             "-w",
             "\n%{http_code}",
         ]
-        for key, value in (headers or {}).items():
+        for key, value in merged_headers.items():
             cmd.extend(["-H", f"{key}: {value}"])
         if body is not None:
             cmd.extend(["--data", json.dumps(body)])
