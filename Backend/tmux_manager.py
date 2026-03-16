@@ -2202,7 +2202,7 @@ def create_agent_session(
 
     if spec.engine == "claude":
         _stabilize_claude_startup(session_name, permission_mode=mode)
-        if resume_id:
+        if resume_id and not _skip_resume_once:
             claude_capture = _tmux_capture_text(session_name)
             if _capture_has_claude_usage_limit(claude_capture):
                 _block_resume_id(
