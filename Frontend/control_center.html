@@ -3931,6 +3931,17 @@
       </div>
     </section>
 
+    <!-- ═══ MOBILE APP QR-CODE ═══ -->
+    <div class="sectionLabel">
+      <span class="sectionLabel__dot"></span>
+      Mobile App
+    </div>
+    <section class="dashSection" aria-label="Mobile App QR-Code" style="padding:16px;text-align:center">
+      <div style="font-size:12px;color:var(--sbDark);margin-bottom:8px;font-weight:600">Scan mit deinem Handy</div>
+      <div id="mobileQrCode" style="display:inline-block;padding:12px;background:#fff;border-radius:12px"></div>
+      <div id="mobileQrUrl" style="font-family:monospace;font-size:11px;color:var(--sbDark);margin-top:8px;opacity:.7;word-break:break-all"></div>
+    </section>
+
     <!-- ═══ RESERVIERTE BEREICHE (Scope Locks) ═══ -->
     <div class="sectionLabel">
       <span class="sectionLabel__dot"></span>
@@ -10687,6 +10698,26 @@
 <script>
 function closeWelcome(){document.getElementById('welcomeOverlay').style.display='none';localStorage.setItem('bridge_welcome_seen','1');}
 if(!localStorage.getItem('bridge_welcome_seen')){document.getElementById('welcomeOverlay').style.display='flex';}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+(function initMobileQr(){
+  var container = document.getElementById('mobileQrCode');
+  var urlEl = document.getElementById('mobileQrUrl');
+  if(!container) return;
+  var host = window.location.hostname || '127.0.0.1';
+  var port = window.location.port || '9111';
+  var mobileUrl = window.location.protocol + '//' + host + ':' + port + '/mobile_buddy.html';
+  try {
+    var qr = qrcode(0, 'M');
+    qr.addData(mobileUrl);
+    qr.make();
+    container.innerHTML = qr.createSvgTag(5, 0);
+  } catch(e) {
+    container.textContent = 'QR-Code nicht verfuegbar';
+  }
+  if(urlEl) urlEl.textContent = mobileUrl;
+})();
 </script>
 <script src="buddy_widget.js"></script>
 </body>
