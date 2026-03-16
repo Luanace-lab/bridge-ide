@@ -41,7 +41,7 @@ Viewport des Audits:
 | `Top 3 Tasks` | fuellt den Management-Composer und bleibt auf `mobile_buddy.html` | Ja | `prompt.top3` |
 | Management-Sendefeld | kein belastbarer `/send`-Response im Audit, sichtbarer Feed-Zustand bleibt stale | Teilweise / Blocker | `management.send` mit `responseStatus:null` |
 | Team-Picker | oeffnet Teamliste mit `10` Teams | Ja | `teamPicker.open` |
-| Team-Auswahl | setzt aktives Team auf `Bridge IDE / Kernteam`, Zielkontakt `Ordo` | Ja | `team.select` |
+| Team-Auswahl | setzt aktives Team auf `Bridge ACE / Kernteam`, Zielkontakt `Ordo` | Ja | `team.select` |
 | Agenten-Disclosure | oeffnet Mitgliedsleiste mit `7` Agenten | Ja | `memberToggle.open` |
 | Team-Sendefeld | `POST /send -> 201`, User-Nachricht erscheint im Team-Feed | Ja | `team.send` |
 | Buddy-Widget auf/zu | kompakte Sprechblase oeffnet und schliesst innerhalb des Mobile-Shells | Ja | `widget.open`, `widget.close` |

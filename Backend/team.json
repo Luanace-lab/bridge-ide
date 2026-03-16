@@ -1,927 +1,2180 @@
 {
-    "version": 3,
-    "owner": {
-        "id": "user",
-        "name": "User",
-        "role": "owner",
-        "level": 0
+  "version": 3,
+  "owner": {
+    "id": "user",
+    "name": "Leo",
+    "role": "owner",
+    "level": 0
+  },
+  "projects": [
+    {
+      "id": "bridge-ide",
+      "name": "Bridge IDE",
+      "path": ".",
+      "description": "Lokale Multi-Agent-Plattform",
+      "project_md": "CLAUDE.md",
+      "team_ids": [
+        "management",
+        "core",
+        "ux",
+        "strategy",
+        "scale-lab"
+      ],
+      "shared_memory": "shared_memory/",
+      "scope_labels": {
+        "BRIDGE/Frontend/": "Frontend-Oberflaeche",
+        "BRIDGE/Backend/server.py": "Backend-System",
+        "BRIDGE/Backend/bridge_mcp.py": "Agent-Werkzeuge",
+        "BRIDGE/Backend/bridge_watcher.py": "Nachrichten-Router",
+        "BRIDGE/Backend/tmux_manager.py": "Session-Manager"
+      },
+      "created_at": "2026-02-24"
     },
-    "projects": [
-        {
-            "id": "bridge-ide",
-            "name": "Bridge IDE",
-            "path": ".",
-            "description": "Lokale Multi-Agent-Plattform",
-            "project_md": "CLAUDE.md",
-            "team_ids": [
-                "core",
-                "onboarding"
-            ],
-            "shared_memory": "shared_memory/",
-            "scope_labels": {
-                "BRIDGE/Frontend/": "Frontend-Oberflaeche",
-                "BRIDGE/Backend/server.py": "Backend-System",
-                "BRIDGE/Backend/bridge_mcp.py": "Agent-Werkzeuge",
-                "BRIDGE/Backend/bridge_watcher.py": "Nachrichten-Router",
-                "BRIDGE/Backend/tmux_manager.py": "Session-Manager"
-            },
-            "created_at": "2026-02-24"
-        },
-        {
-            "id": "bug-bounty",
-            "name": "Bug Bounty $$$",
-            "path": "BugBounty",
-            "description": "3 Hacker-Teams. Aggressiv, strategisch, autonom. Dog-Fooding der Bridge-Plattform.",
-            "project_md": "BugBounty/CLAUDE.md",
-            "team_ids": [
-                "bb-alpha",
-                "bb-bravo",
-                "bb-charlie"
-            ],
-            "scope_labels": {
-                "TeamAlpha/": "Alpha-Operationen",
-                "TeamBravo/": "Bravo-Operationen",
-                "TeamCharlie/": "Charlie-Operationen"
-            },
-            "created_at": "2026-03-02T01:45:32.140676+00:00"
-        },
-        {
-            "id": "proj1",
-            "name": "Project One",
-            "team_ids": [],
-            "created_at": "2026-03-16T09:39:39.037771+00:00"
-        },
-        {
-            "id": "proj2",
-            "name": "Project Two",
-            "team_ids": [],
-            "created_at": "2026-03-16T09:39:39.040687+00:00"
-        },
-        {
-            "id": "proj3",
-            "name": "Project Three",
-            "team_ids": [],
-            "created_at": "2026-03-16T09:39:39.042779+00:00"
-        }
-    ],
-    "teams": [
-        {
-            "id": "core",
-            "name": "Core Platform",
-            "lead": "architect",
-            "members": [
-                "backend",
-                "frontend",
-                "platform"
-            ],
-            "scope": "Gesamte Bridge-Plattform: Frontend, Backend, Plattform-Specs"
-        },
-        {
-            "id": "onboarding",
-            "name": "Onboarding",
-            "lead": "buddy",
-            "members": [
-                "buddy"
-            ],
-            "scope": "User-Onboarding, CLI-Detection, System-Navigation"
-        },
-        {
-            "id": "bb-alpha",
-            "name": "Team Alpha — Ghost",
-            "lead": "alpha_lead",
-            "members": [
-                "alpha_lead",
-                "alpha_recon",
-                "alpha_exploit",
-                "alpha_haiku"
-            ],
-            "scope": ""
-        },
-        {
-            "id": "bb-bravo",
-            "name": "Team Bravo — Viper",
-            "lead": "bravo_lead",
-            "members": [
-                "bravo_lead",
-                "bravo_recon",
-                "bravo_exploit",
-                "bravo_haiku"
-            ],
-            "scope": ""
-        },
-        {
-            "id": "bb-charlie",
-            "name": "Team Charlie — Raven",
-            "lead": "charlie_lead",
-            "members": [
-                "charlie_lead",
-                "charlie_recon",
-                "charlie_exploit",
-                "charlie_haiku"
-            ],
-            "scope": ""
-        },
-        {
-            "id": "trading-team",
-            "name": "Trading Team",
-            "lead": "buddy",
-            "members": [
-                "trading_analyst",
-                "trading_strategist",
-                "trading_risk"
-            ],
-            "scope": "Marktanalyse, Trade Signals, Risk Management",
-            "active": true
-        },
-        {
-            "id": "marketing-team",
-            "name": "Marketing Team",
-            "lead": "buddy",
-            "members": [
-                "marketing_content",
-                "marketing_seo",
-                "marketing_campaign"
-            ],
-            "scope": "Content-Erstellung, Social Media, SEO, Kampagnen-Management",
-            "active": true
-        },
-        {
-            "id": "legal-team",
-            "name": "Legal Team",
-            "lead": "buddy",
-            "members": [
-                "legal_contract",
-                "legal_compliance",
-                "legal_researcher"
-            ],
-            "scope": "Vertragsanalyse, Compliance-Pruefung, Rechtsrecherche",
-            "active": true
-        },
-        {
-            "id": "board-http-team-b43ef986",
-            "name": "Board HTTP Team Renamed",
-            "lead": "",
-            "members": [],
-            "scope": ""
-        }
-    ],
-    "agents": [
-        {
-            "id": "buddy",
-            "name": "Buddy",
-            "role": "buddy",
-            "level": 1,
-            "reports_to": "user",
-            "aliases": [
-                "navigator",
-                "guide"
-            ],
-            "engine": "claude",
-            "home_dir": "homes/buddy",
-            "prompt_file": "homes/buddy/prompt.txt",
-            "agent_md": "",
-            "description": "Navigator und Onboarding-Guide. Scannt CLI-Umgebung, leitet den User durch Bridge.",
-            "active": true,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": true,
-            "mcp_servers": "all"
-        },
-        {
-            "id": "frontend",
-            "name": "Frontend",
-            "role": "developer",
-            "level": 2,
-            "reports_to": "architect",
-            "aliases": [
-                "ui",
-                "ux"
-            ],
-            "engine": "claude",
-            "home_dir": "homes/frontend",
-            "prompt_file": "homes/frontend/prompt.txt",
-            "agent_md": "",
-            "description": "Frontend-Spezialist. UI, CSS, Themes, Client-JS, chat.html, control_center.html.",
-            "active": true,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core",
-                "bridge-ui-designer"
-            ],
-            "auto_start": false,
-            "scope": [
-                "Frontend/"
-            ],
-            "permissions": [
-                "frontend: Alle Dateien in Frontend/ aendern"
-            ]
-        },
-        {
-            "id": "backend",
-            "name": "Backend",
-            "role": "developer",
-            "level": 2,
-            "reports_to": "architect",
-            "aliases": [
-                "server",
-                "api"
-            ],
-            "engine": "claude",
-            "home_dir": "homes/backend",
-            "prompt_file": "homes/backend/prompt.txt",
-            "agent_md": "",
-            "description": "Backend-Spezialist. server.py, bridge_mcp.py, WebSocket, tmux_manager, API-Endpoints.",
-            "active": true,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core",
-                "server-architecture",
-                "mcp-tool-development"
-            ],
-            "auto_start": false,
-            "scope": [
-                "Backend/"
-            ],
-            "permissions": [
-                "backend: Alle Dateien in Backend/ aendern"
-            ]
-        },
-        {
-            "id": "architect",
-            "name": "Architect",
-            "role": "architect",
-            "level": 1,
-            "reports_to": "user",
-            "aliases": [
-                "arch",
-                "system"
-            ],
-            "engine": "claude",
-            "home_dir": "homes/architect",
-            "prompt_file": "homes/architect/prompt.txt",
-            "agent_md": "",
-            "description": "Systemarchitekt. Gesamtarchitektur, Integration, Abhaengigkeitsanalyse, Code-Review.",
-            "active": true,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core",
-                "bridge-review-code",
-                "superpowers-writing-plans"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "platform",
-            "name": "Platform",
-            "role": "specialist",
-            "level": 2,
-            "reports_to": "architect",
-            "aliases": [
-                "plattform",
-                "specs"
-            ],
-            "engine": "claude",
-            "home_dir": "homes/platform",
-            "prompt_file": "homes/platform/prompt.txt",
-            "agent_md": "",
-            "description": "Plattform-Experte. Alle Platform-Specs (Accounting, Cyber, Legal, etc.) + Implementierung.",
-            "active": true,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "scope": [
-                "Backend/docs/",
-                "Backend/data_platform/"
-            ],
-            "permissions": [
-                "platform: Platform-Specs und zugehoerigen Code aendern"
-            ]
-        },
-        {
-            "id": "alpha_lead",
-            "name": "Ghost",
-            "role": "bb-lead",
-            "level": 2,
-            "reports_to": "nova",
-            "aliases": [
-                "ghost"
-            ],
-            "engine": "claude",
-            "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_lead",
-            "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_lead/CLAUDE.md",
-            "description": "Bug Bounty Lead Team Alpha. Aggressiver Angriffsstil.",
-            "config_dir": "",
-            "active": false,
-            "mcp_servers": "all",
-            "skills": [
-                "api-integration",
-                "bridge-agent-core",
-                "deep-research",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "alpha_recon",
-            "name": "Shadow",
-            "role": "bb-recon",
-            "level": 3,
-            "reports_to": "alpha_lead",
-            "aliases": [
-                "shadow"
-            ],
-            "engine": "qwen",
-            "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_recon",
-            "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_recon/CLAUDE.md",
-            "description": "Recon-Spezialist Team Alpha. Kartiert Angriffsflaechen.",
-            "config_dir": "",
-            "active": false,
-            "skills": [
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false,
-            "model": ""
-        },
-        {
-            "id": "alpha_exploit",
-            "name": "Phantom",
-            "role": "bb-exploit",
-            "level": 3,
-            "reports_to": "nova",
-            "aliases": [
-                "phantom"
-            ],
-            "engine": "qwen",
-            "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_exploit",
-            "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_exploit/CLAUDE.md",
-            "description": "Exploit-Entwickler Team Alpha. PoC-Spezialist.",
-            "config_dir": "",
-            "active": false,
-            "skills": [
-                "api-integration",
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "bravo_lead",
-            "name": "Viper",
-            "role": "bb-lead",
-            "level": 2,
-            "reports_to": "nova",
-            "aliases": [
-                "viper"
-            ],
-            "engine": "claude",
-            "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_lead",
-            "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_lead/CLAUDE.md",
-            "description": "Bug Bounty Lead Team Bravo. Geduldig, paranoid, Angriffsketten.",
-            "config_dir": "",
-            "active": false,
-            "mcp_servers": "all",
-            "skills": [
-                "api-integration",
-                "bridge-agent-core",
-                "deep-research",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "bravo_recon",
-            "name": "Cobra",
-            "role": "bb-recon",
-            "level": 3,
-            "reports_to": "bravo_lead",
-            "aliases": [
-                "cobra"
-            ],
-            "engine": "qwen",
-            "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_recon",
-            "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_recon/CLAUDE.md",
-            "description": "Recon-Spezialist Team Bravo. Unsichtbare Aufklaerung.",
-            "config_dir": "",
-            "active": false,
-            "skills": [
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "bravo_exploit",
-            "name": "Mamba",
-            "role": "bb-exploit",
-            "level": 3,
-            "reports_to": "nova",
-            "aliases": [
-                "mamba"
-            ],
-            "engine": "qwen",
-            "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_exploit",
-            "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_exploit/CLAUDE.md",
-            "description": "Exploit-Entwickler Team Bravo. Maximaler Impact.",
-            "config_dir": "",
-            "active": false,
-            "skills": [
-                "api-integration",
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "charlie_lead",
-            "name": "Raven",
-            "role": "bb-lead",
-            "level": 2,
-            "reports_to": "nova",
-            "aliases": [
-                "raven"
-            ],
-            "engine": "claude",
-            "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_lead",
-            "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_lead/CLAUDE.md",
-            "description": "Bug Bounty Lead Team Charlie. Business Logic, Design Flaws.",
-            "config_dir": "",
-            "active": false,
-            "mcp_servers": "aase",
-            "skills": [
-                "api-integration",
-                "bridge-agent-core",
-                "deep-research",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "charlie_recon",
-            "name": "Crow",
-            "role": "bb-recon",
-            "level": 3,
-            "reports_to": "charlie_lead",
-            "aliases": [
-                "crow"
-            ],
-            "engine": "qwen",
-            "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_recon",
-            "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_recon/CLAUDE.md",
-            "description": "Recon-Spezialist Team Charlie. Leises Kartieren.",
-            "config_dir": "",
-            "active": false,
-            "skills": [
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "charlie_exploit",
-            "name": "Hawk",
-            "role": "bb-exploit",
-            "level": 3,
-            "reports_to": "nova",
-            "aliases": [
-                "hawk"
-            ],
-            "engine": "qwen",
-            "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_exploit",
-            "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_exploit/CLAUDE.md",
-            "description": "Exploit-Entwickler Team Charlie. Business-Logic-Exploits.",
-            "config_dir": "",
-            "active": false,
-            "skills": [
-                "api-integration",
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false
-        },
-        {
-            "id": "alpha_haiku",
-            "name": "AlphaH",
-            "role": "bb-recon",
-            "level": 3,
-            "reports_to": "alpha_lead",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_haiku",
-            "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_haiku/CLAUDE.md",
-            "description": "Recon & Exploit Support Team Alpha. Claude Haiku.",
-            "active": false,
-            "skills": [
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false,
-            "model": "claude-haiku-4-5-20251001"
-        },
-        {
-            "id": "bravo_haiku",
-            "name": "BravoH",
-            "role": "bb-recon",
-            "level": 3,
-            "reports_to": "bravo_lead",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_haiku",
-            "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_haiku/CLAUDE.md",
-            "description": "Recon & Exploit Support Team Bravo. Claude Haiku.",
-            "active": false,
-            "skills": [
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false,
-            "model": "claude-haiku-4-5-20251001"
-        },
-        {
-            "id": "charlie_haiku",
-            "name": "CharlieH",
-            "role": "bb-recon",
-            "level": 3,
-            "reports_to": "charlie_lead",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_haiku",
-            "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_haiku/CLAUDE.md",
-            "description": "Recon & Exploit Support Team Charlie. Claude Haiku.",
-            "active": false,
-            "skills": [
-                "bridge-agent-core",
-                "security-scanner",
-                "stealth-browser",
-                "bridge-evidence-enforcement"
-            ],
-            "auto_start": false,
-            "model": "claude-haiku-4-5-20251001"
-        },
-        {
-            "id": "trading_analyst",
-            "name": "Analyst",
-            "role": "researcher",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/trading_analyst",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Market-Analyst. Marktdaten analysieren, Trends erkennen, Reports erstellen.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "research: Marktdaten abrufen und analysieren"
-            ],
-            "scope": [
-                "research/",
-                "reports/"
-            ]
-        },
-        {
-            "id": "trading_strategist",
-            "name": "Strategist",
-            "role": "strategist",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/trading_strategist",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Trading-Stratege. Handelsstrategien entwickeln, Backtesting, Signal-Generierung.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "strategy: Handelsstrategien entwickeln und testen"
-            ],
-            "scope": [
-                "strategies/",
-                "signals/"
-            ]
-        },
-        {
-            "id": "trading_risk",
-            "name": "Risk Manager",
-            "role": "analyst",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/trading_risk",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Risk Manager. Portfolio-Risiko bewerten, Limits setzen, Alerts ausloesen.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "risk: Risikobewertung und Portfolio-Analyse"
-            ],
-            "scope": [
-                "risk/",
-                "reports/"
-            ]
-        },
-        {
-            "id": "marketing_content",
-            "name": "Content Creator",
-            "role": "creator",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/marketing_content",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Content Creator. Blog-Posts, Social Media Posts, Newsletter schreiben.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "content: Inhalte erstellen und veroeffentlichen"
-            ],
-            "scope": [
-                "content/",
-                "drafts/"
-            ]
-        },
-        {
-            "id": "marketing_seo",
-            "name": "SEO Specialist",
-            "role": "analyst",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/marketing_seo",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "SEO-Spezialist. Keyword-Recherche, On-Page-Optimierung, Ranking-Analyse.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "research: SEO-Daten analysieren und optimieren"
-            ],
-            "scope": [
-                "seo/",
-                "reports/"
-            ]
-        },
-        {
-            "id": "marketing_campaign",
-            "name": "Campaign Manager",
-            "role": "manager",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/marketing_campaign",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Kampagnen-Manager. Kampagnen planen, ausfuehren, Performance tracken.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "campaigns: Kampagnen verwalten und auswerten"
-            ],
-            "scope": [
-                "campaigns/",
-                "reports/"
-            ]
-        },
-        {
-            "id": "legal_contract",
-            "name": "Contract Analyst",
-            "role": "analyst",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/legal_contract",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Vertragsanalyst. Vertraege pruefen, Risiken identifizieren, Klauseln bewerten.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "legal: Vertraege analysieren und bewerten"
-            ],
-            "scope": [
-                "contracts/",
-                "reviews/"
-            ]
-        },
-        {
-            "id": "legal_compliance",
-            "name": "Compliance Officer",
-            "role": "auditor",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/legal_compliance",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Compliance Officer. Regulatorische Anforderungen pruefen, Richtlinien durchsetzen.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "compliance: Regulatorische Pruefungen durchfuehren"
-            ],
-            "scope": [
-                "compliance/",
-                "policies/"
-            ]
-        },
-        {
-            "id": "legal_researcher",
-            "name": "Legal Researcher",
-            "role": "researcher",
-            "level": 3,
-            "reports_to": "buddy",
-            "aliases": [],
-            "engine": "claude",
-            "home_dir": ".agent_sessions/legal_researcher",
-            "prompt_file": "",
-            "agent_md": "",
-            "description": "Rechtsrechercheur. Urteile, Gesetze, Praezedenzfaelle recherchieren.",
-            "active": false,
-            "config_dir": "",
-            "skills": [
-                "bridge-agent-core"
-            ],
-            "auto_start": false,
-            "mcp_servers": "bridge",
-            "permissions": [
-                "research: Rechtliche Recherche durchfuehren"
-            ],
-            "scope": [
-                "research/",
-                "memos/"
-            ]
-        }
-    ],
-    "subscriptions": [
-        {
-            "id": "sub2",
-            "name": "Agent Pool",
-            "path": "",
-            "active": true,
-            "provider": "claude",
-            "display_name": "Lio",
-            "plan": "max",
-            "rate_limit_tier": "default_claude_max_20x"
-        },
-        {
-            "id": "sub1",
-            "name": "Default Updated",
-            "path": "",
-            "active": true,
-            "provider": "claude",
-            "display_name": "Leo",
-            "plan": "max",
-            "rate_limit_tier": "default_claude_max_20x"
-        },
-        {
-            "id": "gemini",
-            "name": "Gemini",
-            "provider": "gemini",
-            "path": "",
-            "active": true,
-            "_detected": true
-        },
-        {
-            "id": "qwen",
-            "name": "Qwen",
-            "provider": "qwen",
-            "path": "",
-            "active": true,
-            "_detected": true
-        },
-        {
-            "id": "codex",
-            "name": "Codex",
-            "provider": "openai",
-            "path": "",
-            "active": true,
-            "_detected": true
-        }
-    ],
-    "role_templates": {
-        "backend": [
-            "server-architecture",
-            "mcp-tool-development",
-            "api-integration"
-        ],
-        "frontend": [
-            "bridge-ui-designer",
-            "frontend-design",
-            "anthropic-frontend-design",
-            "ui-designer",
-            "i18n-expert"
-        ],
-        "architect": [
-            "superpowers-requesting-code-review",
-            "superpowers-systematic-debugging",
-            "security-scanner"
-        ],
-        "strateg": [
-            "deep-research",
-            "competitors-analysis",
-            "prompt-optimizer"
-        ],
-        "koordinat": [
-            "superpowers-dispatching-parallel-agents",
-            "claude-md-progressive-disclosurer"
-        ],
-        "orchestr": [
-            "superpowers-dispatching-parallel-agents",
-            "claude-md-progressive-disclosurer"
-        ],
-        "integration": [
-            "stealth-browser",
-            "api-integration",
-            "account-creator"
-        ],
-        "pentest": [
-            "security-scanner",
-            "stealth-browser"
-        ],
-        "research": [
-            "deep-research",
-            "fact-checker"
-        ],
-        "techwriter": [
-            "anthropic-doc-coauthoring",
-            "docs-cleaner",
-            "markdown-tools"
-        ]
+    {
+      "id": "bug-bounty",
+      "name": "Bug Bounty $$$",
+      "path": "BugBounty",
+      "description": "3 Hacker-Teams. Aggressiv, strategisch, autonom. Dog-Fooding der Bridge-Plattform.",
+      "project_md": "BugBounty/CLAUDE.md",
+      "team_ids": [
+        "bb-alpha",
+        "bb-bravo",
+        "bb-charlie"
+      ],
+      "scope_labels": {
+        "TeamAlpha/": "Alpha-Operationen",
+        "TeamBravo/": "Bravo-Operationen",
+        "TeamCharlie/": "Charlie-Operationen"
+      },
+      "created_at": "2026-03-02T01:45:32.140676+00:00"
+    },
+    {
+      "id": "proj1",
+      "name": "Project One",
+      "team_ids": [],
+      "created_at": "2026-03-15T02:37:21.774097+00:00"
+    },
+    {
+      "id": "proj2",
+      "name": "Project Two",
+      "team_ids": [],
+      "created_at": "2026-03-15T02:37:21.776769+00:00"
+    },
+    {
+      "id": "proj3",
+      "name": "Project Three",
+      "team_ids": [],
+      "created_at": "2026-03-15T02:37:21.781069+00:00"
     }
+  ],
+  "teams": [
+    {
+      "id": "management",
+      "name": "Management",
+      "lead": "user",
+      "members": [
+        "ordo",
+        "lucy",
+        "nova",
+        "viktor",
+        "jura"
+      ],
+      "scope": "Koordination, Strategie, Architektur, Legal, Assistenz"
+    },
+    {
+      "id": "core",
+      "name": "Core Platform",
+      "lead": "viktor",
+      "members": [
+        "assi",
+        "atlas",
+        "backend",
+        "codex",
+        "nexus",
+        "stellexa",
+        "qwen2",
+        "qwen3"
+      ],
+      "scope": "server.py, bridge_watcher.py, tmux_manager.py, bridge_mcp.py"
+    },
+    {
+      "id": "ux",
+      "name": "User Experience",
+      "lead": "ordo",
+      "members": [
+        "frontend",
+        "frontend2",
+        "techwriter"
+      ],
+      "scope": "Frontend/, UI, CSS, Dokumentation"
+    },
+    {
+      "id": "strategy",
+      "name": "Strategy & Research",
+      "lead": "nova",
+      "members": [
+        "kai"
+      ],
+      "scope": "Specs, Research, Marktanalyse, Susi-Perspektive"
+    },
+    {
+      "id": "test",
+      "name": "Test",
+      "lead": "nova",
+      "members": [
+        "kai"
+      ],
+      "scope": "test"
+    },
+    {
+      "id": "marketing-launch",
+      "name": "Marketing Launch",
+      "lead": "nova",
+      "members": [
+        "nova"
+      ],
+      "scope": ""
+    },
+    {
+      "id": "bb-alpha",
+      "name": "Team Alpha — Ghost",
+      "lead": "alpha_lead",
+      "members": [
+        "alpha_lead",
+        "alpha_recon",
+        "alpha_exploit",
+        "alpha_haiku"
+      ],
+      "scope": "Web application security testing"
+    },
+    {
+      "id": "bb-bravo",
+      "name": "Team Bravo — Viper",
+      "lead": "bravo_lead",
+      "members": [
+        "bravo_lead",
+        "bravo_recon",
+        "bravo_exploit",
+        "bravo_haiku"
+      ],
+      "scope": "Infrastructure and network security"
+    },
+    {
+      "id": "bb-charlie",
+      "name": "Team Charlie — Raven",
+      "lead": "charlie_lead",
+      "members": [
+        "charlie_lead",
+        "charlie_recon",
+        "charlie_exploit",
+        "charlie_haiku"
+      ],
+      "scope": "API and authentication security"
+    },
+    {
+      "id": "release-audit-2026-03-08",
+      "name": "release-audit-2026-03-08",
+      "lead": "codex_release_audit",
+      "members": [
+        "backend",
+        "atlas",
+        "kai",
+        "viktor",
+        "sec_all"
+      ],
+      "scope": "BRIDGE release audit for blockers, bugs, unwired implementations, and verification",
+      "active": true
+    },
+    {
+      "id": "scale-lab",
+      "name": "Scale Lab",
+      "lead": "user",
+      "members": [
+        "scale_lab_alpha",
+        "scale_lab_beta"
+      ],
+      "scope": "Bridge task-system probing, control-center task flow, scalable multi-task architecture"
+    },
+    {
+      "id": "trading-team",
+      "name": "Trading Team",
+      "lead": "buddy",
+      "members": [
+        "trading_analyst",
+        "trading_strategist",
+        "trading_risk"
+      ],
+      "scope": "Marktanalyse, Trade Signals, Risk Management",
+      "active": true
+    },
+    {
+      "id": "marketing-team",
+      "name": "Marketing Team",
+      "lead": "buddy",
+      "members": [
+        "marketing_content",
+        "marketing_seo",
+        "marketing_campaign"
+      ],
+      "scope": "Content-Erstellung, Social Media, SEO, Kampagnen-Management",
+      "active": true
+    },
+    {
+      "id": "legal-team",
+      "name": "Legal Team",
+      "lead": "buddy",
+      "members": [
+        "legal_contract",
+        "legal_compliance",
+        "legal_researcher"
+      ],
+      "scope": "Vertragsanalyse, Compliance-Pruefung, Rechtsrecherche",
+      "active": true
+    },
+    {
+      "id": "board-http-team",
+      "name": "Board HTTP Team Renamed",
+      "lead": "",
+      "members": [
+        "codex"
+      ],
+      "scope": ""
+    },
+    {
+      "id": "slice81-team",
+      "name": "Slice 81 Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "board-http-team-041bb8ce",
+      "name": "Board HTTP Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "slice82-team",
+      "name": "Slice 82 Team",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "board-http-team-487a2c05",
+      "name": "Board HTTP Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "slice83-team",
+      "name": "Slice 83 Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "board-http-team-d7e89ac0",
+      "name": "Board HTTP Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "board-http-team-3b85b1f3",
+      "name": "Board HTTP Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "board-http-team-ad6ed5b2",
+      "name": "Board HTTP Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    },
+    {
+      "id": "board-http-team-d4e43d87",
+      "name": "Board HTTP Team Renamed",
+      "lead": "",
+      "members": [],
+      "scope": ""
+    }
+  ],
+  "agents": [
+    {
+      "id": "assi",
+      "name": "Assi",
+      "role": "coordinator",
+      "level": 1,
+      "reports_to": "user",
+      "aliases": [
+        "koordinator"
+      ],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/assi",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Koordinator. Orchestrierung, Onboarding, Qualitaetskontrolle.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "id": "ordo",
+      "name": "Ordo",
+      "role": "manager",
+      "level": 1,
+      "reports_to": "user",
+      "aliases": [
+        "manager",
+        "projektleiter",
+        "teamlead"
+      ],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/ordo",
+      "prompt_file": "Backend/prompts/ordo.txt",
+      "agent_md": "",
+      "description": "Projektleiter. Koordination, Delegation, Reviews, Qualitaetsschutz.",
+      "active": true,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core",
+        "claude-md-progressive-disclosurer",
+        "bridge-evidence-enforcement",
+        "superpowers-dispatching-parallel-agents",
+        "superpowers-writing-plans",
+        "superpowers-executing-plans",
+        "bridge-status",
+        "bridge-deploy"
+      ],
+      "auto_start": true
+    },
+    {
+      "id": "lucy",
+      "name": "Lucy",
+      "role": "assistant",
+      "level": 1,
+      "reports_to": "user",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "Lucy",
+      "prompt_file": "Backend/prompts/lucy.txt",
+      "agent_md": "",
+      "description": "Persoenliche Assistentin. Strukturiert Leos Tag, filtert, priorisiert.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core",
+        "claude-md-progressive-disclosurer",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "nova",
+      "name": "Nova",
+      "role": "strategist",
+      "level": 1,
+      "reports_to": "user",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "Nova",
+      "prompt_file": "Backend/prompts/nova.txt",
+      "agent_md": "Nova/CLAUDE.md",
+      "description": "Kreativ-Strategin. Produkt-Vision, Endnutzer-Perspektive, Marketing.",
+      "active": false,
+      "mcp_servers": "all",
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-pre-action-analysis"
+      ],
+      "permissions": [
+        "strategy: Produkt-Vision und Roadmap definieren",
+        "marketing: Launch-Strategie und Kommunikation",
+        "team-coordination: Uebergreifende Team-Koordination"
+      ],
+      "scope": [
+        "Strategie-Dokumente",
+        "Marketing-Material"
+      ],
+      "extra_routes": [
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "viktor",
+      "name": "Viktor",
+      "role": "architect",
+      "level": 1,
+      "reports_to": "user",
+      "aliases": [
+        "architekt"
+      ],
+      "engine": "claude",
+      "home_dir": "Viktor",
+      "prompt_file": "Backend/prompts/viktor.txt",
+      "agent_md": "Viktor/CLAUDE.md",
+      "description": "Systemarchitekt. Architektur-Reviews, Code-Qualitaet, technische Standards.",
+      "active": true,
+      "config_dir": "",
+      "mcp_servers": "all",
+      "display_name": "",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-pre-action-analysis",
+        "bridge-evidence-enforcement",
+        "bridge-review-code",
+        "superpowers-requesting-code-review",
+        "superpowers-systematic-debugging",
+        "superpowers-verification-before-completion",
+        "server-architecture",
+        "bridge-deploy",
+        "bridge-status"
+      ],
+      "model": "claude-opus-4-6",
+      "permissions": [
+        "server-restart: Selbststaendig Server neustarten (Agents warnen, Kontext sichern lassen, neustarten, Startcheck)",
+        "architecture-decisions: Architektur-Entscheidungen treffen und durchsetzen",
+        "code-review: Code-Reviews durchfuehren und Aenderungen ablehnen/freigeben",
+        "agent-delegation: Aufgaben an L2-Agents delegieren",
+        "task-management: Tasks erstellen, zuweisen, priorisieren"
+      ],
+      "scope": [
+        "BRIDGE/Backend/server.py",
+        "BRIDGE/Backend/bridge_mcp.py",
+        "BRIDGE/Backend/tmux_manager.py",
+        "BRIDGE/Backend/bridge_watcher.py",
+        "Architektur-Reviews alle Backend-Dateien"
+      ],
+      "extra_routes": [
+        "nova",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "backend",
+      "name": "Backend",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/backend",
+      "prompt_file": "Backend/prompts/backend.txt",
+      "agent_md": "",
+      "description": "Senior Backend-Entwickler. server.py, API-Endpunkte, WebSocket.",
+      "active": true,
+      "config_dir": "",
+      "display_name": "",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-pre-action-analysis",
+        "bridge-evidence-enforcement",
+        "superpowers-systematic-debugging",
+        "superpowers-verification-before-completion",
+        "superpowers-test-driven-development",
+        "server-architecture",
+        "mcp-tool-development",
+        "api-integration"
+      ],
+      "permissions": [
+        "backend-development: server.py, API-Endpunkte, WebSocket aendern",
+        "restart-scripts: start_platform.sh, stop_platform.sh, restart_wrapper.sh aendern",
+        "deployment: Server-Deployment-Scripts anpassen"
+      ],
+      "scope": [
+        "BRIDGE/Backend/server.py",
+        "BRIDGE/Backend/start_platform.sh",
+        "BRIDGE/Backend/stop_platform.sh",
+        "BRIDGE/Backend/restart_wrapper.sh",
+        "BRIDGE/Backend/common.py"
+      ],
+      "auto_start": true
+    },
+    {
+      "id": "frontend",
+      "name": "Frontend",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "engine": "claude",
+      "home_dir": "Frontend_persönlich",
+      "prompt_file": "Backend/prompts/frontend.txt",
+      "agent_md": "",
+      "description": "Senior Frontend-Designer. UI, CSS, Client-JavaScript, Themes.",
+      "active": true,
+      "config_dir": "",
+      "skills": [
+        "anthropic-frontend-design",
+        "anthropic-webapp-testing",
+        "bridge-ui-designer",
+        "ui-designer",
+        "superpowers-verification-before-completion",
+        "anthropic-canvas-design",
+        "bridge-agent-core",
+        "bridge-evidence-enforcement"
+      ],
+      "permissions": [
+        "frontend-development: BRIDGE/Frontend/ CSS, Client-JS, Themes, UX aendern",
+        "ui-testing: Playwright-Tests fuer UI-Aenderungen"
+      ],
+      "scope": [
+        "BRIDGE/Frontend/"
+      ],
+      "mcp_servers": "playwright",
+      "auto_start": false
+    },
+    {
+      "id": "frontend2",
+      "name": "Frontend2",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "extra_routes": [
+        "nova",
+        "frontend"
+      ],
+      "engine": "claude",
+      "home_dir": "Frontend_persönlich",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Frontend-Entwickler 2. Dashboard Upgrade, Organigramm, UI.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "anthropic-frontend-design",
+        "anthropic-web-artifacts-builder",
+        "anthropic-webapp-testing",
+        "bridge-agent-core",
+        "bridge-ui-designer",
+        "frontend-design",
+        "i18n-expert",
+        "ui-designer",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "techwriter",
+      "name": "Techwriter",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "ordo",
+      "aliases": [],
+      "extra_routes": [
+        "backend"
+      ],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/techwriter",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Technischer Autor. Dokumentation, README, API-Docs.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "anthropic-doc-coauthoring",
+        "bridge-agent-core",
+        "docs-cleaner",
+        "markdown-tools",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "kai",
+      "name": "Kai",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "nova",
+      "aliases": [],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "engine": "claude",
+      "home_dir": "Kai",
+      "prompt_file": "Backend/prompts/kai.txt",
+      "agent_md": "Kai/CLAUDE.md",
+      "description": "Real-World Integration Specialist. E2E-Tests, externe Services.",
+      "active": false,
+      "config_dir": "",
+      "mcp_servers": "all",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "permissions": [
+        "e2e-testing: End-to-End Tests ausfuehren",
+        "integration-testing: Externe Service-Integration testen",
+        "knowledge-management: Knowledge Vault verwalten"
+      ],
+      "scope": [
+        "Tests/",
+        "BRIDGE/Knowledge/"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "buddy",
+      "name": "Buddy",
+      "role": "concierge",
+      "level": 1,
+      "reports_to": "user",
+      "aliases": [
+        "guide"
+      ],
+      "engine": "codex",
+      "home_dir": "Buddy",
+      "prompt_file": "Buddy/prompts/buddy.txt",
+      "agent_md": "Buddy/AGENTS.md",
+      "description": "Persoenlicher Concierge. Breitester alltagspraktischer Aktionsraum. Onboarding, Concierge, Companion.",
+      "active": true,
+      "config_dir": "",
+      "mcp_servers": "all",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement",
+        "deep-research",
+        "fact-checker",
+        "competitors-analysis"
+      ],
+      "permissions": [
+        "concierge: Nachrichten lesen, Entwuerfe erstellen, Zusammenfassungen, Kontakte durchsuchen, Termine vorschlagen, Tasks anlegen",
+        "approval-gate: E-Mails senden, WhatsApp/SMS senden, Anrufe starten, Termine bestaetigen, Kaeufe ausloesen"
+      ],
+      "scope": [
+        "Buddy/"
+      ],
+      "auto_start": true,
+      "model": "o3-pro",
+      "model_reasoning_effort": "xhigh"
+    },
+    {
+      "id": "claude",
+      "name": "Claude Agent B",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "extra_routes": [
+        "backend",
+        "assi",
+        "buddy",
+        "nova"
+      ],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/claude",
+      "description": "Claude Agent B. Release-Blocker Implementierung.",
+      "active": false,
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "config_dir": ""
+    },
+    {
+      "id": "codex",
+      "name": "Codex",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "engine": "codex",
+      "home_dir": ".agent_sessions/codex",
+      "prompt_file": "Backend/prompts/codex.txt",
+      "agent_md": "",
+      "description": "Senior Coder (Codex-Engine). Architekturkritische Implementierungen.",
+      "active": true,
+      "skills": [
+        "bridge-agent-core",
+        "superpowers-verification-before-completion",
+        "bridge-evidence-enforcement",
+        "superpowers-systematic-debugging",
+        "superpowers-requesting-code-review",
+        "bridge-review-code"
+      ],
+      "model": "gpt-5.3-codex",
+      "auto_start": true
+    },
+    {
+      "id": "codex_2",
+      "name": "Codex 2",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "engine": "codex",
+      "home_dir": ".agent_sessions/codex_2",
+      "prompt_file": "Backend/prompts/codex.txt",
+      "agent_md": "",
+      "description": "Senior Coder (Codex-Engine). Buddy Knowledge-Architektur.",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "superpowers-verification-before-completion",
+        "bridge-evidence-enforcement"
+      ],
+      "model": "gpt-5.3-codex",
+      "auto_start": true
+    },
+    {
+      "id": "stellexa",
+      "name": "Stellexa",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "extra_routes": [
+        "nova"
+      ],
+      "engine": "claude",
+      "home_dir": "Stellexa",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Multi-Engine Agent. Bridge-Haertung, CLI-Integration, Tooling.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "api-integration",
+        "bridge-agent-core",
+        "mcp-tool-development",
+        "server-architecture",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "qwen2",
+      "name": "Sora",
+      "role": "junior",
+      "level": 3,
+      "reports_to": "viktor",
+      "aliases": [
+        "sora"
+      ],
+      "engine": "qwen",
+      "home_dir": "Qwen_Sora",
+      "prompt_file": "Backend/prompts/qwen2.txt",
+      "agent_md": "",
+      "description": "Implementierer (Qwen-Engine). UI-Tasks.",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "qwen3",
+      "name": "Ren",
+      "role": "junior",
+      "level": 3,
+      "reports_to": "viktor",
+      "aliases": [
+        "ren"
+      ],
+      "engine": "qwen",
+      "home_dir": "Qwen_Ren",
+      "prompt_file": "Backend/prompts/qwen3.txt",
+      "agent_md": "",
+      "description": "Tester (Qwen-Engine). E2E-Tests.",
+      "active": true,
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement",
+        "superpowers-systematic-debugging",
+        "qa-expert",
+        "superpowers-test-driven-development"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "alpha_lead",
+      "name": "Ghost",
+      "role": "bb-lead",
+      "level": 2,
+      "reports_to": "nova",
+      "aliases": [
+        "ghost"
+      ],
+      "engine": "claude",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_lead",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_lead/CLAUDE.md",
+      "description": "Bug Bounty Lead Team Alpha. Aggressiver Angriffsstil.",
+      "config_dir": "",
+      "active": false,
+      "mcp_servers": "all",
+      "skills": [
+        "api-integration",
+        "bridge-agent-core",
+        "deep-research",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "alpha_recon",
+      "name": "Shadow",
+      "role": "bb-recon",
+      "level": 3,
+      "reports_to": "alpha_lead",
+      "aliases": [
+        "shadow"
+      ],
+      "engine": "qwen",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_recon",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_recon/CLAUDE.md",
+      "description": "Recon-Spezialist Team Alpha. Kartiert Angriffsflaechen.",
+      "config_dir": "",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false,
+      "model": ""
+    },
+    {
+      "id": "alpha_exploit",
+      "name": "Phantom",
+      "role": "bb-exploit",
+      "level": 3,
+      "reports_to": "nova",
+      "aliases": [
+        "phantom"
+      ],
+      "engine": "qwen",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_exploit",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_exploit/CLAUDE.md",
+      "description": "Exploit-Entwickler Team Alpha. PoC-Spezialist.",
+      "config_dir": "",
+      "active": false,
+      "skills": [
+        "api-integration",
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "bravo_lead",
+      "name": "Viper",
+      "role": "bb-lead",
+      "level": 2,
+      "reports_to": "nova",
+      "aliases": [
+        "viper"
+      ],
+      "engine": "claude",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_lead",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_lead/CLAUDE.md",
+      "description": "Bug Bounty Lead Team Bravo. Geduldig, paranoid, Angriffsketten.",
+      "config_dir": "",
+      "active": false,
+      "mcp_servers": "all",
+      "skills": [
+        "api-integration",
+        "bridge-agent-core",
+        "deep-research",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "bravo_recon",
+      "name": "Cobra",
+      "role": "bb-recon",
+      "level": 3,
+      "reports_to": "bravo_lead",
+      "aliases": [
+        "cobra"
+      ],
+      "engine": "qwen",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_recon",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_recon/CLAUDE.md",
+      "description": "Recon-Spezialist Team Bravo. Unsichtbare Aufklaerung.",
+      "config_dir": "",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "bravo_exploit",
+      "name": "Mamba",
+      "role": "bb-exploit",
+      "level": 3,
+      "reports_to": "nova",
+      "aliases": [
+        "mamba"
+      ],
+      "engine": "qwen",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_exploit",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_exploit/CLAUDE.md",
+      "description": "Exploit-Entwickler Team Bravo. Maximaler Impact.",
+      "config_dir": "",
+      "active": false,
+      "skills": [
+        "api-integration",
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "charlie_lead",
+      "name": "Raven",
+      "role": "bb-lead",
+      "level": 2,
+      "reports_to": "nova",
+      "aliases": [
+        "raven"
+      ],
+      "engine": "claude",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_lead",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_lead/CLAUDE.md",
+      "description": "Bug Bounty Lead Team Charlie. Business Logic, Design Flaws.",
+      "config_dir": "",
+      "active": false,
+      "mcp_servers": "aase",
+      "skills": [
+        "api-integration",
+        "bridge-agent-core",
+        "deep-research",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "charlie_recon",
+      "name": "Crow",
+      "role": "bb-recon",
+      "level": 3,
+      "reports_to": "charlie_lead",
+      "aliases": [
+        "crow"
+      ],
+      "engine": "qwen",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_recon",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_recon/CLAUDE.md",
+      "description": "Recon-Spezialist Team Charlie. Leises Kartieren.",
+      "config_dir": "",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "charlie_exploit",
+      "name": "Hawk",
+      "role": "bb-exploit",
+      "level": 3,
+      "reports_to": "nova",
+      "aliases": [
+        "hawk"
+      ],
+      "engine": "qwen",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_exploit",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_exploit/CLAUDE.md",
+      "description": "Exploit-Entwickler Team Charlie. Business-Logic-Exploits.",
+      "config_dir": "",
+      "active": false,
+      "skills": [
+        "api-integration",
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "alpha_haiku",
+      "name": "AlphaH",
+      "role": "bb-recon",
+      "level": 3,
+      "reports_to": "alpha_lead",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_haiku",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_haiku/CLAUDE.md",
+      "description": "Recon & Exploit Support Team Alpha. Claude Haiku.",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false,
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "id": "bravo_haiku",
+      "name": "BravoH",
+      "role": "bb-recon",
+      "level": 3,
+      "reports_to": "bravo_lead",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_haiku",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_haiku/CLAUDE.md",
+      "description": "Recon & Exploit Support Team Bravo. Claude Haiku.",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false,
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "id": "charlie_haiku",
+      "name": "CharlieH",
+      "role": "bb-recon",
+      "level": 3,
+      "reports_to": "charlie_lead",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_haiku",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_haiku/CLAUDE.md",
+      "description": "Recon & Exploit Support Team Charlie. Claude Haiku.",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false,
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "id": "atlas",
+      "name": "Atlas",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "Atlas",
+      "prompt_file": "Backend/prompts/atlas.txt",
+      "agent_md": "Atlas/CLAUDE.md",
+      "description": "Senior Software Engineer. Multi-Task-System Backend-Implementierung.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "ace-code-understanding",
+        "superpowers-systematic-debugging",
+        "superpowers-test-driven-development",
+        "security-scanner",
+        "superpowers-verification-before-completion",
+        "bridge-agent-core",
+        "server-architecture",
+        "bridge-evidence-enforcement"
+      ],
+      "permissions": [
+        "backend-implementation: server.py Erweiterungen (Task-System, Scope-Locks)",
+        "mcp-development: bridge_mcp.py Erweiterungen (neue MCP-Tools)",
+        "performance: Performance-Optimierung bestehender Systeme",
+        "testing: Tests fuer kritische Backend-Funktionen"
+      ],
+      "scope": [
+        "BRIDGE/Backend/server.py",
+        "BRIDGE/Backend/bridge_mcp.py",
+        "BRIDGE/Backend/tmux_manager.py",
+        "BRIDGE/Backend/knowledge_engine.py"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "nexus",
+      "name": "Nexus",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "Nexus",
+      "prompt_file": "Backend/prompts/nexus.txt",
+      "agent_md": "Nexus/CLAUDE.md",
+      "description": "Senior Software Engineer. Multi-Task-System Koordinationsschicht.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "superpowers-requesting-code-review",
+        "superpowers-receiving-code-review",
+        "superpowers-writing-plans",
+        "deep-research",
+        "superpowers-verification-before-completion",
+        "bridge-agent-core",
+        "server-architecture",
+        "bridge-evidence-enforcement"
+      ],
+      "permissions": [
+        "coordination: Multi-Task-System Koordinationsschicht",
+        "integration: Komponenten-Integration"
+      ],
+      "scope": [
+        "BRIDGE/Backend/server.py (Koordinations-Layer)"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "echo",
+      "name": "Echo",
+      "role": "junior",
+      "level": 3,
+      "reports_to": "kai",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "Kai/team/echo",
+      "prompt_file": "",
+      "agent_md": "Kai/team/echo/CLAUDE.md",
+      "description": "Voice Engineer. ElevenLabs + Twilio, Audio-Pipeline.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "account-creator",
+        "api-integration",
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false,
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "id": "iris",
+      "name": "Iris",
+      "role": "junior",
+      "level": 3,
+      "reports_to": "kai",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": "Kai/team/iris",
+      "prompt_file": "",
+      "agent_md": "Kai/team/iris/CLAUDE.md",
+      "description": "Vision Engineer. OpenCV + v4l2loopback, Video-Pipeline.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "account-creator",
+        "api-integration",
+        "bridge-agent-core",
+        "security-scanner",
+        "stealth-browser",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false,
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "id": "jura",
+      "name": "Jura",
+      "role": "legal",
+      "level": 1,
+      "reports_to": "user",
+      "aliases": [],
+      "extra_routes": [
+        "kai",
+        "nova",
+        "viktor"
+      ],
+      "engine": "claude",
+      "home_dir": "Jura",
+      "prompt_file": "",
+      "agent_md": "Jura/CLAUDE.md",
+      "description": "Legal Agent / Compliance-Prueferin. Policy-Analyse, Richtlinien-Konformitaet.",
+      "active": true,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core",
+        "deep-research",
+        "fact-checker",
+        "bridge-evidence-enforcement"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "aria",
+      "name": "Aria",
+      "role": "Brand Strategist & Growth Lead",
+      "role_description": "Brand Strategist & Growth Lead — Marketing Team Lead",
+      "description": "Brand Strategist & Growth Lead. Leitet das Marketing-Team. Positionierung von Bridge IDE.",
+      "engine": "claude",
+      "model": "",
+      "config_dir": "",
+      "team": "marketing",
+      "reports_to": "nova",
+      "level": 2,
+      "active": false,
+      "mode": "normal",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-pre-action-analysis"
+      ],
+      "mcp_servers": "",
+      "home_dir": "Aria",
+      "extra_routes": [
+        "viktor",
+        "ordo",
+        "lucy"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "mira",
+      "name": "Mira",
+      "role": "junior",
+      "role_description": "Social Media & Community Manager",
+      "description": "Social Media & Community Manager. Stimme von Bridge IDE nach aussen. Screenshots und Content.",
+      "engine": "claude",
+      "model": "",
+      "config_dir": "",
+      "team": "marketing",
+      "reports_to": "aria",
+      "level": 3,
+      "active": false,
+      "mode": "normal",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement"
+      ],
+      "mcp_servers": "",
+      "home_dir": "Mira",
+      "extra_routes": [
+        "viktor",
+        "nova"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "finn",
+      "name": "Finn",
+      "role": "junior",
+      "role_description": "Content Creator & Developer Relations",
+      "description": "Content Creator & DevRel. Technische Inhalte, Tutorials, Developer Docs fuer Bridge IDE.",
+      "engine": "claude",
+      "model": "",
+      "config_dir": "",
+      "team": "marketing",
+      "reports_to": "aria",
+      "level": 3,
+      "active": false,
+      "mode": "normal",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement"
+      ],
+      "mcp_servers": "",
+      "home_dir": "Finn",
+      "extra_routes": [
+        "viktor",
+        "nova"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "sec_dns",
+      "name": "Sec-DNS",
+      "role": "security",
+      "level": 3,
+      "reports_to": "atlas",
+      "engine": "claude",
+      "home_dir": "Security/sec_dns",
+      "description": "DNS-Leak Prevention & Tor DNS Hardening",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "permissions": [
+        "security: DNS leak testing, Tor DNS verification"
+      ],
+      "scope": [
+        "Security/sec_dns/"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "sec_webrtc",
+      "name": "Sec-WebRTC",
+      "role": "security",
+      "level": 3,
+      "reports_to": "atlas",
+      "engine": "claude",
+      "home_dir": "Security/sec_webrtc",
+      "description": "WebRTC Leak Prevention & IP Protection",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "permissions": [
+        "security: WebRTC leak testing, IP protection"
+      ],
+      "scope": [
+        "Security/sec_webrtc/"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "sec_fingerprint",
+      "name": "Sec-Fingerprint",
+      "role": "security",
+      "level": 3,
+      "reports_to": "atlas",
+      "engine": "claude",
+      "home_dir": "Security/sec_fingerprint",
+      "description": "Browser Fingerprint Hardening (Canvas, WebGL, TLS/JA3)",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "permissions": [
+        "security: Fingerprint analysis, Canvas/WebGL spoofing"
+      ],
+      "scope": [
+        "Security/sec_fingerprint/"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_cookie",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "sec_cookie",
+      "name": "Sec-Cookie",
+      "role": "security",
+      "level": 3,
+      "reports_to": "atlas",
+      "engine": "claude",
+      "home_dir": "Security/sec_cookie",
+      "description": "Cookie Isolation & Session Security fuer Tor/Proxy",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "permissions": [
+        "security: Cookie isolation, session management"
+      ],
+      "scope": [
+        "Security/sec_cookie/"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_tor",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "sec_tor",
+      "name": "Sec-Tor",
+      "role": "security",
+      "level": 3,
+      "reports_to": "atlas",
+      "engine": "claude",
+      "home_dir": "Security/sec_tor",
+      "description": "Tor Circuit Verification & OPSEC Compliance",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "permissions": [
+        "security: Tor verification, OPSEC testing"
+      ],
+      "scope": [
+        "Security/sec_tor/"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_evasion"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "sec_evasion",
+      "name": "Sec-Evasion",
+      "role": "security",
+      "level": 3,
+      "reports_to": "atlas",
+      "engine": "claude",
+      "home_dir": "Security/sec_evasion",
+      "description": "Bot Detection Evasion & Human Behavior Simulation",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "permissions": [
+        "security: Bot detection testing, evasion techniques"
+      ],
+      "scope": [
+        "Security/sec_evasion/"
+      ],
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "atlas",
+        "nexus",
+        "sec_dns",
+        "sec_webrtc",
+        "sec_fingerprint",
+        "sec_cookie",
+        "sec_tor"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "sec_all",
+      "name": "SecAll",
+      "role": "Security Engineer (DNS, WebRTC, Fingerprint, Cookie, Tor, Evasion)",
+      "level": 3,
+      "reports_to": "atlas",
+      "active": false,
+      "extra_routes": [
+        "nova",
+        "viktor",
+        "backend",
+        "frontend",
+        "kai",
+        "codex",
+        "atlas",
+        "nexus"
+      ],
+      "home_dir": "Security/sec_all",
+      "engine": "claude",
+      "prompt_file": "Backend/prompts/sec_all.txt",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile",
+      "role": "Mobile App Entwickler",
+      "role_description": "Mobile App Entwickler — Bridge IDE Mobile Client",
+      "description": "Mobile App Entwickler. React Native/Flutter App fuer Bridge IDE. Chat, Dashboard, Push-Notifications.",
+      "engine": "claude",
+      "model": "",
+      "config_dir": "",
+      "team": "",
+      "reports_to": "viktor",
+      "level": 2,
+      "active": false,
+      "mode": "normal",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement",
+        "anthropic-frontend-design",
+        "anthropic-webapp-testing",
+        "anthropic-theme-factory",
+        "frontend-design",
+        "anthropic-web-artifacts-builder",
+        "superpowers-verification-before-completion",
+        "superpowers-systematic-debugging"
+      ],
+      "mcp_servers": "",
+      "home_dir": "MobileApp",
+      "prompt_file": "Backend/prompts/mobile.txt",
+      "extra_routes": [
+        "viktor",
+        "backend",
+        "atlas"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "mika",
+      "name": "Mika",
+      "role": "senior",
+      "role_description": "Senior UI/UX Designerin & WebApp-Entwicklerin",
+      "description": "Senior UI/UX Designerin & WebApp-Entwicklerin. Design-Systeme, Themes, Component-Libraries, Playwright-Verifikation.",
+      "engine": "claude",
+      "model": "",
+      "config_dir": "",
+      "team": "",
+      "reports_to": "viktor",
+      "level": 2,
+      "active": false,
+      "mode": "normal",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement",
+        "anthropic-frontend-design",
+        "anthropic-webapp-testing",
+        "anthropic-theme-factory",
+        "ui-designer",
+        "bridge-ui-designer",
+        "frontend-design",
+        "anthropic-web-artifacts-builder",
+        "superpowers-verification-before-completion"
+      ],
+      "mcp_servers": "",
+      "home_dir": "Mika",
+      "extra_routes": [
+        "viktor",
+        "nova",
+        "mobile",
+        "frontend"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "scale_lab_alpha",
+      "name": "Scale Lab Alpha",
+      "role": "bridge_task_worker",
+      "level": 2,
+      "reports_to": "user",
+      "aliases": [
+        "alpha_lab"
+      ],
+      "engine": "claude",
+      "model": "claude-sonnet-4-6",
+      "config_dir": "",
+      "team": "scale-lab",
+      "active": false,
+      "mode": "normal",
+      "mcp_servers": "",
+      "home_dir": ".agent_sessions/scale_lab_alpha",
+      "prompt_file": "Backend/prompts/scale_lab_alpha.txt",
+      "agent_md": "",
+      "description": "Claude worker for live Bridge task-system probing. Focus: queue, claim/ack, task execution discipline, Bridge-only output.",
+      "permissions": [
+        "bridge-only-output: Ergebnisse und Status nur ueber bridge_task_* und bridge_send",
+        "task-probing: reale Task-Flows im Bridge-System ausfuehren und dokumentieren",
+        "repo-analysis: Task-System und Control-Center-bezogene Dateien lesen und bewerten"
+      ],
+      "scope": [
+        "BRIDGE/Backend/server.py",
+        "BRIDGE/Backend/bridge_mcp.py",
+        "BRIDGE/Backend/bridge_watcher.py",
+        "BRIDGE/Frontend/control_center.html",
+        "BRIDGE/Frontend/task_tracker.html"
+      ],
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement",
+        "claude-md-progressive-disclosurer"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "scale_lab_beta",
+      "name": "Scale Lab Beta",
+      "role": "bridge_task_worker",
+      "level": 2,
+      "reports_to": "user",
+      "aliases": [
+        "beta_lab"
+      ],
+      "engine": "claude",
+      "model": "claude-sonnet-4-6",
+      "config_dir": "",
+      "team": "scale-lab",
+      "active": false,
+      "mode": "normal",
+      "mcp_servers": "",
+      "home_dir": ".agent_sessions/scale_lab_beta",
+      "prompt_file": "Backend/prompts/scale_lab_beta.txt",
+      "agent_md": "",
+      "description": "Claude worker for scalable multi-task architecture. Focus: conflict-free scheduling, concurrency control, backpressure, task-model design.",
+      "permissions": [
+        "bridge-only-output: Ergebnisse und Status nur ueber bridge_task_* und bridge_send",
+        "architecture: skalierbares Multi-Agent-Task-Modell fuer Bridge entwerfen",
+        "repo-analysis: Task-System, Routing, Locking und Runtime-Dateien lesen und bewerten"
+      ],
+      "scope": [
+        "BRIDGE/Backend/server.py",
+        "BRIDGE/Backend/bridge_mcp.py",
+        "BRIDGE/Backend/bridge_watcher.py",
+        "BRIDGE/Backend/tmux_manager.py",
+        "BRIDGE/Frontend/control_center.html"
+      ],
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement",
+        "claude-md-progressive-disclosurer"
+      ],
+      "auto_start": false
+    },
+    {
+      "id": "gemini_agent",
+      "name": "Gemini",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [
+        "gemini"
+      ],
+      "engine": "gemini",
+      "home_dir": ".agent_sessions/gemini_agent",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Senior Engineer. Gemini-Engine Runtime- und Tooling-Checks.",
+      "active": true,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core",
+        "bridge-evidence-enforcement",
+        "superpowers-systematic-debugging",
+        "superpowers-verification-before-completion"
+      ],
+      "auto_start": false,
+      "model": "",
+      "mode": "normal",
+      "mcp_servers": ""
+    },
+    {
+      "id": "trading_analyst",
+      "name": "Analyst",
+      "role": "researcher",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/trading_analyst",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Market-Analyst. Marktdaten analysieren, Trends erkennen, Reports erstellen.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "research: Marktdaten abrufen und analysieren"
+      ],
+      "scope": [
+        "research/",
+        "reports/"
+      ]
+    },
+    {
+      "id": "trading_strategist",
+      "name": "Strategist",
+      "role": "strategist",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/trading_strategist",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Trading-Stratege. Handelsstrategien entwickeln, Backtesting, Signal-Generierung.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "strategy: Handelsstrategien entwickeln und testen"
+      ],
+      "scope": [
+        "strategies/",
+        "signals/"
+      ]
+    },
+    {
+      "id": "trading_risk",
+      "name": "Risk Manager",
+      "role": "analyst",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/trading_risk",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Risk Manager. Portfolio-Risiko bewerten, Limits setzen, Alerts ausloesen.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "risk: Risikobewertung und Portfolio-Analyse"
+      ],
+      "scope": [
+        "risk/",
+        "reports/"
+      ]
+    },
+    {
+      "id": "marketing_content",
+      "name": "Content Creator",
+      "role": "creator",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/marketing_content",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Content Creator. Blog-Posts, Social Media Posts, Newsletter schreiben.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "content: Inhalte erstellen und veroeffentlichen"
+      ],
+      "scope": [
+        "content/",
+        "drafts/"
+      ]
+    },
+    {
+      "id": "marketing_seo",
+      "name": "SEO Specialist",
+      "role": "analyst",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/marketing_seo",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "SEO-Spezialist. Keyword-Recherche, On-Page-Optimierung, Ranking-Analyse.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "research: SEO-Daten analysieren und optimieren"
+      ],
+      "scope": [
+        "seo/",
+        "reports/"
+      ]
+    },
+    {
+      "id": "marketing_campaign",
+      "name": "Campaign Manager",
+      "role": "manager",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/marketing_campaign",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Kampagnen-Manager. Kampagnen planen, ausfuehren, Performance tracken.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "campaigns: Kampagnen verwalten und auswerten"
+      ],
+      "scope": [
+        "campaigns/",
+        "reports/"
+      ]
+    },
+    {
+      "id": "legal_contract",
+      "name": "Contract Analyst",
+      "role": "analyst",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/legal_contract",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Vertragsanalyst. Vertraege pruefen, Risiken identifizieren, Klauseln bewerten.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "legal: Vertraege analysieren und bewerten"
+      ],
+      "scope": [
+        "contracts/",
+        "reviews/"
+      ]
+    },
+    {
+      "id": "legal_compliance",
+      "name": "Compliance Officer",
+      "role": "auditor",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/legal_compliance",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Compliance Officer. Regulatorische Anforderungen pruefen, Richtlinien durchsetzen.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "compliance: Regulatorische Pruefungen durchfuehren"
+      ],
+      "scope": [
+        "compliance/",
+        "policies/"
+      ]
+    },
+    {
+      "id": "legal_researcher",
+      "name": "Legal Researcher",
+      "role": "researcher",
+      "level": 3,
+      "reports_to": "buddy",
+      "aliases": [],
+      "engine": "claude",
+      "home_dir": ".agent_sessions/legal_researcher",
+      "prompt_file": "",
+      "agent_md": "",
+      "description": "Rechtsrechercheur. Urteile, Gesetze, Praezedenzfaelle recherchieren.",
+      "active": false,
+      "config_dir": "",
+      "skills": [
+        "bridge-agent-core"
+      ],
+      "auto_start": false,
+      "mcp_servers": "bridge",
+      "permissions": [
+        "research: Rechtliche Recherche durchfuehren"
+      ],
+      "scope": [
+        "research/",
+        "memos/"
+      ]
+    },
+    {
+      "id": "codex_3",
+      "name": "Codex_3",
+      "role": "senior",
+      "level": 2,
+      "reports_to": "viktor",
+      "aliases": [],
+      "engine": "codex",
+      "home_dir": ".agent_sessions/codex_3",
+      "prompt_file": "Backend/prompts/codex.txt",
+      "agent_md": "",
+      "description": "Senior Coder (Codex-Engine). Buddy Knowledge-Architektur.",
+      "active": false,
+      "skills": [
+        "bridge-agent-core",
+        "superpowers-verification-before-completion",
+        "bridge-evidence-enforcement"
+      ],
+      "model": "gpt-5.3-codex",
+      "auto_start": true,
+      "agent_id": "codex_3",
+      "display_name": "Codex_3"
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "sub2",
+      "name": "Agent Pool",
+      "path": "",
+      "active": true,
+      "provider": "claude",
+      "display_name": "Lio",
+      "plan": "max",
+      "rate_limit_tier": "default_claude_max_20x"
+    },
+    {
+      "id": "sub1",
+      "name": "Default Updated",
+      "path": "",
+      "active": true,
+      "provider": "claude",
+      "display_name": "Leo",
+      "plan": "max",
+      "rate_limit_tier": "default_claude_max_20x"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "provider": "gemini",
+      "path": "",
+      "active": true,
+      "_detected": true
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen",
+      "provider": "qwen",
+      "path": "",
+      "active": true,
+      "_detected": true
+    },
+    {
+      "id": "codex",
+      "name": "Codex",
+      "provider": "openai",
+      "path": "",
+      "active": true,
+      "_detected": true
+    }
+  ],
+  "role_templates": {
+    "backend": [
+      "server-architecture",
+      "mcp-tool-development",
+      "api-integration"
+    ],
+    "frontend": [
+      "bridge-ui-designer",
+      "frontend-design",
+      "anthropic-frontend-design",
+      "ui-designer",
+      "i18n-expert"
+    ],
+    "architect": [
+      "superpowers-requesting-code-review",
+      "superpowers-systematic-debugging",
+      "security-scanner"
+    ],
+    "strateg": [
+      "deep-research",
+      "competitors-analysis",
+      "prompt-optimizer"
+    ],
+    "koordinat": [
+      "superpowers-dispatching-parallel-agents",
+      "claude-md-progressive-disclosurer"
+    ],
+    "orchestr": [
+      "superpowers-dispatching-parallel-agents",
+      "claude-md-progressive-disclosurer"
+    ],
+    "integration": [
+      "stealth-browser",
+      "api-integration",
+      "account-creator"
+    ],
+    "pentest": [
+      "security-scanner",
+      "stealth-browser"
+    ],
+    "research": [
+      "deep-research",
+      "fact-checker"
+    ],
+    "techwriter": [
+      "anthropic-doc-coauthoring",
+      "docs-cleaner",
+      "markdown-tools"
+    ]
+  }
 }

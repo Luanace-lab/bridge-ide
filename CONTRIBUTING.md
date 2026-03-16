@@ -1,4 +1,4 @@
-# Contributing to Bridge IDE
+# Contributing to Bridge ACE
 
 ## Development Setup
 
@@ -10,9 +10,7 @@
 
 - `Backend/` — Server, MCP, agent management (Python)
 - `Frontend/` — Web UI (HTML/CSS/JS)
-- `Backend/skills/` — Skill definitions (SKILL.md files)
 - `Backend/workflow_templates/` — n8n workflow templates (JSON)
-- `Backend/shared_tools/` — Shared tool scripts
 
 ## Guidelines
 
@@ -31,19 +29,8 @@
 
 ### Adding Skills
 
-Create `Backend/skills/your-skill/SKILL.md`:
-
-```markdown
----
-name: your-skill
-description: What this skill does
-allowed-tools: Edit Read Bash
----
-
-# Your Skill
-
-Instructions for the agent when this skill is active.
-```
+Skills are managed via Claude Code's built-in skill system (`~/.claude/skills/`).
+See the Claude Code documentation for skill creation guidelines.
 
 ### Adding Workflow Templates
 
