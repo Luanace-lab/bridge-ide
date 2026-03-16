@@ -17,7 +17,7 @@ services:
       - ./Backend/automations.json:/app/Backend/automations.json
       - ./Backend/workflow_registry.json:/app/Backend/workflow_registry.json
       - ./Backend/event_subscriptions.json:/app/Backend/event_subscriptions.json
-      - ${HOME}/.config/bridge/tokens.json:/root/.config/bridge/tokens.json:ro
+      - bridge-tokens:/data
       - ${HOME}/.config/bridge/n8n.env:/root/.config/bridge/n8n.env:ro
     environment:
       - PORT=9111
@@ -36,3 +36,6 @@ services:
       timeout: 5s
       start_period: 10s
       retries: 3
+
+volumes:
+  bridge-tokens:
