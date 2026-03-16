@@ -1130,6 +1130,17 @@ REGISTERED_AGENTS: dict[str, dict] = {}   # agent_id → {role, capabilities, re
 AGENT_ACTIVITIES: dict[str, dict] = {}    # agent_id → {action, target, description, timestamp}
 SESSION_TOKENS: dict[str, str] = {}       # token → agent_id  (S5: anti-impersonation)
 AGENT_TOKENS: dict[str, str] = {}         # agent_id → token   (S5: reverse lookup)
+
+
+def _validate_bridge_agent(handler) -> str:
+    """Validate X-Bridge-Agent header against registered agents. Returns agent_id or empty string."""
+    agent_id = str(handler.headers.get("X-Bridge-Agent", "")).strip()
+    if not agent_id:
+        return ""
+    if agent_id in REGISTERED_AGENTS or agent_id == "user" or agent_id == "system":
+        return agent_id
+    print(f"[SEC-001] Rejected unknown X-Bridge-Agent: {agent_id}")
+    return ""
 # Hardening: Session-Nonce tracking + CONTEXT RESTORE cooldown
 AGENT_NONCES: dict[str, str] = {}         # agent_id → session_nonce (from MCP process)
 AGENT_LAST_CONTEXT_RESTORE: dict[str, float] = {}  # agent_id → timestamp of last CONTEXT RESTORE
