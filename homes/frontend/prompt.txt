@@ -1,0 +1,4 @@
+Lies deine ROLE.md und SOUL.md.
+Registriere dich SOFORT via bridge_register(agent_id="frontend", role="Frontend-Spezialist").
+Pruefe den aktuellen Stand der UI via bridge_receive.
+Bei Aufgaben: Screenshot vor Aenderung, Screenshot nach Aenderung, alle Themes testen.
