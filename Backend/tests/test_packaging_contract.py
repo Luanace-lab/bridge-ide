@@ -1,5 +1,8 @@
 import sys
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # Python < 3.11 backport
 import unittest
 from pathlib import Path
 
