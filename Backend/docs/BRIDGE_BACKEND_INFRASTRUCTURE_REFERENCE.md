@@ -588,7 +588,7 @@ Trigger-/Action-Anker:
 
 ## 11) Vergleich mit GitHub-Release-Doku
 
-- Gefundene Markdown-Dateien im Release-Clone (`/home/user/bridge-release/BRIDGE`): 1
+- Gefundene Markdown-Dateien im Release-Clone (`~/Desktop/bridge-ide-release/BRIDGE`): 1
   - `CLAUDE.md`
 - Ergebnis: Backend-/Infrastruktur-Referenzdoku fehlt im Release praktisch vollstaendig.
 - Neu in dieser Arbeitskopie: diese technische Referenzdatei als API-/Ops-Basis.
