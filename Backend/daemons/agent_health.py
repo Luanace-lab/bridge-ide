@@ -274,6 +274,21 @@ def _agent_health_tick(cleanup_counter: int) -> int:
                             f"Moeglicherweise Registrierung verloren.",
                             time.time(),
                         )
+                        # Active recovery: nudge agent to re-register after >5min no heartbeat
+                        if hb_age > 300:
+                            _nudge_key = f"recovery_nudge:{agent_id}"
+                            _last_nudge = _agent_last_restart.get(_nudge_key, 0)
+                            if (time.time() - _last_nudge) > 120:  # cooldown 2min between nudges
+                                _agent_last_restart[_nudge_key] = time.time()
+                                session_name = f"acw_{agent_id}"
+                                try:
+                                    import subprocess as _sp
+                                    _sp.run(["tmux", "send-keys", "-t", session_name,
+                                             "Lies deine Dokumentation. Registriere dich via bridge_register.",
+                                             "Enter"], capture_output=True, timeout=3)
+                                    print(f"[health] Recovery-nudge sent to {agent_id} (no heartbeat {int(hb_age)}s)")
+                                except Exception:
+                                    pass
 
         if _is_session_alive_cb(agent_id) and agent_id in conf_ids:
             if _is_agent_at_oauth_prompt_cb(agent_id):
