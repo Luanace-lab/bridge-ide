@@ -11,78 +11,32 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-
     :root {
-      --bg: #060a10;
-      --surface: #0d1420;
-      --border: rgba(44,220,220,.08);
-      --border-hover: rgba(44,220,220,.2);
-      --text: #e4eff8;
-      --text-muted: #5a7a94;
-      --accent: #2cd8d8;
-      --accent-dim: rgba(44,216,216,.12);
-      --accent-glow: rgba(44,216,216,.06);
-      --green: #22c55e;
-      --font-display: 'Outfit', sans-serif;
-      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+      --bg: #060a10; --surface: #0d1420;
+      --border: rgba(44,220,220,.08); --border-hover: rgba(44,220,220,.2);
+      --text: #e4eff8; --text-muted: #5a7a94; --accent: #2cd8d8; --green: #22c55e;
+      --font-display: 'Outfit', sans-serif; --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+      --gradient: linear-gradient(135deg, #22c55e, #2cd8d8, #818cf8, #c084fc);
+      --nav-bg: rgba(6,10,16,.92);
     }
+    body { font-family: var(--font-display); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
-    body {
-      font-family: var(--font-display);
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-    }
+    /* Matrix */
+    .matrix-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; opacity: .85; }
+    .matrix-col { position: absolute; top: -100%; font-family: var(--font-mono); font-size: 14px; color: var(--accent); writing-mode: vertical-rl; animation: matrix-fall linear infinite; opacity: .6; text-shadow: 0 0 8px rgba(44,216,216,.6), 0 0 20px rgba(44,216,216,.3); }
+    @keyframes matrix-fall { from { transform: translateY(-100%); } to { transform: translateY(200vh); } }
 
-    /* ─── Matrix Background ─── */
-    .matrix-bg {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 0; pointer-events: none; opacity: .85;
-    }
-    .matrix-col {
-      position: absolute; top: -100%; font-family: var(--font-mono);
-      font-size: 14px; color: var(--accent); writing-mode: vertical-rl;
-      animation: matrix-fall linear infinite;
-      opacity: .6;
-      text-shadow: 0 0 8px rgba(44,216,216,.6), 0 0 20px rgba(44,216,216,.3);
-    }
-    @keyframes matrix-fall {
-      from { transform: translateY(-100%); }
-      to { transform: translateY(200vh); }
-    }
-
-    /* ─── Nav ─── */
-    .nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 40px;
-      background: rgba(6,10,16,.9);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav__brand {
-      display: flex; align-items: center; gap: 12px;
-      font-size: 15px; font-weight: 600; color: var(--text);
-      text-decoration: none; letter-spacing: .02em;
-    }
+    /* Nav */
+    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 14px 40px; background: var(--nav-bg); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
+    .nav__brand { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; color: var(--text); text-decoration: none; letter-spacing: .02em; }
     .nav__logo { height: 48px; width: auto; }
-    .nav__links { display: flex; align-items: center; gap: 32px; }
-    .nav__link {
-      font-size: 13px; font-weight: 400; color: var(--text-muted);
-      text-decoration: none; transition: color .2s;
-    }
-    .nav__link:hover { color: var(--accent); }
-    .nav__cta {
-      font-size: 12px; font-weight: 600; padding: 8px 20px;
-      background: var(--accent); color: var(--bg); border: none;
-      border-radius: 6px; cursor: pointer; text-decoration: none;
-      transition: all .2s; letter-spacing: .03em;
-    }
+    .nav__links { display: flex; align-items: center; gap: 24px; }
+    .nav__link { font-size: 13px; font-weight: 400; color: var(--text-muted); text-decoration: none; padding: 6px 12px; border: 2px solid transparent; border-radius: 6px; background-origin: border-box; background-clip: padding-box, border-box; transition: all .25s; }
+    .nav__link:hover { color: var(--text); background-image: linear-gradient(var(--nav-bg), var(--nav-bg)), var(--gradient); background-size: 100% 100%, 200% 200%; animation: gradient-shift 4s ease infinite; }
+    .nav__cta { font-size: 12px; font-weight: 600; padding: 8px 20px; background: var(--gradient); background-size: 200% 200%; animation: gradient-shift 4s ease infinite; color: var(--bg); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all .2s; letter-spacing: .03em; }
     .nav__cta:hover { box-shadow: 0 0 20px rgba(44,216,216,.3); }
 
-    /* ─── Mobile Hamburger ─── */
+    /* Mobile Hamburger */
     .nav__burger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
     .nav__burger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; }
     .nav__burger[aria-expanded="true"] .burger-open { display: none; }
@@ -90,288 +44,95 @@
     .nav__burger[aria-expanded="false"] .burger-close { display: none; }
     @media (max-width: 640px) {
       .nav__burger { display: flex; }
-      .nav__links {
-        position: fixed; top: 62px; left: 0; right: 0;
-        flex-direction: column; gap: 0; padding: 8px 0;
-        background: rgba(6,10,16,.95); backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--border);
-        transform: translateY(-120%); transition: transform .25s ease;
-      }
+      .nav__links { position: fixed; top: 62px; left: 0; right: 0; flex-direction: column; gap: 0; padding: 8px 0; background: var(--nav-bg); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); transform: translateY(-120%); transition: transform .25s ease; }
       .nav__links--open { display: flex; transform: translateY(0); }
-      .nav__link, .nav__cta { display: block; padding: 12px 24px; text-align: left; width: 100%; }
-      .nav__cta { margin: 4px 16px; width: auto; text-align: center; }
+      .nav__link, .nav__cta { display: block; padding: 12px 24px; text-align: left; width: 100%; border-radius: 0; }
+      .nav__cta { margin: 4px 16px; width: auto; text-align: center; border-radius: 6px; }
     }
 
-    /* ─── Hero ─── */
-    .hero {
-      min-height: 100vh; display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      padding: 120px 60px 80px;
-      position: relative; z-index: 1;
-      max-width: 1400px; margin: 0 auto;
-    }
+    /* Hero */
+    .hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 100px 60px 40px; position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; }
     .hero__content { max-width: 600px; }
-    .hero__badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 5px 14px; border-radius: 20px;
-      background: rgba(34,197,94,.06); border: 1px solid rgba(34,197,94,.15);
-      font-size: 11px; font-weight: 600; color: var(--green);
-      margin-bottom: 28px; letter-spacing: .05em; text-transform: uppercase;
-    }
-    .hero__badge::before {
-      content: ''; width: 5px; height: 5px; border-radius: 50%;
-      background: var(--green); animation: pulse 2s infinite;
-    }
+    .hero__badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; border-radius: 20px; background: rgba(34,197,94,.06); border: 1px solid rgba(34,197,94,.15); font-size: 11px; font-weight: 600; color: var(--green); margin-bottom: 28px; letter-spacing: .05em; text-transform: uppercase; }
+    .hero__badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-    .hero__title {
-      font-size: clamp(38px, 5vw, 62px);
-      font-weight: 800; line-height: 1.05;
-      letter-spacing: -.03em;
-      margin-bottom: 8px;
-    }
+    .hero__title { font-size: clamp(38px, 5vw, 62px); font-weight: 800; line-height: 1.05; letter-spacing: -.03em; margin-bottom: 8px; }
     .hero__title span { color: var(--accent); }
-    .hero__acronym {
-      font-family: var(--font-mono); font-size: 13px;
-      color: var(--text-muted); letter-spacing: .15em;
-      text-transform: uppercase; margin-bottom: 24px;
-      display: block;
-    }
-    .hero__sub {
-      font-size: 17px; font-weight: 300;
-      color: var(--text-muted); max-width: 480px;
-      line-height: 1.7; margin-bottom: 36px;
-    }
+    .hero__acronym { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 24px; display: block; }
+    .hero__sub { font-size: 17px; font-weight: 300; color: var(--text-muted); max-width: 480px; line-height: 1.7; margin-bottom: 28px; }
     .hero__actions { display: flex; gap: 12px; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 28px; border-radius: 8px; font-size: 14px;
-      font-weight: 600; text-decoration: none; cursor: pointer;
-      transition: all .2s; border: none; font-family: var(--font-display);
-    }
-    .btn--primary { background: var(--accent); color: var(--bg); }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all .2s; border: none; font-family: var(--font-display); }
+    .btn--primary { background: var(--gradient); background-size: 200% 200%; animation: gradient-shift 4s ease infinite; color: var(--bg); }
     .btn--primary:hover { box-shadow: 0 0 24px rgba(44,216,216,.25); transform: translateY(-1px); }
-    .btn--secondary {
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-    .btn--secondary:hover { color: var(--text); border-color: var(--accent); }
+    .btn--secondary { background-color: transparent; color: var(--text-muted); border: 2px solid transparent; border-radius: 8px; background-origin: border-box; background-clip: padding-box, border-box; transition: all .25s; }
+    .btn--secondary:hover { color: var(--text); background-image: linear-gradient(var(--bg), var(--bg)), var(--gradient); background-size: 100% 100%, 200% 200%; animation: gradient-shift 4s ease infinite; }
 
-    .hero__visual {
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      position: relative;
-    }
-    .hero__visual::after {
-      content: ''; position: absolute; top: 50%; left: 50%;
-      width: 300px; height: 300px; border-radius: 50%;
-      transform: translate(-50%, -40%);
-      background: radial-gradient(circle, rgba(44,216,216,.25) 0%, rgba(128,255,208,.1) 40%, transparent 70%);
-      animation: glow-pulse 4s ease-in-out infinite;
-      pointer-events: none; z-index: 0;
-    }
-    @keyframes glow-pulse {
-      0%,100% { opacity: .6; transform: translate(-50%,-40%) scale(1); }
-      50% { opacity: 1; transform: translate(-50%,-40%) scale(1.3); }
-    }
-    .hero__creature {
-      width: 100%; max-width: 680px;
-      animation: float 6s ease-in-out infinite;
-      position: relative; z-index: 1;
-    }
-    @keyframes float {
-      0%,100% { transform: translateY(0); }
-      50% { transform: translateY(-12px); }
-    }
-    @keyframes buddy-glow {
-      0%,100% { filter: drop-shadow(0 0 60px rgba(44,216,216,.3)) brightness(1.05); }
-      30% { filter: drop-shadow(0 0 80px rgba(44,216,216,.4)) brightness(1.15); }
-      50% { filter: drop-shadow(0 0 130px rgba(128,255,208,.65)) brightness(1.45); }
-      70% { filter: drop-shadow(0 0 80px rgba(44,216,216,.4)) brightness(1.15); }
-    }
-    .hero__buddy-label {
-      font-size: clamp(22px, 3vw, 32px); font-weight: 800;
-      text-align: center; margin-bottom: 2px;
-      letter-spacing: -.01em;
-      background: linear-gradient(135deg, #22c55e, #2cd8d8, #818cf8, #c084fc);
-      background-size: 200% 200%;
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: gradient-shift 4s ease infinite;
-    }
-    .hero__buddy-sub {
-      font-size: 13px; font-weight: 400;
-      text-align: center; margin-top: 4px;
-      color: var(--text-muted); letter-spacing: .03em;
-    }
-    @keyframes gradient-shift {
-      0%,100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
+    /* Install (inline in hero) */
+    .hero__install { margin-top: 24px; }
+    .hero__install-label { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 6px; }
+    .hero__install-code { display: inline-block; padding: 10px 20px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 13px; color: var(--accent); cursor: pointer; user-select: all; transition: border-color .2s; }
+    .hero__install-code:hover { border-color: var(--accent); }
+    .hero__install-hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
 
-    /* ─── Terminal ─── */
-    .terminal-section {
-      padding: 0 60px 100px;
-      max-width: 1400px; margin: 0 auto;
-      position: relative; z-index: 1;
-    }
-    .terminal {
-      width: 100%; max-width: 760px; margin: 0 auto;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden;
-      box-shadow: 0 24px 80px rgba(0,0,0,.5);
-    }
-    .terminal__bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 12px 16px; border-bottom: 1px solid var(--border);
-    }
-    .terminal__dot { width: 10px; height: 10px; border-radius: 50%; }
-    .terminal__dot--red { background: #ef4444; }
-    .terminal__dot--yellow { background: #f59e0b; }
-    .terminal__dot--green { background: #22c55e; }
-    .terminal__title {
-      flex: 1; text-align: center; font-size: 11px;
-      color: var(--text-muted); font-family: var(--font-mono);
-    }
-    .terminal__body {
-      padding: 20px 24px; font-family: var(--font-mono);
-      font-size: 13px; line-height: 2; color: var(--text-muted);
-    }
-    .terminal__line--cmd { color: var(--text); }
-    .terminal__line--cmd::before { content: '$ '; color: var(--green); }
-    .terminal__line--accent { color: var(--accent); }
-    .terminal__line--green { color: var(--green); }
-    .terminal__line--dim { opacity: .4; }
+    /* Buddy Visual */
+    .hero__visual { display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+    .hero__visual::after { content: ''; position: absolute; top: 50%; left: 50%; width: 300px; height: 300px; border-radius: 50%; transform: translate(-50%, -40%); background: radial-gradient(circle, rgba(44,216,216,.25) 0%, rgba(128,255,208,.1) 40%, transparent 70%); animation: glow-pulse 4s ease-in-out infinite; pointer-events: none; z-index: 0; }
+    @keyframes glow-pulse { 0%,100% { opacity: .6; transform: translate(-50%,-40%) scale(1); } 50% { opacity: 1; transform: translate(-50%,-40%) scale(1.3); } }
+    .hero__creature { width: 100%; max-width: 680px; animation: float 6s ease-in-out infinite; position: relative; z-index: 1; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .hero__buddy-label { font-size: clamp(22px, 3vw, 32px); font-weight: 800; text-align: center; margin-bottom: 2px; letter-spacing: -.01em; background: var(--gradient); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: gradient-shift 4s ease infinite; }
+    .hero__buddy-sub { font-size: 13px; font-weight: 400; text-align: center; margin-top: 4px; color: var(--text-muted); letter-spacing: .03em; }
+    @keyframes gradient-shift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 
-    /* ─── Install ─── */
-    .install-section {
-      padding: 0 60px 100px;
-      max-width: 1400px; margin: 0 auto;
-      text-align: center; position: relative; z-index: 1;
-    }
-    .install__label {
-      font-family: var(--font-mono); font-size: 11px;
-      color: var(--accent); letter-spacing: .15em; text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .install__os {
-      font-size: 14px; color: var(--text-muted); margin-bottom: 16px;
-    }
-    .install__code {
-      display: inline-block; padding: 14px 28px; border-radius: 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      font-family: var(--font-mono); font-size: 14px;
-      color: var(--accent); cursor: pointer; user-select: all;
-      transition: border-color .2s;
-    }
-    .install__code:hover { border-color: var(--accent); }
-    .install__hint {
-      font-size: 12px; color: var(--text-muted); margin-top: 10px;
-    }
-
-    /* ─── Features ─── */
-    .features {
-      padding: 100px 60px;
-      max-width: 1200px; margin: 0 auto;
-      position: relative; z-index: 1;
-    }
-    .features__header { text-align: center; margin-bottom: 64px; }
-    .features__label {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-      letter-spacing: .15em; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 12px;
-    }
-    .features__title {
-      font-size: clamp(24px, 3.5vw, 36px); font-weight: 700;
-      letter-spacing: -.02em;
-    }
-    .features__sub {
-      font-size: 15px; color: var(--text-muted); margin-top: 12px;
-      max-width: 560px; margin-left: auto; margin-right: auto;
-    }
-    .features__grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-    }
-    .feature {
-      padding: 28px 24px; border-radius: 12px;
-      background: var(--surface); border: 1px solid var(--border);
-      transition: border-color .25s, transform .25s;
-      position: relative; overflow: hidden;
-    }
-    .feature::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--feature-accent, var(--accent)), transparent);
-      opacity: 0; transition: opacity .3s;
-    }
+    /* Features */
+    .features { padding: 60px 60px; max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+    .features__header { text-align: center; margin-bottom: 40px; }
+    .features__label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+    .features__title { font-size: clamp(24px, 3.5vw, 36px); font-weight: 700; letter-spacing: -.02em; }
+    .features__sub { font-size: 15px; color: var(--text-muted); margin-top: 12px; max-width: 560px; margin-left: auto; margin-right: auto; }
+    .features__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .feature { padding: 20px 20px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); transition: border-color .25s, transform .25s; position: relative; overflow: hidden; }
+    .feature::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--feature-accent, var(--accent)), transparent); opacity: 0; transition: opacity .3s; }
     .feature:hover { border-color: var(--border-hover); transform: translateY(-3px); }
     .feature:hover::before { opacity: 1; }
-    .feature__icon {
-      width: 40px; height: 40px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 16px; font-size: 18px;
-    }
+    .feature__icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 18px; }
     .feature__icon--agents { background: rgba(44,216,216,.1); color: var(--accent); }
     .feature__icon--comm { background: rgba(99,102,241,.1); color: #818cf8; }
     .feature__icon--memory { background: rgba(34,197,94,.08); color: #22c55e; }
     .feature__icon--control { background: rgba(245,158,11,.08); color: #f59e0b; }
-    .feature__icon--engines { background: rgba(168,85,247,.1); color: #a855f7; }
     .feature__icon--integrate { background: rgba(236,72,153,.08); color: #ec4899; }
     .feature__icon--workflow { background: rgba(59,130,246,.1); color: #3b82f6; }
     .feature__icon--buddy { background: rgba(44,216,216,.08); color: #80ffd0; }
-    .feature__title { font-size: 15px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.01em; }
+    .feature__title { font-size: 15px; font-weight: 700; margin-bottom: 6px; letter-spacing: -.01em; }
     .feature__desc { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
-    .feature__stat {
-      display: inline-block; margin-top: 12px; padding: 3px 10px;
-      border-radius: 4px; font-family: var(--font-mono); font-size: 11px;
-      background: rgba(44,216,216,.06); color: var(--accent);
-      border: 1px solid rgba(44,216,216,.1);
-    }
 
-    /* ─── CTA ─── */
-    .cta {
-      padding: 80px 60px 120px; text-align: center;
-      position: relative; z-index: 1;
-    }
-    .cta__box {
-      max-width: 600px; margin: 0 auto; padding: 48px 40px;
-      background: transparent;
-      border: none;
-    }
-    .cta__title { font-size: clamp(22px, 3vw, 30px); font-weight: 700; margin-bottom: 12px; letter-spacing: -.02em; }
-    .cta__sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
-    .cta__actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    /* Footer */
+    .footer { padding: 32px 40px; text-align: center; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); position: relative; z-index: 1; }
+    .footer__links { display: flex; justify-content: center; gap: 16px; margin-bottom: 12px; }
+    .footer__link { font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; padding: 6px 14px; border: 2px solid transparent; border-radius: 6px; background-origin: border-box; background-clip: padding-box, border-box; transition: all .25s; }
+    .footer__link:hover { color: var(--text); background-image: linear-gradient(var(--bg), var(--bg)), var(--gradient); background-size: 100% 100%, 200% 200%; animation: gradient-shift 4s ease infinite; }
 
-    /* ─── Footer ─── */
-    .footer {
-      padding: 32px 40px; text-align: center;
-      border-top: 1px solid var(--border);
-      font-size: 12px; color: var(--text-muted);
-      position: relative; z-index: 1;
-    }
-
-    /* ─── Responsive ─── */
+    /* Responsive */
     @media (max-width: 900px) {
-      .hero { grid-template-columns: 1fr; text-align: center; padding: 100px 24px 40px; }
+      .hero { grid-template-columns: 1fr; text-align: center; padding: 80px 24px 32px; }
       .hero__content { max-width: 100%; }
-      .hero__sub { margin: 0 auto 36px; }
+      .hero__sub { margin: 0 auto 24px; }
       .hero__actions { justify-content: center; }
-      .hero__visual { margin-top: 40px; }
+      .hero__install { text-align: center; }
+      .hero__visual { margin-top: 32px; }
       .hero__creature { max-width: 320px; }
-      .terminal-section, .install-section, .features, .cta { padding-left: 24px; padding-right: 24px; }
+      .features { padding-left: 24px; padding-right: 24px; }
     }
     @media (max-width: 640px) {
       .nav { padding: 12px 20px; }
       .hero__creature { max-width: 260px; }
+      .hero__install-code { font-size: 11px; padding: 8px 14px; }
     }
   </style>
 </head>
 <body>
-
-  <!-- Matrix Background -->
   <div class="matrix-bg" id="matrixBg"></div>
 
-  <!-- Nav -->
   <nav class="nav">
     <a class="nav__brand" href="#">
       <img class="nav__logo" src="ace_logo_clean.png" alt="ACE Logo">
@@ -384,11 +145,10 @@
     <div class="nav__links">
       <a class="nav__link" href="#features">Features</a>
       <a class="nav__link" href="https://github.com/Luanace-lab/bridge-ide" target="_blank" rel="noopener">GitHub</a>
-      <a class="nav__cta" href="#get-started">Get Started</a>
+      <a class="nav__cta" href="https://github.com/Luanace-lab/bridge-ide" target="_blank" rel="noopener">Get Started</a>
     </div>
   </nav>
 
-  <!-- Hero -->
   <section class="hero">
     <div class="hero__content">
       <div class="hero__badge">Open source &middot; Runs on your hardware</div>
@@ -396,8 +156,13 @@
       <span class="hero__acronym">Bridge &mdash; Agentic Collab Engine</span>
       <p class="hero__sub">Multiple AI agents working together in real-time on your local machine. You define the roles. They collaborate. You stay in control.</p>
       <div class="hero__actions">
-        <a class="btn btn--primary" href="#get-started">Get Started</a>
-        <a class="btn btn--secondary" href="#features">How it works</a>
+        <a class="btn btn--primary" href="https://github.com/Luanace-lab/bridge-ide" target="_blank" rel="noopener">View on GitHub</a>
+        <a class="btn btn--secondary" href="#features">Features</a>
+      </div>
+      <div class="hero__install" id="get-started">
+        <div class="hero__install-label">Install</div>
+        <div class="hero__install-code" id="installCmd" title="Click to copy">git clone https://github.com/Luanace-lab/bridge-ide.git && cd bridge-ide && ./install.sh</div>
+        <div class="hero__install-hint" id="installHint">Paste into your terminal. Requires Python 3.10+, Node.js, tmux.</div>
       </div>
     </div>
     <div class="hero__visual">
@@ -407,38 +172,6 @@
     </div>
   </section>
 
-  <!-- Terminal Preview -->
-  <section class="terminal-section">
-    <div class="terminal">
-      <div class="terminal__bar">
-        <span class="terminal__dot terminal__dot--red"></span>
-        <span class="terminal__dot terminal__dot--yellow"></span>
-        <span class="terminal__dot terminal__dot--green"></span>
-        <span class="terminal__title">bridge-ace</span>
-      </div>
-      <div class="terminal__body">
-        <div class="terminal__line terminal__line--cmd">bridge start</div>
-        <div class="terminal__line terminal__line--green">Bridge API online &mdash; port 9111</div>
-        <div class="terminal__line terminal__line--green">Agent WebSocket online &mdash; port 9112</div>
-        <div class="terminal__line terminal__line--dim">&nbsp;</div>
-        <div class="terminal__line terminal__line--accent">Architect registered &mdash; code review, system design</div>
-        <div class="terminal__line terminal__line--accent">Strategist registered &mdash; research, planning</div>
-        <div class="terminal__line terminal__line--accent">Engineer registered &mdash; implementation, testing</div>
-        <div class="terminal__line terminal__line--dim">&nbsp;</div>
-        <div class="terminal__line terminal__line--green">3 agents online. Team ready.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Install -->
-  <section class="install-section" id="get-started">
-    <div class="install__label">Install</div>
-    <div class="install__os" id="installOs">Detected: Linux</div>
-    <div class="install__code" id="installCmd" title="Click to copy">git clone https://github.com/Luanace-lab/bridge-ide.git && cd bridge-ide && ./install.sh</div>
-    <div class="install__hint" id="installHint">Paste into your terminal to get started.</div>
-  </section>
-
-  <!-- Features -->
   <section class="features" id="features">
     <div class="features__header">
       <div class="features__label">What you get</div>
@@ -447,99 +180,62 @@
     </div>
     <div class="features__grid">
       <div class="feature" style="--feature-accent:#2cd8d8">
-        <div class="feature__icon feature__icon--agents">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
+        <div class="feature__icon feature__icon--agents"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <h3 class="feature__title">Multi-Agent Runtime</h3>
-        <p class="feature__desc">Run dozens of AI agents simultaneously across 4 engines &mdash; Claude, Codex, Qwen, Gemini. Each gets its own session, memory, and identity. Mix models in one team.</p>
-        <span class="feature__stat">4 engines &middot; auto-restart &middot; hot-reload</span>
+        <p class="feature__desc">Run dozens of AI agents across 4 engines &mdash; Claude, Codex, Qwen, Gemini. Each gets its own session, memory, and identity.</p>
       </div>
       <div class="feature" style="--feature-accent:#818cf8">
-        <div class="feature__icon feature__icon--comm">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
+        <div class="feature__icon feature__icon--comm"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <h3 class="feature__title">Real-Time Communication</h3>
-        <p class="feature__desc">Agents talk to each other through a live WebSocket bridge. Broadcast to teams, send urgent interrupts, share files. No polling, no file-passing.</p>
-        <span class="feature__stat">WebSocket push &middot; channels &middot; file upload</span>
+        <p class="feature__desc">Agents talk through a live WebSocket bridge. Broadcast, send interrupts, share files. No polling.</p>
       </div>
       <div class="feature" style="--feature-accent:#22c55e">
-        <div class="feature__icon feature__icon--memory">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        </div>
+        <div class="feature__icon feature__icon--memory"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
         <h3 class="feature__title">Persistent by Design</h3>
-        <p class="feature__desc">Soul Engine gives each agent a persistent identity. Context Bridge syncs state every 5 minutes. Memory, knowledge vault, and encrypted credentials survive every restart and crash.</p>
-        <span class="feature__stat">Soul Engine &middot; Context Bridge &middot; 4-stage recovery</span>
+        <p class="feature__desc">Soul Engine gives agents persistent identity. Context Bridge syncs state. Memory and credentials survive every restart.</p>
       </div>
       <div class="feature" style="--feature-accent:#f59e0b">
-        <div class="feature__icon feature__icon--control">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
+        <div class="feature__icon feature__icon--control"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <h3 class="feature__title">Full Control Center</h3>
-        <p class="feature__desc">Live dashboard with agent status, cost tracking, task kanban, org chart, scope locks, and approval gates. Nothing happens without your permission.</p>
-        <span class="feature__stat">5 themes &middot; 5 languages &middot; live metrics</span>
+        <p class="feature__desc">Live dashboard with agent status, cost tracking, task kanban, scope locks, and approval gates.</p>
       </div>
       <div class="feature" style="--feature-accent:#ec4899">
-        <div class="feature__icon feature__icon--integrate">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        </div>
+        <div class="feature__icon feature__icon--integrate"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
         <h3 class="feature__title">Connected to the Real World</h3>
-        <p class="feature__desc">Agents send emails, post to Slack, read WhatsApp, make phone calls, browse the web, solve captchas, and manage Git repos. Out of the box.</p>
-        <span class="feature__stat">Email &middot; Slack &middot; WhatsApp &middot; Phone &middot; Git</span>
+        <p class="feature__desc">Agents send emails, post to Slack, browse the web, make calls, and manage Git repos. Out of the box.</p>
       </div>
       <div class="feature" style="--feature-accent:#3b82f6">
-        <div class="feature__icon feature__icon--workflow">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
+        <div class="feature__icon feature__icon--workflow"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
         <h3 class="feature__title">Workflows &amp; Automations</h3>
-        <p class="feature__desc">Describe what you want in plain language. Bridge compiles it into a workflow, deploys it, and runs it on schedule. Integrates with n8n for complex pipelines.</p>
-        <span class="feature__stat">Cron &middot; Templates &middot; n8n &middot; Auto-assign</span>
+        <p class="feature__desc">Describe what you want in plain language. Bridge compiles it into a workflow and runs it on schedule.</p>
       </div>
       <div class="feature" style="--feature-accent:#80ffd0">
-        <div class="feature__icon feature__icon--buddy">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-        </div>
+        <div class="feature__icon feature__icon--buddy"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
         <h3 class="feature__title">Buddy &mdash; Your AI Companion</h3>
-        <p class="feature__desc">Your personal guide from day one. Buddy onboards you, delegates to specialists, and keeps you in the loop. Think Jarvis, not chatbot.</p>
-        <span class="feature__stat">Voice &middot; Personality &middot; Always learning</span>
+        <p class="feature__desc">Your personal guide from day one. Buddy onboards you, delegates to specialists, and keeps you in the loop.</p>
       </div>
       <div class="feature" style="--feature-accent:#38bdf8">
-        <div class="feature__icon" style="background:rgba(56,189,248,.1);color:#38bdf8">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-        </div>
+        <div class="feature__icon" style="background:rgba(56,189,248,.1);color:#38bdf8"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
         <h3 class="feature__title">5,000+ MCP Tool Library</h3>
-        <p class="feature__desc">200+ built-in Bridge tools plus a curated library of 5,387 tools from the MCP ecosystem. Browser, desktop, stealth, voice, data &mdash; auto-indexed, searchable, ready to use.</p>
-        <span class="feature__stat">200+ built-in &middot; 5,387 ecosystem &middot; 88 skills</span>
+        <p class="feature__desc">200+ built-in tools plus 5,387 from the MCP ecosystem. Auto-indexed, searchable, ready to use.</p>
       </div>
       <div class="feature" style="--feature-accent:#a3e635">
-        <div class="feature__icon" style="background:rgba(163,230,53,.08);color:#a3e635">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>
-        </div>
+        <div class="feature__icon" style="background:rgba(163,230,53,.08);color:#a3e635"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg></div>
         <h3 class="feature__title">Runs Everywhere</h3>
-        <p class="feature__desc">Native on Linux and macOS. Windows via WSL2. Docker for isolation. One install script, dependencies auto-detected, platform auto-configured.</p>
-        <span class="feature__stat">Linux &middot; macOS &middot; Windows (WSL2) &middot; Docker</span>
+        <p class="feature__desc">Native on Linux and macOS. Windows via WSL2. Docker for isolation. One install script.</p>
       </div>
     </div>
   </section>
 
-  <!-- CTA -->
-  <section class="cta">
-    <div class="cta__box">
-      <h2 class="cta__title">Start building with your team</h2>
-      <p class="cta__sub">Clone the repo, set your API keys, and launch your first multi-agent session in minutes.</p>
-      <div class="cta__actions">
-        <a class="btn btn--primary" href="https://github.com/Luanace-lab/bridge-ide" target="_blank" rel="noopener">View on GitHub</a>
-        <a class="btn btn--secondary" href="https://github.com/Luanace-lab/bridge-ide#readme" target="_blank" rel="noopener">Read the docs</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
   <footer class="footer">
+    <div class="footer__links">
+      <a class="footer__link" href="https://github.com/Luanace-lab/bridge-ide" target="_blank" rel="noopener">GitHub</a>
+      <a class="footer__link" href="https://github.com/Luanace-lab/bridge-ide#readme" target="_blank" rel="noopener">Docs</a>
+    </div>
     Bridge ACE &mdash; Agentic Collab Engine. Free and open source.
   </footer>
 
   <script>
-    // ─── Matrix Rain Background ───
     (function initMatrix() {
       const bg = document.getElementById('matrixBg');
       const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF';
@@ -557,30 +253,18 @@
         bg.appendChild(col);
       }
     })();
-
-    // ─── OS Detection ───
-    (function detectOS() {
-      const ua = navigator.userAgent || '';
-      const platform = navigator.platform || '';
-      const osEl = document.getElementById('installOs');
-      const cmdEl = document.getElementById('installCmd');
-      const hintEl = document.getElementById('installHint');
-      const repo = 'https://github.com/Luanace-lab/bridge-ide.git';
-
+    (function initInstall() {
+      var cmdEl = document.getElementById('installCmd');
+      var hintEl = document.getElementById('installHint');
+      var repo = 'https://github.com/Luanace-lab/bridge-ide.git';
+      var platform = navigator.platform || '';
       if (/Win/.test(platform)) {
-        osEl.textContent = 'Detected: Windows';
         cmdEl.textContent = 'wsl --install && wsl -e bash -c "git clone ' + repo + ' && cd bridge-ide && ./install.sh"';
-        hintEl.textContent = 'Bridge ACE runs via WSL2. This command installs WSL and sets up Bridge in one step.';
+        hintEl.textContent = 'Runs via WSL2. This installs WSL and sets up Bridge in one step.';
       } else if (/Mac/.test(platform)) {
-        osEl.textContent = 'Detected: macOS';
         cmdEl.textContent = 'git clone ' + repo + ' && cd bridge-ide && ./install.sh';
-        hintEl.textContent = 'Requires Python 3.10+, Node.js, and tmux (brew install tmux).';
-      } else {
-        osEl.textContent = 'Detected: Linux';
-        cmdEl.textContent = 'git clone ' + repo + ' && cd bridge-ide && ./install.sh';
-        hintEl.textContent = 'Requires Python 3.10+, Node.js, and tmux.';
+        hintEl.textContent = 'Requires Python 3.10+, Node.js, tmux (brew install tmux).';
       }
-
       cmdEl.addEventListener('click', function() {
         var text = cmdEl.textContent;
         var ta = document.createElement('textarea');
@@ -595,6 +279,5 @@
       });
     })();
   </script>
-
 </body>
 </html>
