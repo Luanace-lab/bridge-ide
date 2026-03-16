@@ -10,7 +10,7 @@ Architecture:
   - Fire-and-forget webhook delivery in daemon threads
   - Wildcard "*" subscriptions receive all events
 
-Spec: /home/leo/Desktop/CC/Viktor/N8N_INTEGRATION_SPEC.md
+Spec: docs/N8N_INTEGRATION_SPEC.md
 """
 
 from __future__ import annotations

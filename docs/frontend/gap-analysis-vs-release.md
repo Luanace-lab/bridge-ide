@@ -2,7 +2,7 @@
 
 ## Scope
 
-This note compares the active frontend code in `/home/leo/Desktop/CC/BRIDGE/Frontend/*`
+This note compares the active frontend code in `./Frontend/*`
 with the documentation state that existed before this audit.
 
 ## Verified documentation drift

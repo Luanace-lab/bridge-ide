@@ -10,7 +10,7 @@ Diese Audit-Notiz ist nicht mehr die kanonische Referenz. Ihre noch gueltigen Be
 
 ## Scope
 
-This note is the running, verified gap register for the working copy in `/home/leo/Desktop/CC/BRIDGE`.
+This note is the running, verified gap register for the working copy in `./BRIDGE`.
 
 It started with the `Buddy (BRIDGE)` slice and now records verified gaps for:
 
@@ -40,8 +40,8 @@ The following checks were executed locally on `2026-03-12`:
 - `curl -fsS 'http://127.0.0.1:9111/logs?name=server&lines=2'`
 - `curl -fsS 'http://127.0.0.1:9111/task/queue?limit=2'`
 - `curl -fsS 'http://127.0.0.1:9111/agents'`
-- `curl -fsS 'http://127.0.0.1:9111/agent/config?project_path=/home/leo/Desktop/CC/BRIDGE&engine=claude'`
-- `curl -fsS 'http://127.0.0.1:9111/agent/config?project_path=/home/leo/Desktop/CC/BRIDGE&engine=codex'`
+- `curl -fsS 'http://127.0.0.1:9111/agent/config?project_path=./BRIDGE&engine=claude'`
+- `curl -fsS 'http://127.0.0.1:9111/agent/config?project_path=./BRIDGE&engine=codex'`
 - `curl -fsS http://127.0.0.1:9111/workflows`
 - `curl -fsS http://127.0.0.1:9111/workflows/templates`
 - `curl -fsS http://127.0.0.1:9111/workflows/tools`
@@ -88,7 +88,7 @@ The following checks were executed locally on `2026-03-12`:
 | high | BRIDGE | Hardcoded localhost host/port coupling in active frontends | `Frontend/chat.html`, `Frontend/control_center.html`, `Frontend/project_config.html`, `Frontend/buddy_landing.html`, and `Frontend/buddy_widget.js` all hardcode `127.0.0.1:9111/9112` and restrict token-injection helpers to `127.0.0.1` or `localhost`. | The current UI layer is tightly coupled to one local deployment topology, which blocks straightforward use behind alternate hostnames, ports, or reverse proxies. |
 | medium | BRIDGE | Attachment upload auth depends on page-wide fetch interception | `Frontend/chat.html` and `Frontend/control_center.html` call `/chat/upload` via direct `fetch(...)`, while auth is added indirectly by a global `window.fetch = bridgeFetch` override later in each page. The endpoint itself returned `401` when called without token. | Upload auth currently depends on an implicit page-wide fetch monkeypatch instead of explicit request wiring, which makes the clickpath brittle under refactors or alternate embedding contexts. |
 | medium | BRIDGE | Inactive schedule automations keep stale `next_run` truth | `GET /automations` returned inactive schedule automations whose `next_run` remained in the past. In `Backend/automation_engine.py`, `set_automation_active()` only flips `active` and writes to disk, while schedule `next_run` is only initialized or advanced elsewhere. | Inactive automation records can still look scheduled, which weakens trust in automation state and complicates operator diagnosis. |
-| high | BRIDGE | Hardcoded local machine paths across active team config | `Backend/team.json` binds projects and agents to `/home/leo/Desktop/CC/...` and `/home/leo/.claude-sub2` paths across many entries, including Buddy, Viktor, Nova, and project roots. | The working copy depends on one machine layout and one user profile, which weakens foreign-machine reproducibility. |
+| high | BRIDGE | Hardcoded local machine paths across active team config | `Backend/team.json` binds projects and agents to `./...` and `~/.claude-sub2` paths across many entries, including Buddy, Viktor, Nova, and project roots. | The working copy depends on one machine layout and one user profile, which weakens foreign-machine reproducibility. |
 | medium | BRIDGE | Start/stop scripts assume a specific repo placement and name | `Backend/start_platform.sh` and `Backend/stop_platform.sh` derive `ROOT_DIR` by walking up and then reconstruct `.../BRIDGE/Backend`, while also defaulting to `http://127.0.0.1:9111`. | Startup behavior assumes a specific directory topology and local port layout instead of a neutral canonical bootstrap contract. |
 | high | BRIDGE frontend | `buddy_landing.html` is broken by CSP before its Buddy boot logic can run | Direct browser probe on `buddy_landing.html?skip_onboarding=1` produced 7 CSP console errors for jsDelivr-hosted `three.js` modules. The page rendered its controls but did not reach its expected start/send requests. | The documented Buddy frontdoor is currently broken at runtime even before auth/write-path issues are considered. |
 | medium | BRIDGE frontend | `landing.html` still exposes placeholder product CTAs | Direct browser probe verified working hash navigation, but the docs/github CTAs still resolve to `#`, `#`, and `##readme`. | The public landing surface overstates product completeness and still contains dead-end calls to action. |

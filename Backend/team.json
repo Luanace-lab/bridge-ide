@@ -10,9 +10,9 @@
     {
       "id": "bridge-ide",
       "name": "Bridge IDE",
-      "path": "/home/leo/Desktop/CC",
+      "path": ".",
       "description": "Lokale Multi-Agent-Plattform",
-      "project_md": "/home/leo/Desktop/CC/CLAUDE.md",
+      "project_md": "CLAUDE.md",
       "team_ids": [
         "management",
         "core",
@@ -20,7 +20,7 @@
         "strategy",
         "scale-lab"
       ],
-      "shared_memory": "/home/leo/Desktop/CC/shared_memory/",
+      "shared_memory": "shared_memory/",
       "scope_labels": {
         "BRIDGE/Frontend/": "Frontend-Oberflaeche",
         "BRIDGE/Backend/server.py": "Backend-System",
@@ -33,9 +33,9 @@
     {
       "id": "bug-bounty",
       "name": "Bug Bounty $$$",
-      "path": "/home/leo/Desktop/CC/BugBounty",
+      "path": "BugBounty",
       "description": "3 Hacker-Teams. Aggressiv, strategisch, autonom. Dog-Fooding der Bridge-Plattform.",
-      "project_md": "/home/leo/Desktop/CC/BugBounty/CLAUDE.md",
+      "project_md": "BugBounty/CLAUDE.md",
       "team_ids": [
         "bb-alpha",
         "bb-bravo",
@@ -315,12 +315,12 @@
         "koordinator"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/assi",
+      "home_dir": ".agent_sessions/assi",
       "prompt_file": "",
       "agent_md": "",
       "description": "Koordinator. Orchestrierung, Onboarding, Qualitaetskontrolle.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core"
       ],
@@ -339,12 +339,12 @@
         "teamlead"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/ordo",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/ordo.txt",
+      "home_dir": ".agent_sessions/ordo",
+      "prompt_file": "Backend/prompts/ordo.txt",
       "agent_md": "",
       "description": "Projektleiter. Koordination, Delegation, Reviews, Qualitaetsschutz.",
       "active": true,
-      "config_dir": "/home/leo/.claude-agent-mobile/",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core",
         "claude-md-progressive-disclosurer",
@@ -355,8 +355,7 @@
         "bridge-status",
         "bridge-deploy"
       ],
-      "auto_start": true,
-      "subscription_id": "sub1"
+      "auto_start": true
     },
     {
       "id": "lucy",
@@ -366,12 +365,12 @@
       "reports_to": "user",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Lucy",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/lucy.txt",
+      "home_dir": "Lucy",
+      "prompt_file": "Backend/prompts/lucy.txt",
       "agent_md": "",
       "description": "Persoenliche Assistentin. Strukturiert Leos Tag, filtert, priorisiert.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core",
         "claude-md-progressive-disclosurer",
@@ -387,13 +386,13 @@
       "reports_to": "user",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Nova",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/nova.txt",
-      "agent_md": "/home/leo/Desktop/CC/Nova/CLAUDE.md",
+      "home_dir": "Nova",
+      "prompt_file": "Backend/prompts/nova.txt",
+      "agent_md": "Nova/CLAUDE.md",
       "description": "Kreativ-Strategin. Produkt-Vision, Endnutzer-Perspektive, Marketing.",
       "active": false,
       "mcp_servers": "all",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core",
         "bridge-pre-action-analysis"
@@ -433,12 +432,12 @@
         "architekt"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Viktor",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/viktor.txt",
-      "agent_md": "/home/leo/Desktop/CC/Viktor/CLAUDE.md",
+      "home_dir": "Viktor",
+      "prompt_file": "Backend/prompts/viktor.txt",
+      "agent_md": "Viktor/CLAUDE.md",
       "description": "Systemarchitekt. Architektur-Reviews, Code-Qualitaet, technische Standards.",
       "active": true,
-      "config_dir": "/home/leo/.claude-agent-mobile/",
+      "config_dir": "",
       "mcp_servers": "all",
       "display_name": "",
       "skills": [
@@ -482,8 +481,7 @@
         "sec_tor",
         "sec_evasion"
       ],
-      "auto_start": false,
-      "subscription_id": "sub1"
+      "auto_start": false
     },
     {
       "id": "backend",
@@ -507,12 +505,12 @@
         "sec_evasion"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/backend",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/backend.txt",
+      "home_dir": ".agent_sessions/backend",
+      "prompt_file": "Backend/prompts/backend.txt",
       "agent_md": "",
       "description": "Senior Backend-Entwickler. server.py, API-Endpunkte, WebSocket.",
       "active": true,
-      "config_dir": "/home/leo/.claude-agent-mobile/",
+      "config_dir": "",
       "display_name": "",
       "skills": [
         "bridge-agent-core",
@@ -561,12 +559,12 @@
         "sec_evasion"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/Frontend_persönlich",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/frontend.txt",
+      "home_dir": "Frontend_persönlich",
+      "prompt_file": "Backend/prompts/frontend.txt",
       "agent_md": "",
       "description": "Senior Frontend-Designer. UI, CSS, Client-JavaScript, Themes.",
       "active": true,
-      "config_dir": "/home/leo/.claude-agent-mobile/",
+      "config_dir": "",
       "skills": [
         "anthropic-frontend-design",
         "anthropic-webapp-testing",
@@ -585,8 +583,7 @@
         "BRIDGE/Frontend/"
       ],
       "mcp_servers": "playwright",
-      "auto_start": false,
-      "subscription_id": "sub1"
+      "auto_start": false
     },
     {
       "id": "frontend2",
@@ -600,12 +597,12 @@
         "frontend"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/Frontend_persönlich",
+      "home_dir": "Frontend_persönlich",
       "prompt_file": "",
       "agent_md": "",
       "description": "Frontend-Entwickler 2. Dashboard Upgrade, Organigramm, UI.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "anthropic-frontend-design",
         "anthropic-web-artifacts-builder",
@@ -630,12 +627,12 @@
         "backend"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/techwriter",
+      "home_dir": ".agent_sessions/techwriter",
       "prompt_file": "",
       "agent_md": "",
       "description": "Technischer Autor. Dokumentation, README, API-Docs.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "anthropic-doc-coauthoring",
         "bridge-agent-core",
@@ -667,12 +664,12 @@
         "sec_evasion"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Kai",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/kai.txt",
-      "agent_md": "/home/leo/Desktop/CC/Kai/CLAUDE.md",
+      "home_dir": "Kai",
+      "prompt_file": "Backend/prompts/kai.txt",
+      "agent_md": "Kai/CLAUDE.md",
       "description": "Real-World Integration Specialist. E2E-Tests, externe Services.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "mcp_servers": "all",
       "skills": [
         "bridge-agent-core"
@@ -698,12 +695,12 @@
         "guide"
       ],
       "engine": "codex",
-      "home_dir": "/home/leo/Desktop/CC/Buddy",
-      "prompt_file": "/home/leo/Desktop/CC/Buddy/prompts/buddy.txt",
-      "agent_md": "/home/leo/Desktop/CC/Buddy/AGENTS.md",
+      "home_dir": "Buddy",
+      "prompt_file": "Buddy/prompts/buddy.txt",
+      "agent_md": "Buddy/AGENTS.md",
       "description": "Persoenlicher Concierge. Breitester alltagspraktischer Aktionsraum. Onboarding, Concierge, Companion.",
       "active": true,
-      "config_dir": "/home/leo/.claude-agent-mobile/",
+      "config_dir": "",
       "mcp_servers": "all",
       "skills": [
         "bridge-agent-core",
@@ -720,7 +717,6 @@
         "Buddy/"
       ],
       "auto_start": true,
-      "subscription_id": "sub1",
       "model": "o3-pro",
       "model_reasoning_effort": "xhigh"
     },
@@ -738,15 +734,14 @@
         "nova"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/claude",
+      "home_dir": ".agent_sessions/claude",
       "description": "Claude Agent B. Release-Blocker Implementierung.",
       "active": false,
       "skills": [
         "bridge-agent-core"
       ],
       "auto_start": false,
-      "config_dir": "/home/leo/.claude-agent-mobile/",
-      "subscription_id": "sub1"
+      "config_dir": ""
     },
     {
       "id": "codex",
@@ -756,8 +751,8 @@
       "reports_to": "viktor",
       "aliases": [],
       "engine": "codex",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/codex",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/codex.txt",
+      "home_dir": ".agent_sessions/codex",
+      "prompt_file": "Backend/prompts/codex.txt",
       "agent_md": "",
       "description": "Senior Coder (Codex-Engine). Architekturkritische Implementierungen.",
       "active": true,
@@ -780,8 +775,8 @@
       "reports_to": "viktor",
       "aliases": [],
       "engine": "codex",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/codex_2",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/codex.txt",
+      "home_dir": ".agent_sessions/codex_2",
+      "prompt_file": "Backend/prompts/codex.txt",
       "agent_md": "",
       "description": "Senior Coder (Codex-Engine). Buddy Knowledge-Architektur.",
       "active": false,
@@ -804,12 +799,12 @@
         "nova"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Stellexa",
+      "home_dir": "Stellexa",
       "prompt_file": "",
       "agent_md": "",
       "description": "Multi-Engine Agent. Bridge-Haertung, CLI-Integration, Tooling.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "api-integration",
         "bridge-agent-core",
@@ -829,8 +824,8 @@
         "sora"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/Qwen_Sora",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/qwen2.txt",
+      "home_dir": "Qwen_Sora",
+      "prompt_file": "Backend/prompts/qwen2.txt",
       "agent_md": "",
       "description": "Implementierer (Qwen-Engine). UI-Tasks.",
       "active": false,
@@ -850,8 +845,8 @@
         "ren"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/Qwen_Ren",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/qwen3.txt",
+      "home_dir": "Qwen_Ren",
+      "prompt_file": "Backend/prompts/qwen3.txt",
       "agent_md": "",
       "description": "Tester (Qwen-Engine). E2E-Tests.",
       "active": true,
@@ -874,10 +869,10 @@
         "ghost"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_lead",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_lead/CLAUDE.md",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_lead",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_lead/CLAUDE.md",
       "description": "Bug Bounty Lead Team Alpha. Aggressiver Angriffsstil.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "mcp_servers": "all",
       "skills": [
@@ -900,10 +895,10 @@
         "shadow"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_recon",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_recon/CLAUDE.md",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_recon",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_recon/CLAUDE.md",
       "description": "Recon-Spezialist Team Alpha. Kartiert Angriffsflaechen.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "skills": [
         "bridge-agent-core",
@@ -924,10 +919,10 @@
         "phantom"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_exploit",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_exploit/CLAUDE.md",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_exploit",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_exploit/CLAUDE.md",
       "description": "Exploit-Entwickler Team Alpha. PoC-Spezialist.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "skills": [
         "api-integration",
@@ -948,10 +943,10 @@
         "viper"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_lead",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_lead/CLAUDE.md",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_lead",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_lead/CLAUDE.md",
       "description": "Bug Bounty Lead Team Bravo. Geduldig, paranoid, Angriffsketten.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "mcp_servers": "all",
       "skills": [
@@ -974,10 +969,10 @@
         "cobra"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_recon",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_recon/CLAUDE.md",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_recon",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_recon/CLAUDE.md",
       "description": "Recon-Spezialist Team Bravo. Unsichtbare Aufklaerung.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "skills": [
         "bridge-agent-core",
@@ -997,10 +992,10 @@
         "mamba"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_exploit",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_exploit/CLAUDE.md",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_exploit",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_exploit/CLAUDE.md",
       "description": "Exploit-Entwickler Team Bravo. Maximaler Impact.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "skills": [
         "api-integration",
@@ -1021,10 +1016,10 @@
         "raven"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_lead",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_lead/CLAUDE.md",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_lead",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_lead/CLAUDE.md",
       "description": "Bug Bounty Lead Team Charlie. Business Logic, Design Flaws.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "mcp_servers": "aase",
       "skills": [
@@ -1047,10 +1042,10 @@
         "crow"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_recon",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_recon/CLAUDE.md",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_recon",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_recon/CLAUDE.md",
       "description": "Recon-Spezialist Team Charlie. Leises Kartieren.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "skills": [
         "bridge-agent-core",
@@ -1070,10 +1065,10 @@
         "hawk"
       ],
       "engine": "qwen",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_exploit",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_exploit/CLAUDE.md",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_exploit",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_exploit/CLAUDE.md",
       "description": "Exploit-Entwickler Team Charlie. Business-Logic-Exploits.",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "active": false,
       "skills": [
         "api-integration",
@@ -1092,8 +1087,8 @@
       "reports_to": "alpha_lead",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_haiku",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamAlpha/.agent_sessions/alpha_haiku/CLAUDE.md",
+      "home_dir": "BugBounty/TeamAlpha/.agent_sessions/alpha_haiku",
+      "agent_md": "BugBounty/TeamAlpha/.agent_sessions/alpha_haiku/CLAUDE.md",
       "description": "Recon & Exploit Support Team Alpha. Claude Haiku.",
       "active": false,
       "skills": [
@@ -1113,8 +1108,8 @@
       "reports_to": "bravo_lead",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_haiku",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamBravo/.agent_sessions/bravo_haiku/CLAUDE.md",
+      "home_dir": "BugBounty/TeamBravo/.agent_sessions/bravo_haiku",
+      "agent_md": "BugBounty/TeamBravo/.agent_sessions/bravo_haiku/CLAUDE.md",
       "description": "Recon & Exploit Support Team Bravo. Claude Haiku.",
       "active": false,
       "skills": [
@@ -1134,8 +1129,8 @@
       "reports_to": "charlie_lead",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_haiku",
-      "agent_md": "/home/leo/Desktop/CC/BugBounty/TeamCharlie/.agent_sessions/charlie_haiku/CLAUDE.md",
+      "home_dir": "BugBounty/TeamCharlie/.agent_sessions/charlie_haiku",
+      "agent_md": "BugBounty/TeamCharlie/.agent_sessions/charlie_haiku/CLAUDE.md",
       "description": "Recon & Exploit Support Team Charlie. Claude Haiku.",
       "active": false,
       "skills": [
@@ -1155,12 +1150,12 @@
       "reports_to": "viktor",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Atlas",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/atlas.txt",
-      "agent_md": "/home/leo/Desktop/CC/Atlas/CLAUDE.md",
+      "home_dir": "Atlas",
+      "prompt_file": "Backend/prompts/atlas.txt",
+      "agent_md": "Atlas/CLAUDE.md",
       "description": "Senior Software Engineer. Multi-Task-System Backend-Implementierung.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "ace-code-understanding",
         "superpowers-systematic-debugging",
@@ -1207,12 +1202,12 @@
       "reports_to": "viktor",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Nexus",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/nexus.txt",
-      "agent_md": "/home/leo/Desktop/CC/Nexus/CLAUDE.md",
+      "home_dir": "Nexus",
+      "prompt_file": "Backend/prompts/nexus.txt",
+      "agent_md": "Nexus/CLAUDE.md",
       "description": "Senior Software Engineer. Multi-Task-System Koordinationsschicht.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "superpowers-requesting-code-review",
         "superpowers-receiving-code-review",
@@ -1254,12 +1249,12 @@
       "reports_to": "kai",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Kai/team/echo",
+      "home_dir": "Kai/team/echo",
       "prompt_file": "",
-      "agent_md": "/home/leo/Desktop/CC/Kai/team/echo/CLAUDE.md",
+      "agent_md": "Kai/team/echo/CLAUDE.md",
       "description": "Voice Engineer. ElevenLabs + Twilio, Audio-Pipeline.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "account-creator",
         "api-integration",
@@ -1279,12 +1274,12 @@
       "reports_to": "kai",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Kai/team/iris",
+      "home_dir": "Kai/team/iris",
       "prompt_file": "",
-      "agent_md": "/home/leo/Desktop/CC/Kai/team/iris/CLAUDE.md",
+      "agent_md": "Kai/team/iris/CLAUDE.md",
       "description": "Vision Engineer. OpenCV + v4l2loopback, Video-Pipeline.",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "account-creator",
         "api-integration",
@@ -1309,12 +1304,12 @@
         "viktor"
       ],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Jura",
+      "home_dir": "Jura",
       "prompt_file": "",
-      "agent_md": "/home/leo/Desktop/CC/Jura/CLAUDE.md",
+      "agent_md": "Jura/CLAUDE.md",
       "description": "Legal Agent / Compliance-Prueferin. Policy-Analyse, Richtlinien-Konformitaet.",
       "active": true,
-      "config_dir": "/home/leo/.claude-agent-mobile/",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core",
         "deep-research",
@@ -1331,7 +1326,7 @@
       "description": "Brand Strategist & Growth Lead. Leitet das Marketing-Team. Positionierung von Bridge IDE.",
       "engine": "claude",
       "model": "",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "team": "marketing",
       "reports_to": "nova",
       "level": 2,
@@ -1342,7 +1337,7 @@
         "bridge-pre-action-analysis"
       ],
       "mcp_servers": "",
-      "home_dir": "/home/leo/Desktop/CC/Aria",
+      "home_dir": "Aria",
       "extra_routes": [
         "viktor",
         "ordo",
@@ -1358,7 +1353,7 @@
       "description": "Social Media & Community Manager. Stimme von Bridge IDE nach aussen. Screenshots und Content.",
       "engine": "claude",
       "model": "",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "team": "marketing",
       "reports_to": "aria",
       "level": 3,
@@ -1369,7 +1364,7 @@
         "bridge-evidence-enforcement"
       ],
       "mcp_servers": "",
-      "home_dir": "/home/leo/Desktop/CC/Mira",
+      "home_dir": "Mira",
       "extra_routes": [
         "viktor",
         "nova"
@@ -1384,7 +1379,7 @@
       "description": "Content Creator & DevRel. Technische Inhalte, Tutorials, Developer Docs fuer Bridge IDE.",
       "engine": "claude",
       "model": "",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "team": "marketing",
       "reports_to": "aria",
       "level": 3,
@@ -1395,7 +1390,7 @@
         "bridge-evidence-enforcement"
       ],
       "mcp_servers": "",
-      "home_dir": "/home/leo/Desktop/CC/Finn",
+      "home_dir": "Finn",
       "extra_routes": [
         "viktor",
         "nova"
@@ -1409,10 +1404,10 @@
       "level": 3,
       "reports_to": "atlas",
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Security/sec_dns",
+      "home_dir": "Security/sec_dns",
       "description": "DNS-Leak Prevention & Tor DNS Hardening",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core"
       ],
@@ -1445,10 +1440,10 @@
       "level": 3,
       "reports_to": "atlas",
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Security/sec_webrtc",
+      "home_dir": "Security/sec_webrtc",
       "description": "WebRTC Leak Prevention & IP Protection",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core"
       ],
@@ -1481,10 +1476,10 @@
       "level": 3,
       "reports_to": "atlas",
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Security/sec_fingerprint",
+      "home_dir": "Security/sec_fingerprint",
       "description": "Browser Fingerprint Hardening (Canvas, WebGL, TLS/JA3)",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core"
       ],
@@ -1517,10 +1512,10 @@
       "level": 3,
       "reports_to": "atlas",
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Security/sec_cookie",
+      "home_dir": "Security/sec_cookie",
       "description": "Cookie Isolation & Session Security fuer Tor/Proxy",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core"
       ],
@@ -1553,10 +1548,10 @@
       "level": 3,
       "reports_to": "atlas",
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Security/sec_tor",
+      "home_dir": "Security/sec_tor",
       "description": "Tor Circuit Verification & OPSEC Compliance",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core"
       ],
@@ -1589,10 +1584,10 @@
       "level": 3,
       "reports_to": "atlas",
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/Security/sec_evasion",
+      "home_dir": "Security/sec_evasion",
       "description": "Bot Detection Evasion & Human Behavior Simulation",
       "active": false,
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core"
       ],
@@ -1635,9 +1630,9 @@
         "atlas",
         "nexus"
       ],
-      "home_dir": "/home/leo/Desktop/CC/Security/sec_all",
+      "home_dir": "Security/sec_all",
       "engine": "claude",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/sec_all.txt",
+      "prompt_file": "Backend/prompts/sec_all.txt",
       "skills": [
         "bridge-agent-core"
       ],
@@ -1651,7 +1646,7 @@
       "description": "Mobile App Entwickler. React Native/Flutter App fuer Bridge IDE. Chat, Dashboard, Push-Notifications.",
       "engine": "claude",
       "model": "",
-      "config_dir": "/home/leo/.claude-agent-mobile",
+      "config_dir": "",
       "team": "",
       "reports_to": "viktor",
       "level": 2,
@@ -1669,8 +1664,8 @@
         "superpowers-systematic-debugging"
       ],
       "mcp_servers": "",
-      "home_dir": "/home/leo/Desktop/CC/MobileApp",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/mobile.txt",
+      "home_dir": "MobileApp",
+      "prompt_file": "Backend/prompts/mobile.txt",
       "extra_routes": [
         "viktor",
         "backend",
@@ -1686,7 +1681,7 @@
       "description": "Senior UI/UX Designerin & WebApp-Entwicklerin. Design-Systeme, Themes, Component-Libraries, Playwright-Verifikation.",
       "engine": "claude",
       "model": "",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "team": "",
       "reports_to": "viktor",
       "level": 2,
@@ -1705,7 +1700,7 @@
         "superpowers-verification-before-completion"
       ],
       "mcp_servers": "",
-      "home_dir": "/home/leo/Desktop/CC/Mika",
+      "home_dir": "Mika",
       "extra_routes": [
         "viktor",
         "nova",
@@ -1725,13 +1720,13 @@
       ],
       "engine": "claude",
       "model": "claude-sonnet-4-6",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "team": "scale-lab",
       "active": false,
       "mode": "normal",
       "mcp_servers": "",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/scale_lab_alpha",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/scale_lab_alpha.txt",
+      "home_dir": ".agent_sessions/scale_lab_alpha",
+      "prompt_file": "Backend/prompts/scale_lab_alpha.txt",
       "agent_md": "",
       "description": "Claude worker for live Bridge task-system probing. Focus: queue, claim/ack, task execution discipline, Bridge-only output.",
       "permissions": [
@@ -1764,13 +1759,13 @@
       ],
       "engine": "claude",
       "model": "claude-sonnet-4-6",
-      "config_dir": "/home/leo/.claude-sub2",
+      "config_dir": "",
       "team": "scale-lab",
       "active": false,
       "mode": "normal",
       "mcp_servers": "",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/scale_lab_beta",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/scale_lab_beta.txt",
+      "home_dir": ".agent_sessions/scale_lab_beta",
+      "prompt_file": "Backend/prompts/scale_lab_beta.txt",
       "agent_md": "",
       "description": "Claude worker for scalable multi-task architecture. Focus: conflict-free scheduling, concurrency control, backpressure, task-model design.",
       "permissions": [
@@ -1802,13 +1797,12 @@
         "gemini"
       ],
       "engine": "gemini",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/gemini_agent",
+      "home_dir": ".agent_sessions/gemini_agent",
       "prompt_file": "",
       "agent_md": "",
       "description": "Senior Engineer. Gemini-Engine Runtime- und Tooling-Checks.",
       "active": true,
-      "config_dir": "/home/leo/.gemini",
-      "subscription_id": "gemini",
+      "config_dir": "",
       "skills": [
         "bridge-agent-core",
         "bridge-evidence-enforcement",
@@ -1828,7 +1822,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/trading_analyst",
+      "home_dir": ".agent_sessions/trading_analyst",
       "prompt_file": "",
       "agent_md": "",
       "description": "Market-Analyst. Marktdaten analysieren, Trends erkennen, Reports erstellen.",
@@ -1855,7 +1849,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/trading_strategist",
+      "home_dir": ".agent_sessions/trading_strategist",
       "prompt_file": "",
       "agent_md": "",
       "description": "Trading-Stratege. Handelsstrategien entwickeln, Backtesting, Signal-Generierung.",
@@ -1882,7 +1876,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/trading_risk",
+      "home_dir": ".agent_sessions/trading_risk",
       "prompt_file": "",
       "agent_md": "",
       "description": "Risk Manager. Portfolio-Risiko bewerten, Limits setzen, Alerts ausloesen.",
@@ -1909,7 +1903,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/marketing_content",
+      "home_dir": ".agent_sessions/marketing_content",
       "prompt_file": "",
       "agent_md": "",
       "description": "Content Creator. Blog-Posts, Social Media Posts, Newsletter schreiben.",
@@ -1936,7 +1930,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/marketing_seo",
+      "home_dir": ".agent_sessions/marketing_seo",
       "prompt_file": "",
       "agent_md": "",
       "description": "SEO-Spezialist. Keyword-Recherche, On-Page-Optimierung, Ranking-Analyse.",
@@ -1963,7 +1957,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/marketing_campaign",
+      "home_dir": ".agent_sessions/marketing_campaign",
       "prompt_file": "",
       "agent_md": "",
       "description": "Kampagnen-Manager. Kampagnen planen, ausfuehren, Performance tracken.",
@@ -1990,7 +1984,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/legal_contract",
+      "home_dir": ".agent_sessions/legal_contract",
       "prompt_file": "",
       "agent_md": "",
       "description": "Vertragsanalyst. Vertraege pruefen, Risiken identifizieren, Klauseln bewerten.",
@@ -2017,7 +2011,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/legal_compliance",
+      "home_dir": ".agent_sessions/legal_compliance",
       "prompt_file": "",
       "agent_md": "",
       "description": "Compliance Officer. Regulatorische Anforderungen pruefen, Richtlinien durchsetzen.",
@@ -2044,7 +2038,7 @@
       "reports_to": "buddy",
       "aliases": [],
       "engine": "claude",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/legal_researcher",
+      "home_dir": ".agent_sessions/legal_researcher",
       "prompt_file": "",
       "agent_md": "",
       "description": "Rechtsrechercheur. Urteile, Gesetze, Praezedenzfaelle recherchieren.",
@@ -2071,8 +2065,8 @@
       "reports_to": "viktor",
       "aliases": [],
       "engine": "codex",
-      "home_dir": "/home/leo/Desktop/CC/BRIDGE/.agent_sessions/codex_3",
-      "prompt_file": "/home/leo/Desktop/CC/BRIDGE/Backend/prompts/codex.txt",
+      "home_dir": ".agent_sessions/codex_3",
+      "prompt_file": "Backend/prompts/codex.txt",
       "agent_md": "",
       "description": "Senior Coder (Codex-Engine). Buddy Knowledge-Architektur.",
       "active": false,
@@ -2091,13 +2085,9 @@
     {
       "id": "sub2",
       "name": "Agent Pool",
-      "path": "/home/leo/.claude-sub2/",
+      "path": "",
       "active": true,
-      "api_key_hint": "...4k9x",
-      "email": "lube.trading@outlook.de",
-      "account_created_at": "2025-10-28T18:46:14.977103Z",
       "provider": "claude",
-      "billing_type": "stripe_subscription",
       "display_name": "Lio",
       "plan": "max",
       "rate_limit_tier": "default_claude_max_20x"
@@ -2105,12 +2095,9 @@
     {
       "id": "sub1",
       "name": "Default Updated",
-      "path": "/home/leo/.claude-agent-mobile/",
+      "path": "",
       "active": true,
-      "email": "luan.trade2m@gmail.com",
-      "account_created_at": "2025-02-25T15:41:36.831296Z",
       "provider": "claude",
-      "billing_type": "google_play_subscription",
       "display_name": "Leo",
       "plan": "max",
       "rate_limit_tier": "default_claude_max_20x"
@@ -2119,7 +2106,7 @@
       "id": "gemini",
       "name": "Gemini",
       "provider": "gemini",
-      "path": "/home/leo/.gemini",
+      "path": "",
       "active": true,
       "_detected": true
     },
@@ -2127,7 +2114,7 @@
       "id": "qwen",
       "name": "Qwen",
       "provider": "qwen",
-      "path": "/home/leo/.qwen",
+      "path": "",
       "active": true,
       "_detected": true
     },
@@ -2135,7 +2122,7 @@
       "id": "codex",
       "name": "Codex",
       "provider": "openai",
-      "path": "/home/leo/.codex",
+      "path": "",
       "active": true,
       "_detected": true
     }

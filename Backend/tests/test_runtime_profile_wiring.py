@@ -31,7 +31,7 @@ class TestRuntimeProfileWiring(unittest.TestCase):
                     {
                         "id": "claude",
                         "description": "Claude Agent B. Release-Blocker Implementierung.",
-                        "config_dir": "/home/leo/.claude-sub2/",
+                        "config_dir": "/tmp/test-config/",
                         "mcp_servers": "all",
                         "model": "claude-haiku-4-5-20251001",
                         "permissions": ["review"],
@@ -54,7 +54,7 @@ class TestRuntimeProfileWiring(unittest.TestCase):
                 srv.open_agent_sessions(config)
 
             calls = {item["agent_id"]: item for item in captured}
-            self.assertEqual(calls["claude"]["config_dir"], "/home/leo/.claude-sub2/")
+            self.assertEqual(calls["claude"]["config_dir"], "/tmp/test-config/")
             self.assertEqual(calls["claude"]["mcp_servers"], "all")
             self.assertEqual(calls["claude"]["model"], "claude-haiku-4-5-20251001")
             self.assertEqual(calls["claude"]["permissions"], ["review"])
@@ -78,7 +78,7 @@ class TestRuntimeProfileWiring(unittest.TestCase):
                     {
                         "id": "claude",
                         "description": "Claude Agent B. Release-Blocker Implementierung.",
-                        "config_dir": "/home/leo/.claude-agent-mobile/",
+                        "config_dir": "/tmp/test-config-mobile/",
                         "mcp_servers": "all",
                         "model": "claude-opus-4-1",
                         "permissions": ["review"],
@@ -108,7 +108,7 @@ class TestRuntimeProfileWiring(unittest.TestCase):
                 srv.open_agent_sessions(config)
 
             calls = {item["agent_id"]: item for item in captured}
-            self.assertEqual(calls["claude"]["config_dir"], "/home/leo/.claude-agent-mobile/")
+            self.assertEqual(calls["claude"]["config_dir"], "/tmp/test-config-mobile/")
             self.assertEqual(calls["claude"]["mcp_servers"], "all")
             self.assertEqual(calls["claude"]["model"], "claude-opus-4-1")
             self.assertEqual(calls["claude"]["permissions"], ["review"])
@@ -138,7 +138,7 @@ class TestRuntimeProfileWiring(unittest.TestCase):
                         "id": "claude",
                         "team": "delivery",
                         "description": "Claude",
-                        "config_dir": "/home/leo/.claude-agent-mobile/",
+                        "config_dir": "/tmp/test-config-mobile/",
                     },
                 ]
             }

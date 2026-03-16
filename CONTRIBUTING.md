@@ -3,7 +3,7 @@
 ## Development Setup
 
 1. Fork and clone the repository
-2. Follow [SETUP.md](SETUP.md) for installation
+2. Install dependencies: `pip install -r requirements.txt` (if available)
 3. Start the server in development mode: `cd Backend && python3 server.py`
 
 ## Project Structure
@@ -24,7 +24,7 @@
 
 ### API Changes
 
-- Document new endpoints in [API.md](API.md)
+- Document new endpoints in the project docs
 - Maintain backwards compatibility
 - Use consistent error format: `{"error": "description"}`
 - Add auth tier where appropriate (see `_path_requires_auth_post`)
