@@ -8,9 +8,9 @@ from pathlib import Path
 
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REPO_ROOT = os.path.dirname(os.path.dirname(BACKEND_DIR))
+REPO_ROOT = os.path.dirname(BACKEND_DIR)
 KNOWLEDGE_PATH = os.path.join(BACKEND_DIR, "knowledge_engine.py")
-CHAT_PATH = os.path.join(REPO_ROOT, "BRIDGE", "Frontend", "chat.html")
+CHAT_PATH = os.path.join(REPO_ROOT, "Frontend", "chat.html")
 
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
@@ -96,7 +96,7 @@ class TestBuddyUiFrontdoorContract(unittest.TestCase):
         self.assertNotIn("handleOnboardingAction(action.value, msg)", raw)
 
     def test_buddy_landing_uses_cli_detect_and_setup_home_before_runtime_start(self):
-        raw = Path(os.path.join(REPO_ROOT, "BRIDGE", "Frontend", "buddy_landing.html")).read_text(encoding="utf-8")
+        raw = Path(os.path.join(REPO_ROOT, "Frontend", "buddy_landing.html")).read_text(encoding="utf-8")
 
         self.assertIn("/cli/detect", raw)
         self.assertIn("/agents/${BUDDY_ID}", raw)
