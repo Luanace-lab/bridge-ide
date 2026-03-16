@@ -1217,12 +1217,21 @@ def _validate_cached_claude_resume_id(session_id: str, workspace: Path) -> bool:
     return any((project_dir / f"{session_id}.jsonl").exists() for project_dir in _claude_project_session_dirs(workspace))
 
 
-def _validate_local_claude_resume_id(session_id: str, workspace: Path, config_dir: str | Path) -> bool:
+def _validate_local_claude_resume_id(session_id: str, workspace: Path, config_dir: str | Path) -> str:
+    """Validate resume ID exists. Returns the config_dir where found, or "" if not found."""
     if not _valid_resume_id(session_id):
-        return False
+        return ""
     base = Path(config_dir).expanduser()
     mangled = re.sub(r"[^a-zA-Z0-9-]", "-", str(workspace))
-    return (base / "projects" / mangled / f"{session_id}.jsonl").exists()
+    if (base / "projects" / mangled / f"{session_id}.jsonl").exists():
+        return str(base)
+    # Fallback: search all .claude* config dirs for the session
+    for config_base in sorted(Path.home().glob(".claude*")):
+        if not config_base.is_dir() or config_base == base:
+            continue
+        if (config_base / "projects" / mangled / f"{session_id}.jsonl").exists():
+            return str(config_base)
+    return ""
 
 
 def _extract_rollout_id(rollout_file: Path) -> str:
@@ -1979,18 +1988,22 @@ def create_agent_session(
     effective_claude_config_dir = (
         str(_effective_claude_config_dir(config_dir)) if spec.engine == "claude" else ""
     )
-    if (
-        spec.engine == "claude"
-        and effective_claude_config_dir
-        and resume_id
-        and not _validate_local_claude_resume_id(resume_id, workspace, effective_claude_config_dir)
-    ):
-        print(
-            f"[tmux_manager] Resume ID for {agent_id} not present in local CLAUDE config: {resume_id}",
-            file=sys.stderr,
-        )
-        resume_id = ""
-        resume_source = ""
+    if spec.engine == "claude" and effective_claude_config_dir and resume_id:
+        found_config_dir = _validate_local_claude_resume_id(resume_id, workspace, effective_claude_config_dir)
+        if not found_config_dir:
+            print(
+                f"[tmux_manager] Resume ID for {agent_id} not present in any CLAUDE config: {resume_id}",
+                file=sys.stderr,
+            )
+            resume_id = ""
+            resume_source = ""
+        elif found_config_dir != effective_claude_config_dir:
+            print(
+                f"[tmux_manager] Resume ID for {agent_id} found in {found_config_dir} "
+                f"(not {effective_claude_config_dir}), switching config_dir.",
+                file=sys.stderr,
+            )
+            effective_claude_config_dir = found_config_dir
 
     cli_identity_env = _bridge_cli_identity_env(
         agent_id,
