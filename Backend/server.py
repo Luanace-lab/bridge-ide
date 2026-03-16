@@ -3887,6 +3887,10 @@ def _plan_mode_rescue_check(agent_id: str) -> bool:
         check_lines = lines[-15:] if len(lines) > 15 else lines
         check_text = "\n".join(check_lines).lower()
 
+        # Skip rescue if agent has bypassPermissions — no permission dialogs shown
+        if "bypass permissions" in check_text or "bypasspermissions" in check_text:
+            return False
+
         matched_pattern = None
         for pattern in _PLAN_RESCUE_PATTERNS:
             if pattern.lower() in check_text:
@@ -3896,45 +3900,43 @@ def _plan_mode_rescue_check(agent_id: str) -> bool:
         if not matched_pattern:
             return False
 
-        # Rescue: send Escape keys
+        # Rescue: send Enter to ACCEPT (not Escape which REJECTS)
         _PLAN_RESCUE_LAST[agent_id] = now
+        rescue_desc = "Enter (accept/proceed)"
         print(f"[plan-mode-rescue] Agent {agent_id} stuck at interactive prompt "
-              f"(pattern: {matched_pattern!r}). Sending Escape.")
+              f"(pattern: {matched_pattern!r}). Sending {rescue_desc}.")
 
-        for i in range(_PLAN_RESCUE_MAX_ESCAPES):
-            subprocess.run(
-                ["tmux", "send-keys", "-t", session_name, "Escape"],
-                capture_output=True, timeout=3,
-            )
-            time.sleep(1)
-            # Re-check after each Escape
-            recheck = subprocess.run(
-                ["tmux", "capture-pane", "-t", session_name, "-p", "-S", "-15"],
-                capture_output=True, text=True, timeout=3,
-            )
-            if recheck.returncode != 0:
-                break
-            recheck_text = (recheck.stdout or "").strip().lower()
-            still_stuck = any(p.lower() in recheck_text for p in _PLAN_RESCUE_PATTERNS)
-            if not still_stuck:
-                print(f"[plan-mode-rescue] Agent {agent_id} freed after {i + 1} Escape(s).")
-                try:
-                    append_message("system", "user",
-                                   f"[PLAN-MODE-RESCUE] Agent {agent_id} war in interaktivem Prompt "
-                                   f"blockiert (Pattern: {matched_pattern!r}). "
-                                   f"Automatisch per Escape befreit nach {i + 1} Versuch(en).")
-                except Exception:
-                    pass
-                return True
+        subprocess.run(
+            ["tmux", "send-keys", "-t", session_name, "Enter"],
+            capture_output=True, timeout=3,
+        )
+        time.sleep(2)
 
-        # If still stuck after max escapes, alert
-        print(f"[plan-mode-rescue] Agent {agent_id} still stuck after "
-              f"{_PLAN_RESCUE_MAX_ESCAPES} Escape attempts!")
+        # Re-check if agent is freed
+        recheck = subprocess.run(
+            ["tmux", "capture-pane", "-t", session_name, "-p", "-S", "-15"],
+            capture_output=True, text=True, timeout=3,
+        )
+        recheck_text = (recheck.stdout or "").strip().lower() if recheck.returncode == 0 else ""
+        still_stuck = any(p.lower() in recheck_text for p in _PLAN_RESCUE_PATTERNS)
+
+        if not still_stuck:
+            print(f"[plan-mode-rescue] Agent {agent_id} freed via {rescue_desc}.")
+            try:
+                append_message("system", "user",
+                               f"[PLAN-MODE-RESCUE] Agent {agent_id} war in interaktivem Prompt "
+                               f"blockiert (Pattern: {matched_pattern!r}). "
+                               f"Automatisch per {rescue_desc} befreit.")
+            except Exception:
+                pass
+            return True
+
+        print(f"[plan-mode-rescue] Agent {agent_id} still stuck after {rescue_desc}.")
         try:
             append_message("system", "user",
                            f"[PLAN-MODE-RESCUE FAILED] Agent {agent_id} haengt in interaktivem "
-                           f"Prompt (Pattern: {matched_pattern!r}). {_PLAN_RESCUE_MAX_ESCAPES}x "
-                           f"Escape gesendet, Agent ist weiterhin blockiert. Manueller Eingriff noetig.")
+                           f"Prompt (Pattern: {matched_pattern!r}). {rescue_desc} gesendet, "
+                           f"Agent ist weiterhin blockiert. Manueller Eingriff noetig.")
         except Exception:
             pass
         return True
