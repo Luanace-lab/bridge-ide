@@ -873,11 +873,11 @@ def _init_auth_tokens() -> tuple[str, str, str]:
     saved["register_token"] = reg_tok
     tmp = _TOKEN_CONFIG_FILE + ".tmp"
     try:
-        with open(tmp, "w") as f:
+        # SEC-006: Create file with restrictive permissions from the start
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
             json.dump(saved, f, indent=2)
-        os.chmod(tmp, 0o600)
         os.replace(tmp, _TOKEN_CONFIG_FILE)
-        os.chmod(_TOKEN_CONFIG_FILE, 0o600)
     except Exception as exc:
         print(f"[auth] WARNING: could not persist tokens: {exc}")
 
