@@ -427,8 +427,7 @@ The frontend is plain HTML/CSS/JS without a build step or framework. All pages a
 | `project_config.html` | Project bootstrap: engine model lookup, context scan, project creation, runtime configuration, JSON export, runtime status polling |
 | `task_tracker.html` | Task listing with server-side filtering, authenticated JSON/CSV export, right-side detail panel |
 | `buddy_landing.html` | Buddy onboarding: three.js animation, CLI detection, engine selection, Buddy-home materialization, start, chat loop, draggable side panel |
-| `landing.html` | Marketing landing page with anchor navigation (not the active `/` entrypoint) |
-| `buddy_onboarding_v3_living.html` | [UNKNOWN — legacy/experimental onboarding variant] |
+| `landing.html` | Marketing landing page with anchor navigation (serves as `/` entrypoint via server) |
 | `mobile_buddy.html` | Mobile Buddy: stacked Management-Board + Team-Board, Buddy FAB, draggable board divider, attachment upload, 5 themes |
 | `mobile_projects.html` | Mobile project configurator: 2x2 metric grid, recent-project picks, scan feedback, role cards, runtime start |
 | `mobile_tasks.html` | Mobile task tracker: compact status board, filters, card-based task list, bottom detail sheet, CSV/JSON export |
