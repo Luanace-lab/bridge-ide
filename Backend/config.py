@@ -10,7 +10,7 @@ Phase: A — Foundation
 Usage:
   from config import cfg
   print(cfg.HTTP_PORT)       # 9111
-  print(cfg.PROJECT_PATH)    # /home/user/bridge
+  print(cfg.PROJECT_PATH)    # (resolved dynamically)
 """
 
 from __future__ import annotations

@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('playwright/test');
 
-const FILE_URL = 'file:///home/user/bridge/BRIDGE/Frontend/chat.html';
-const OUTPUT_DIR = '/home/user/bridge/BRIDGE/Frontend/screenshots/20260309_chat_regression_fix';
+const FILE_URL = 'file://./Frontend/chat.html';
+const OUTPUT_DIR = './Frontend/screenshots/20260309_chat_regression_fix';
 const THEMES = ['warm', 'light', 'rose', 'dark'];
 
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
