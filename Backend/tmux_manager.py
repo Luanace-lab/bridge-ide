@@ -695,37 +695,18 @@ def _capture_has_claude_usage_limit(capture: str) -> bool:
     return "you've hit your limit" in lowered or "/extra-usage" in lowered
 
 
-_LOGIN_SCREEN_PATTERNS = (
-    "Sign in",
-    "Log in",
-    "Enter your email",
-    "API key",
-    "authentication required",
-    "not logged in",
-)
-
-
 def _stabilize_claude_startup(
     session_name: str,
     *,
     permission_mode: str,
     timeout: int = 20,
-) -> bool:
-    """Handle Claude startup dialogs that appear before the normal prompt.
-
-    Returns True if agent reached ready prompt, False if stuck on login screen.
-    """
+) -> None:
+    """Handle Claude startup dialogs that appear before the normal prompt."""
     deadline = _time.time() + timeout
     ready_regex = _tmux_engine_spec("claude").ready_prompt_regex
     saw_bypass_dialog = False
     while _time.time() < deadline:
         capture = _tmux_capture_text(session_name)
-        # P0-FIX: Detect login/OAuth screen — abort early
-        capture_lower = capture.lower()
-        if any(p.lower() in capture_lower for p in _LOGIN_SCREEN_PATTERNS):
-            print(f"[tmux_manager] ABORT: Login screen detected in {session_name}: "
-                  f"agent stuck in OAuth prompt.", file=sys.stderr)
-            return False
         if "Quick safety check" in capture and "Yes, I trust this folder" in capture:
             _tmux_send_key(session_name, "Enter")
             _time.sleep(1.0)
@@ -743,9 +724,8 @@ def _stabilize_claude_startup(
             _time.sleep(1.0)
             continue
         if _capture_has_ready_prompt(capture, ready_regex):
-            return True
+            return
         _time.sleep(1.0)
-    return True  # timeout but no login screen detected — let it proceed
 
 
 def _stabilize_gemini_startup(
@@ -2119,16 +2099,10 @@ def create_agent_session(
         _run(["tmux", "set-environment", "-t", session_name, "BROWSER", "false"])
 
     # 3b  W10: Check auth status via official CLI — Bridge never reads credential files.
-    #     P0-FIX: Abort agent start if auth is "login_required" to prevent agents
-    #     hanging in OAuth prompt after server restart.
+    #     We log warnings but do NOT abort agent start on auth failure.
+    #     The CLI itself will show the login prompt if the user is not logged in.
     if spec.engine == "claude" and effective_claude_config_dir:
         auth_status = _check_claude_auth_status(effective_claude_config_dir, agent_id)
-        if auth_status == "login_required":
-            print(f"[tmux_manager] ABORT: Claude auth for {agent_id}: login_required "
-                  f"— refusing to start (would hang in OAuth prompt).", file=sys.stderr)
-            _set_credential_failure(agent_id, reason="login_required",
-                                   detail="Claude CLI requires login. Check config_dir credentials.")
-            return False
         if auth_status not in ("ready", "unknown"):
             print(f"[tmux_manager] WARN: Claude auth status for {agent_id}: {auth_status} "
                   f"— agent will start but may show login screen.", file=sys.stderr)
@@ -2227,14 +2201,7 @@ def create_agent_session(
         return False
 
     if spec.engine == "claude":
-        startup_ok = _stabilize_claude_startup(session_name, permission_mode=mode)
-        if not startup_ok:
-            # P0-FIX: Login screen detected — kill session and report failure
-            print(f"[tmux_manager] Killing {session_name} — stuck in login screen.", file=sys.stderr)
-            kill_agent_session(agent_id)
-            _set_credential_failure(agent_id, reason="login_screen_detected",
-                                   detail="Agent started but landed on OAuth login screen")
-            return False
+        _stabilize_claude_startup(session_name, permission_mode=mode)
         if resume_id and not _skip_resume_once:
             claude_capture = _tmux_capture_text(session_name)
             if _capture_has_claude_usage_limit(claude_capture):
