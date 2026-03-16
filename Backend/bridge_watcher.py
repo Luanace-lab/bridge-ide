@@ -1091,22 +1091,23 @@ async def inject_with_retry(agent_id: str, sender: str, content: str, msg_id: st
             await asyncio.sleep(base_delay + jitter)
 
     # Agent is not at prompt after all retries.
-    # Codex has no bridge_receive() — force-inject is the ONLY delivery path.
-    # Claude/Qwen/Gemini have bridge_receive() and pick up buffered messages.
+    # Only Claude with bypassPermissions reliably calls bridge_receive().
+    # Codex, Gemini, Qwen and Claude without bypass need force-inject.
     latency_ms = int((time.perf_counter() - started) * 1000)
-    if engine == "codex":
-        ok = await asyncio.to_thread(smart_inject, agent_id, notification)
-        if ok:
-            _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: FALLBACK force-injiziert (Codex, kein bridge_receive)")
-            _log_event(msg_id, sender, agent_id, "fallback_injected_codex", latency_ms)
-            return True
-        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: ALLE VERSUCHE FEHLGESCHLAGEN (Codex)")
-        _log_event(msg_id, sender, agent_id, "all_failed_codex", latency_ms)
+    if engine == "claude":
+        # Claude agents with bypassPermissions reliably use bridge_receive()
+        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: Agent nicht am Prompt — Nachricht bleibt im Buffer (bridge_receive)")
+        _log_event(msg_id, sender, agent_id, "buffered_no_force", latency_ms)
         return False
 
-    # Non-Codex: buffer the message, agent picks it up via bridge_receive()
-    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: Agent nicht am Prompt — Nachricht bleibt im Buffer (bridge_receive)")
-    _log_event(msg_id, sender, agent_id, "buffered_no_force", latency_ms)
+    # Codex/Gemini/Qwen: force-inject is the only reliable delivery path
+    ok = await asyncio.to_thread(smart_inject, agent_id, notification)
+    if ok:
+        _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: FALLBACK force-injiziert ({engine})")
+        _log_event(msg_id, sender, agent_id, f"fallback_injected_{engine}", latency_ms)
+        return True
+    _flush(f"[watcher] #{msg_id} {sender}→{agent_id}: ALLE VERSUCHE FEHLGESCHLAGEN ({engine})")
+    _log_event(msg_id, sender, agent_id, f"all_failed_{engine}", latency_ms)
     return False
 
 
