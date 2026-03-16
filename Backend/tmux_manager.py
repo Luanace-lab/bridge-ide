@@ -1150,12 +1150,23 @@ def _check_claude_auth_status(config_dir: str, agent_id: str) -> str:
 
     Returns one of: "ready", "login_required", "usage_limit_reached", "degraded", "unknown".
     """
+    import shutil
+    claude_bin = shutil.which("claude")
+    if not claude_bin:
+        # Fallback: check common install paths
+        for fallback in [os.path.expanduser("~/.local/bin/claude"), "/usr/local/bin/claude", os.path.expanduser("~/.claude/bin/claude")]:
+            if os.path.isfile(fallback) and os.access(fallback, os.X_OK):
+                claude_bin = fallback
+                break
+    if not claude_bin:
+        print(f"[tmux_manager] WARN: 'claude' binary not found in PATH for {agent_id} auth check", file=sys.stderr)
+        return "unknown"
     env = os.environ.copy()
     env["CLAUDE_CONFIG_DIR"] = config_dir
     env.pop("CLAUDECODE", None)
     try:
         result = subprocess.run(
-            ["claude", "auth", "status"],
+            [claude_bin, "auth", "status"],
             capture_output=True, text=True, timeout=10, env=env,
         )
         output = (result.stdout + result.stderr).lower()
@@ -2123,15 +2134,12 @@ def create_agent_session(
     #     hanging in OAuth prompt after server restart.
     if spec.engine == "claude" and effective_claude_config_dir:
         auth_status = _check_claude_auth_status(effective_claude_config_dir, agent_id)
-        if auth_status == "login_required":
-            print(f"[tmux_manager] ABORT: Claude auth for {agent_id}: login_required "
+        if auth_status in ("login_required", "degraded"):
+            print(f"[tmux_manager] ABORT: Claude auth for {agent_id}: {auth_status} "
                   f"— refusing to start (would hang in OAuth prompt).", file=sys.stderr)
-            _set_credential_failure(agent_id, reason="login_required",
-                                   detail="Claude CLI requires login. Check config_dir credentials.")
+            _set_credential_failure(agent_id, reason=auth_status,
+                                   detail=f"Claude CLI auth status: {auth_status}. Check config_dir credentials.")
             return False
-        if auth_status not in ("ready", "unknown"):
-            print(f"[tmux_manager] WARN: Claude auth status for {agent_id}: {auth_status} "
-                  f"— agent will start but may show login screen.", file=sys.stderr)
 
     # 4  Start selected engine CLI. We always unset CLAUDECODE to avoid nested
     #    Claude sessions if the Bridge server runs inside a Claude Code shell.
