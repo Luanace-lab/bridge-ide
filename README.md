@@ -205,6 +205,23 @@ All mobile pages share:
 
 Buddy greets you on first launch and walks you through team setup.
 
+## Server Deployment
+
+Deploy Bridge ACE to a remote server with automatic HTTPS:
+
+```bash
+./Backend/deploy_server.sh your-domain.com
+```
+
+This single command:
+- Checks Docker and Docker Compose are installed
+- Builds and starts the server with a Caddy reverse proxy
+- Provisions a free TLS certificate via Let's Encrypt
+- Generates auth tokens on first start
+- Runs a health check and shows the live URL
+
+**Requirements:** Docker, Docker Compose, a domain pointing to your server's IP (A record).
+
 ## Configuration
 
 Agents are defined in `Backend/team.json`:
