@@ -807,7 +807,7 @@
         <span class="statusDot statusDot--disconnected" id="statusDot"></span>
         <span class="statusLabel" id="statusLabel">Offline</span>
       </div>
-      <button class="helpBtn" title="Hilfe & Einfuehrung" aria-label="Hilfe oeffnen" style="background:none;border:1px solid color-mix(in srgb, var(--sbDark) 30%, transparent);border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--sbDark);opacity:.7;transition:opacity .2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'" onclick="window.location.href='control_center.html?help=1'">?</button>
+      <button class="helpBtn" title="Hilfe & Einfuehrung" aria-label="Hilfe oeffnen" style="background:none;border:1px solid color-mix(in srgb, var(--sbDark) 30%, transparent);border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--sbDark);opacity:.7;transition:opacity .2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'" onclick="document.getElementById('pcHelpModal').style.display='flex'">?</button>
       <div class="pcThemeWrap">
         <button class="pcThemeBtn" id="pcThemeBtn" title="Theme" aria-label="Theme wechseln" aria-expanded="false">
           <span class="pcThemeBtn__dot" id="pcThemeDot"></span><span>Theme</span>
@@ -2182,6 +2182,21 @@
 
     pcSyncProfileSelectors();
   </script>
+<div id="pcHelpModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--bgFlat,#fff);border-radius:14px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.2);color:var(--sbDark,#333)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:16px;font-weight:700;margin:0">Hilfe — Projekt Konfigurator</h2>
+      <button onclick="document.getElementById('pcHelpModal').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;opacity:.5;color:inherit">&times;</button>
+    </div>
+    <div style="font-size:13px;line-height:1.7">
+      <p><b>Schritt 1:</b> Projektname und Pfad eingeben, dann Scannen oder Erstellen klicken.</p>
+      <p style="margin-top:8px"><b>Schritt 2:</b> Team zusammenstellen — Team-Leiter und Agents konfigurieren.</p>
+      <p style="margin-top:8px"><b>Erweitert:</b> Tags und Notizen hinzufuegen fuer bessere Organisation.</p>
+      <p style="margin-top:8px"><b>Exportieren:</b> Team-Konfiguration als JSON speichern.</p>
+      <p style="margin-top:8px"><b>Team starten:</b> Projekt und Agents werden live gestartet.</p>
+    </div>
+  </div>
+</div>
 <script src="buddy_widget.js"></script>
 </body>
 </html>
