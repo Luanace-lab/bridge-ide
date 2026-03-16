@@ -6,6 +6,22 @@ from typing import Any
 
 import credential_store
 
+# SEC-001: Lazy import to avoid circular dependency
+_registered_agents = None
+
+def _is_known_agent(agent_id: str) -> bool:
+    """Check if agent_id is a registered agent, 'user', or 'system'."""
+    global _registered_agents
+    if agent_id in ("user", "system"):
+        return True
+    if _registered_agents is None:
+        try:
+            import server
+            _registered_agents = server.REGISTERED_AGENTS
+        except (ImportError, AttributeError):
+            return True  # fail-open if import fails
+    return agent_id in _registered_agents
+
 
 def _extract_service_and_key(path: str) -> tuple[str, str] | None:
     if not path.startswith("/credentials/"):
@@ -27,6 +43,9 @@ def handle_get(handler: Any, path: str) -> bool:
     agent_id = str(handler.headers.get("X-Bridge-Agent", "")).strip()
     if not agent_id:
         handler._respond(401, {"error": "X-Bridge-Agent header required"})
+        return True
+    if not _is_known_agent(agent_id):
+        handler._respond(403, {"error": f"Unknown agent: {agent_id}"})
         return True
 
     try:
@@ -59,6 +78,9 @@ def handle_post(handler: Any, path: str) -> bool:
     agent_id = str(handler.headers.get("X-Bridge-Agent", "")).strip()
     if not agent_id:
         handler._respond(401, {"error": "X-Bridge-Agent header required"})
+        return True
+    if not _is_known_agent(agent_id):
+        handler._respond(403, {"error": f"Unknown agent: {agent_id}"})
         return True
 
     data = handler._parse_json_body()
@@ -93,6 +115,9 @@ def handle_delete(handler: Any, path: str) -> bool:
     agent_id = str(handler.headers.get("X-Bridge-Agent", "")).strip()
     if not agent_id:
         handler._respond(401, {"error": "X-Bridge-Agent header required"})
+        return True
+    if not _is_known_agent(agent_id):
+        handler._respond(403, {"error": f"Unknown agent: {agent_id}"})
         return True
 
     try:
