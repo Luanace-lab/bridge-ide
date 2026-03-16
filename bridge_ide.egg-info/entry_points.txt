@@ -1,3 +1,0 @@
-[console_scripts]
-bridge-ide = bridge_ide.cli:main
-

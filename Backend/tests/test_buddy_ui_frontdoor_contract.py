@@ -21,6 +21,11 @@ import server as srv  # noqa: E402
 class TestBuddyUiFrontdoorContract(unittest.TestCase):
     def setUp(self):
         self._orig_ke = sys.modules.get("knowledge_engine")
+        self._orig_sm = sys.modules.get("semantic_memory")
+        # Snapshot: preserve the real semantic_memory module before any test can replace it
+        if self._orig_sm is None:
+            import semantic_memory
+            self._orig_sm = semantic_memory
         self._orig_is_alive = srv.is_session_alive
         self._orig_has_recent_ping = srv._has_recent_buddy_frontdoor_ping
         self._tmpdir = tempfile.TemporaryDirectory()
@@ -33,6 +38,8 @@ class TestBuddyUiFrontdoorContract(unittest.TestCase):
             sys.modules["knowledge_engine"] = self._orig_ke
         elif "knowledge_engine" in sys.modules:
             del sys.modules["knowledge_engine"]
+        # Always restore the real semantic_memory module
+        sys.modules["semantic_memory"] = self._orig_sm
 
     def _load_isolated_ke(self):
         import importlib.util
