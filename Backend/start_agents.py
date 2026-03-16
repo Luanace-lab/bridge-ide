@@ -135,6 +135,9 @@ def main() -> int:
         print("[start_agents] No auto_start agents in team.json.")
         return 0
 
+    # Buddy first: ensure the onboarding agent starts before all others
+    agents.sort(key=lambda a: (0 if a.get("role") == "buddy" or a.get("id") == "buddy" else 1))
+
     print(f"[start_agents] Found {len(agents)} auto_start agents in team.json.")
 
     started = 0
