@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tempfile
 import time
 from dataclasses import dataclass, field
@@ -287,7 +288,8 @@ def generate_soul_section(soul: SoulConfig, raw_soul_text: str = "") -> str:
     """
     # If SoulConfig is empty but we have raw SOUL.md text, embed it directly
     if _is_soul_empty(soul) and raw_soul_text.strip():
-        truncated = raw_soul_text.strip()
+        # SEC-005: Strip control characters to prevent prompt injection
+        truncated = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", raw_soul_text.strip())
         if len(truncated) > 3000:
             truncated = truncated[:2997] + "..."
         lines = [
@@ -608,7 +610,8 @@ def approve_soul_update(workspace: Path, proposal_index: int) -> bool:
     if soul_path.exists():
         content = soul_path.read_text(encoding="utf-8")
         section = proposal["section"]
-        new_value = proposal["new_value"]
+        # SEC-005: Strip control characters from soul update proposals
+        new_value = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", str(proposal["new_value"]))
 
         # Replace the section content
         content = _update_soul_section(content, section, new_value)
