@@ -1015,6 +1015,7 @@ from tmux_manager import (
     send_to_session,
     set_session_name_overrides as _set_tmux_session_overrides,
     _deploy_agent_skills,
+    _session_name_for,
     _write_agent_runtime_config,
 )
 
@@ -3405,11 +3406,12 @@ def _finalize_graceful_shutdown() -> None:
     # Kill all agent tmux sessions
     for aid in expected:
         try:
-            subprocess.run(["tmux", "kill-session", "-t", f"acw_{aid}"],
+            _sname = _session_name_for(aid)
+            subprocess.run(["tmux", "kill-session", "-t", _sname],
                            capture_output=True, timeout=5)
-            print(f"[graceful-shutdown] Killed tmux session: acw_{aid}")
+            print(f"[graceful-shutdown] Killed tmux session: {_sname}")
         except Exception as exc:
-            print(f"[graceful-shutdown] Failed to kill acw_{aid}: {exc}")
+            print(f"[graceful-shutdown] Failed to kill {_session_name_for(aid)}: {exc}")
 
     # Update system status
     _SYSTEM_STATUS["shutdown_active"] = True
@@ -6102,7 +6104,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     if not _ag.get("active", False) or not _ag.get("auto_start", False):
                         continue
                     _aid = _ag.get("id", "")
-                    _sess = f"acw_{_aid}"
+                    _sess = _session_name_for(_aid)
                     if _sp.run(["tmux", "has-session", "-t", _sess], capture_output=True).returncode == 0:
                         results["agents"].append({"id": _aid, "status": "already_running"})
                         continue
@@ -6137,7 +6139,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     if not _ag.get("active", False) or not _ag.get("auto_start", False):
                         continue
                     _aid = _ag.get("id", "")
-                    _sess = f"acw_{_aid}"
+                    _sess = _session_name_for(_aid)
                     if _sp.run(["tmux", "has-session", "-t", _sess], capture_output=True).returncode == 0:
                         _sp.run(["tmux", "kill-session", "-t", _sess], capture_output=True)
                         results["agents"].append({"id": _aid, "status": "stopped"})
