@@ -54,6 +54,7 @@ class TestAgentSubscriptionRoutesHttpContract(unittest.TestCase):
             task_lock=srv.TASK_LOCK,
             team_config=team_config,
             team_config_lock=srv.TEAM_CONFIG_LOCK,
+            frontend_dir=getattr(srv, "FRONTEND_DIR", "/tmp"),
             runtime=srv.RUNTIME,
             runtime_lock=srv.RUNTIME_LOCK,
             ws_broadcast_fn=srv.ws_broadcast,

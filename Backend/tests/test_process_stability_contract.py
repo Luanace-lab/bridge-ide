@@ -64,19 +64,18 @@ class TestWrapperAndPlatformScriptContracts(unittest.TestCase):
         start_raw = self._read("start_platform.sh")
         stop_raw = self._read("stop_platform.sh")
         self.assertIn("kill_orphans_by_pattern()", start_raw)
-        self.assertIn('UI_SESSION="ui8787"', start_raw)
-        self.assertIn('UI_PORT=8787', start_raw)
-        self.assertIn('kill_orphans_by_pattern "python3 -m http.server ${UI_PORT}" "ui_server"', start_raw)
-        self.assertIn('tmux new-session -d -s "${UI_SESSION}" "python3 -m http.server ${UI_PORT} --directory ${UI_DIR}"', start_raw)
-        self.assertIn('UI_SESSION="ui8787"', stop_raw)
-        self.assertIn('UI_PORT=8787', stop_raw)
-        self.assertIn('kill_orphans_by_pattern "python3 -m http.server ${UI_PORT}" "ui_server"', stop_raw)
+        # UI server on 8787 was disabled — start_platform.sh no longer creates it.
+        # It documents the removal and lets the Bridge server on 9111 serve the UI.
+        self.assertIn("UI Server (port 8787) --- DISABLED", start_raw)
+        # stop_platform.sh still cleans up legacy sessions from previous runs.
+        self.assertIn('tmux has-session -t "ui8787"', stop_raw)
+        self.assertIn('kill_orphans_by_pattern "python3 -m http.server 8787" "ui_server_legacy"', stop_raw)
 
     def test_start_platform_resolves_forwarder_session_from_team_config(self) -> None:
         raw = self._read("start_platform.sh")
         self.assertIn("resolve_forwarder_session()", raw)
         self.assertIn('python3 - "${BRIDGE_DIR}/team.json"', raw)
-        self.assertIn('if role == "manager" or {"manager", "projektleiter", "teamlead"} & aliases:', raw)
+        self.assertIn('is_manager = role == "manager" or {"manager", "projektleiter", "teamlead"} & aliases', raw)
         self.assertIn('FORWARDER_SESSION="$(resolve_forwarder_session)"', raw)
         self.assertIn('start_process output_forwarder env FORWARDER_SESSION="${FORWARDER_SESSION}" python3 -u "${BRIDGE_DIR}/output_forwarder.py"', raw)
 
@@ -113,7 +112,7 @@ class TestWrapperAndPlatformScriptContracts(unittest.TestCase):
         self.assertIn('if ! wait_for_configured_runtime 20 0.25; then', raw)
         self.assertIn('http_timeout = float(os.environ.get("RUNTIME_CONFIGURE_HTTP_TIMEOUT", "90"))', raw)
         self.assertIn('stabilize_seconds = max(float(os.environ.get("RUNTIME_CONFIGURE_STABILIZE_SECONDS", "30")), 0.0)', raw)
-        self.assertIn('"stabilize_seconds": stabilize_seconds,', raw)
+        self.assertIn('stabilize_seconds=stabilize_seconds,', raw)
         self.assertIn('with urllib.request.urlopen(req, timeout=http_timeout) as resp:', raw)
         self.assertIn("stable_count", raw)
         self.assertIn("uptime_seconds", raw)
