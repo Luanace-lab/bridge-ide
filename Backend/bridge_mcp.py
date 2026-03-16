@@ -47,8 +47,19 @@ from mcp_catalog import runtime_mcp_registry
 # Configuration
 # ---------------------------------------------------------------------------
 
-BRIDGE_HTTP = "http://127.0.0.1:9111"
-BRIDGE_WS = "ws://127.0.0.1:9112"
+_BRIDGE_SERVER_URL = os.environ.get("BRIDGE_SERVER_URL", "").strip().rstrip("/")
+if _BRIDGE_SERVER_URL:
+    BRIDGE_HTTP = _BRIDGE_SERVER_URL
+    # Derive WebSocket URL: http→ws, https→wss, append /ws for Caddy routing
+    if _BRIDGE_SERVER_URL.startswith("https://"):
+        BRIDGE_WS = "wss://" + _BRIDGE_SERVER_URL[8:] + "/ws"
+    elif _BRIDGE_SERVER_URL.startswith("http://"):
+        BRIDGE_WS = "ws://" + _BRIDGE_SERVER_URL[7:] + "/ws"
+    else:
+        BRIDGE_WS = "ws://" + _BRIDGE_SERVER_URL + "/ws"
+else:
+    BRIDGE_HTTP = "http://127.0.0.1:9111"
+    BRIDGE_WS = "ws://127.0.0.1:9112"
 HEARTBEAT_INTERVAL = 30  # seconds
 WS_RECONNECT_DELAY = 3  # seconds
 MESSAGE_BUFFER_MAX = 500
