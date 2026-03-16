@@ -37,5 +37,28 @@ services:
       start_period: 10s
       retries: 3
 
+  # Caddy reverse proxy — auto-TLS via Let's Encrypt
+  # Enable with: BRIDGE_DOMAIN=bridgeide.com docker compose --profile remote up
+  caddy:
+    image: caddy:2-alpine
+    container_name: bridge-caddy
+    profiles: ["remote"]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      - BRIDGE_DOMAIN=${BRIDGE_DOMAIN:-localhost}
+    depends_on:
+      bridge-server:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   bridge-tokens:
+  caddy-data:
+  caddy-config:
