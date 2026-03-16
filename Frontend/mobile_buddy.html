@@ -1265,8 +1265,9 @@
     }
 
     .teamPicker__btn:hover{
-      background:color-mix(in srgb, var(--sidebar) 14%, var(--bgFlat));
-      box-shadow:0 2px 5px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.55);
+      background:none;
+      box-shadow:none;
+      opacity:.9;
     }
 
     .teamPicker__btn svg{
@@ -1284,9 +1285,9 @@
 
     html:is([data-theme="dark"],[data-theme="black"]) .teamPicker__btn{
       color:#e7edf5;
-      background:rgba(255,255,255,.06);
-      border-color:rgba(255,255,255,.08);
-      box-shadow:0 1px 3px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
+      background:transparent;
+      border:none;
+      box-shadow:none;
     }
 
     .teamPicker__dropdown{
