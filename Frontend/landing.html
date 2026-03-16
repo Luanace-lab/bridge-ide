@@ -263,11 +263,25 @@
       var cmdEl = document.getElementById('installCmd');
       var hintEl = document.getElementById('installHint');
       var repo = 'https://github.com/Luanace-lab/bridge-ide.git';
-      var platform = navigator.platform || '';
-      if (/Win/.test(platform)) {
+      var os = (function detectOS() {
+        if (navigator.userAgentData && navigator.userAgentData.platform) {
+          var p = navigator.userAgentData.platform.toLowerCase();
+          if (p === 'windows') return 'win';
+          if (p === 'macos') return 'mac';
+          return 'linux';
+        }
+        var pl = (navigator.platform || '').toLowerCase();
+        if (/win/.test(pl)) return 'win';
+        if (/mac/.test(pl)) return 'mac';
+        var ua = (navigator.userAgent || '').toLowerCase();
+        if (/windows/.test(ua)) return 'win';
+        if (/macintosh|mac os/.test(ua)) return 'mac';
+        return 'linux';
+      })();
+      if (os === 'win') {
         cmdEl.textContent = 'wsl --install && wsl -e bash -c "git clone ' + repo + ' && cd bridge-ide && ./install.sh"';
         hintEl.textContent = 'Runs via WSL2. This installs WSL and sets up Bridge in one step.';
-      } else if (/Mac/.test(platform)) {
+      } else if (os === 'mac') {
         cmdEl.textContent = 'git clone ' + repo + ' && cd bridge-ide && ./install.sh';
         hintEl.textContent = 'Requires Python 3.10+, Node.js, tmux (brew install tmux).';
       }
