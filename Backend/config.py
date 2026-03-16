@@ -33,7 +33,7 @@ class BridgeConfig:
         self.HTTP_PORT: int = self._env_int("BRIDGE_HTTP_PORT", 9111)
         self.WS_PORT: int = self._env_int("BRIDGE_WS_PORT", 9112)
         self.HTTP_HOST: str = self._env("BRIDGE_HTTP_HOST", "127.0.0.1")
-        self.UI_PORT: int = self._env_int("BRIDGE_UI_PORT", 8787)
+        # UI_PORT removed — UI served from main HTTP port (9111)
 
         # -------------------------------------------------------------------
         # Paths

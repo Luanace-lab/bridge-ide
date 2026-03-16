@@ -756,8 +756,8 @@ WS_HOST = _env_host("BRIDGE_WS_HOST", HTTP_HOST)
 MAX_WAIT_SECONDS = 60.0
 MAX_LIMIT = 1000
 _DEFAULT_ORIGINS = [
-    "http://127.0.0.1:9111", "http://127.0.0.1:8765", "http://127.0.0.1:8787",
-    "http://localhost:8765", "http://localhost:8787", "http://localhost:9111",
+    "http://127.0.0.1:9111", "http://127.0.0.1:8765",
+    "http://localhost:8765", "http://localhost:9111",
     "http://localhost:8083", "http://127.0.0.1:8083",
     "http://localhost:8082", "http://127.0.0.1:8082",
 ]
