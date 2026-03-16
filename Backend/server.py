@@ -3443,7 +3443,7 @@ def _handle_shutdown_ack(agent_id: str) -> None:
 
 
 # Auto-restart toggle (can be changed via API if needed)
-AUTO_RESTART_AGENTS = False
+AUTO_RESTART_AGENTS = True
 _AGENT_LAST_RESTART: dict[str, float] = {}  # agent_id -> timestamp
 _RESTART_COOLDOWN = 120.0  # 2 min between restarts per agent
 _AGENT_OAUTH_FAILURES: dict[str, int] = {}  # agent_id -> consecutive OAuth restart count

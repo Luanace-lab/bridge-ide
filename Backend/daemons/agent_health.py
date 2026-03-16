@@ -232,6 +232,14 @@ def _agent_health_tick(cleanup_counter: int) -> int:
 
         if not _is_session_alive_cb(agent_id) and agent_id in conf_ids:
             if _auto_restart_agents_cb():
+                # Only auto-restart agents with auto_start=true in team.json
+                _should_restart = False
+                for _ag in team_config.get("agents", []):
+                    if _ag.get("id") == agent_id:
+                        _should_restart = bool(_ag.get("auto_start", False))
+                        break
+                if not _should_restart:
+                    continue
                 last_restart = _agent_last_restart.get(agent_id, 0)
                 if (time.time() - last_restart) >= _restart_cooldown_cb():
                     restarted = False
