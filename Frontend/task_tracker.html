@@ -363,6 +363,10 @@
       return 0;
     });
 
+    if(sorted.length === 0){
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--textMuted,#888);padding:40px;font-size:14px">Keine Tasks gefunden</td></tr>';
+      return;
+    }
     tbody.innerHTML = sorted.map(t => {
       const dur = calcDuration(t);
       const summary = t.result_summary || (t.result && t.result.summary) || '';
