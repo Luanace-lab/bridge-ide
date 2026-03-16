@@ -7278,6 +7278,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 session_nonce = str(session_nonce).strip() or None
             context_lost = bool(data.get("context_lost", False))
             cli_identity = _cli_identity_bundle(agent_id, data)
+            # Normalize: registration always records "cli_register" regardless
+            # of whatever transport-level source the client sent.
+            if cli_identity.get("cli_identity_source"):
+                cli_identity["cli_identity_source"] = "cli_register"
             if not agent_id:
                 self._respond(400, {"error": "field 'agent_id' is required"})
                 return
