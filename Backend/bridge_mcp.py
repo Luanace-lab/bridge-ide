@@ -5564,6 +5564,7 @@ async def bridge_stealth_fill(session_id: str, selector: str, value: str) -> str
 async def bridge_stealth_evaluate(session_id: str, expression: str) -> str:
     if _agent_id is None:
         return json.dumps({"status": "error", "error": "not registered"})
+    log.info("[AUDIT] bridge_stealth_evaluate by=%s session=%s expr=%s", _agent_id, session_id, expression[:200])
 
     session = _get_stealth_session(session_id)
     if not session:
@@ -6042,6 +6043,7 @@ async def bridge_cdp_fill(selector: str, value: str, tab_index: str = "0:0") -> 
 )
 async def bridge_cdp_evaluate(expression: str, tab_index: str = "0:0") -> str:
     """Execute JS in Leo's browser."""
+    log.info("[AUDIT] bridge_cdp_evaluate by=%s tab=%s expr=%s", _agent_id, tab_index, expression[:200])
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -7732,6 +7734,7 @@ async def bridge_browser_scr(session_id: str, full_page: bool = True) -> str:
 )
 async def bridge_browser_eval(session_id: str, expression: str) -> str:
     """Evaluate JS in unified session."""
+    log.info("[AUDIT] bridge_browser_evaluate by=%s session=%s expr=%s", _agent_id, session_id, expression[:200])
     session = _get_unified_session(session_id)
     if not session:
         return _structured_action_json(
