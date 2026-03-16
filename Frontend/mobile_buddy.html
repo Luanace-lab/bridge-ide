@@ -86,38 +86,35 @@
       min-height:100dvh;
       font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
       color:var(--text);
-      background:
-        radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--sidebar) 20%, transparent), transparent 48%),
-        radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--sidebar) 16%, transparent), transparent 42%),
-        var(--bg);
+      background:var(--bgFlat);
       display:flex;
-      align-items:center;
+      align-items:stretch;
       justify-content:center;
-      padding:16px;
+      padding:0;
     }
 
     .app{
       width:min(100%, 430px);
       height:min(100dvh - 20px, 900px);
       min-height:680px;
-      background:linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 15%, var(--bgFlat)), color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat)));
-      border:1px solid color-mix(in srgb, var(--sidebar) 28%, transparent);
-      border-radius:34px;
-      box-shadow:0 30px 80px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.28);
-      padding:10px;
+      background:var(--bgFlat);
+      border:none;
+      border-radius:0;
+      box-shadow:none;
+      padding:0;
     }
 
     .shell{
       height:100%;
-      border-radius:var(--radius);
-      background:linear-gradient(180deg, color-mix(in srgb, var(--bgFlat) 96%, var(--sidebar) 4%), color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat)));
-      border:1px solid var(--border);
+      border-radius:0;
+      background:var(--bgFlat);
+      border:none;
       overflow:hidden;
       display:flex;
       flex-direction:column;
       position:relative;
       isolation:isolate;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.36);
+      box-shadow:none;
     }
 
     .shell::before{
@@ -508,7 +505,7 @@
     }
 
     .header{
-      padding:14px 14px 4px;
+      padding:2px 8px;
       border-bottom:none;
       background:transparent;
       display:flex;
@@ -526,19 +523,19 @@
     }
 
     .logoBtn{
-      width:50px;
-      height:50px;
-      border:1px solid color-mix(in srgb, var(--sidebar) 30%, transparent);
-      border-radius:18px;
-      background:linear-gradient(180deg, color-mix(in srgb, #ffffff 90%, var(--bgFlat) 10%), color-mix(in srgb, var(--sidebar) 10%, var(--bgFlat)));
+      width:24px;
+      height:24px;
+      border:none;
+      border-radius:0;
+      background:transparent;
       color:var(--text);
       display:flex;
       align-items:center;
       justify-content:center;
-      box-shadow:0 12px 28px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.72);
+      box-shadow:none;
       cursor:pointer;
       flex-shrink:0;
-      padding:8px;
+      padding:2px;
       position:relative;
     }
 
@@ -643,7 +640,7 @@
       flex-direction:column;
       gap:0;
       --management-size:62%;
-      --board-divider-size:44px;
+      --board-divider-size:1px;
     }
 
     .mobileBoard{
@@ -710,12 +707,12 @@
     }
 
     .boardDivider__grabber{
-      width:78px;
-      height:6px;
-      border-radius:999px;
-      background:color-mix(in srgb, var(--sidebar) 38%, var(--bgFlat));
-      box-shadow:0 1px 0 rgba(255,255,255,.65), 0 8px 16px rgba(0,0,0,.08);
-      transition:transform .14s ease, background .14s ease, box-shadow .14s ease;
+      width:100%;
+      height:1px;
+      border-radius:0;
+      background:color-mix(in srgb, var(--sidebar) 30%, var(--bgFlat));
+      box-shadow:none;
+      transition:background .14s ease;
     }
 
     .boardDivider:hover .boardDivider__grabber,
@@ -1078,43 +1075,41 @@
       z-index:1;
       display:flex;
       align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
-      padding:9px 12px 8px;
-      background:color-mix(in srgb, var(--sidebar) 10%, #ffffff);
-      backdrop-filter:blur(8px);
-      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 12%, transparent);
-    }
-
-    html[data-theme="light"] .boardHeaderMobile{
-      border-color:transparent;
+      gap:6px;
+      flex-wrap:nowrap;
+      padding:4px 10px;
+      min-height:28px;
+      overflow:visible;
+      background:color-mix(in srgb, var(--sidebar) 30%, var(--bgFlat));
+      border:none;
     }
 
     html:is([data-theme="dark"],[data-theme="black"]) .boardHeaderMobile{
-      background:rgba(255,255,255,.06);
-      border-color:rgba(255,255,255,.08);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      border:none;
     }
 
     .boardHeaderMobile--team{
-      gap:6px;
-      padding:8px 10px 6px;
-      align-content:flex-start;
+      gap:4px;
+      padding:4px 10px;
+      min-height:28px;
+      overflow:visible;
     }
 
     .boardHeader__title{
-      font-size:11px;
-      font-weight:600;
+      font-size:9px;
+      font-weight:700;
       text-transform:uppercase;
-      letter-spacing:.5px;
-      color:#3d3d3a;
-      opacity:.56;
+      letter-spacing:.6px;
+      color:var(--text, #3d3d3a);
+      opacity:.85;
       white-space:nowrap;
       flex-shrink:0;
     }
 
     html:is([data-theme="dark"],[data-theme="black"]) .boardHeader__title{
       color:#e7edf5;
+      opacity:.85;
     }
 
     .boardHeader__agents{
@@ -1127,17 +1122,18 @@
     }
 
     .boardActionBtn{
-      width:48px;
-      height:48px;
+      width:24px;
+      height:24px;
       flex:0 0 auto;
-      border:1px solid color-mix(in srgb, var(--sidebar) 24%, transparent);
-      border-radius:16px;
-      background:#ffffff;
-      color:var(--sbDark);
-      display:grid;
+      border:none;
+      border-radius:0;
+      background:transparent;
+      color:var(--text, #3d3d3a);
+      opacity:.7;
+      display:none;
       place-items:center;
       cursor:pointer;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+      box-shadow:none;
       transition:transform .12s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
     }
 
@@ -1178,9 +1174,14 @@
 
     html:is([data-theme="dark"],[data-theme="black"]) .boardActionBtn{
       color:#e7edf5;
-      background:rgba(255,255,255,.06);
-      border-color:rgba(255,255,255,.08);
-      box-shadow:0 1px 3px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
+      opacity:.7;
+      background:transparent;
+      box-shadow:none;
+    }
+
+    /* Phone button always visible */
+    #managementCallBtn{
+      display:inline-flex;
     }
 
     .agentBar__item{
@@ -1188,16 +1189,16 @@
       align-items:center;
       gap:4px;
       font-size:9px;
-      font-weight:400;
-      color:#3d3d3a;
-      opacity:.48;
+      font-weight:500;
+      color:var(--text, #3d3d3a);
+      opacity:.75;
       white-space:nowrap;
       min-width:18px;
       flex:0 1 auto;
       overflow:hidden;
     }
 
-    html:is([data-theme="dark"],[data-theme="black"]) .agentBar__item{ color:#e7edf5; }
+    html:is([data-theme="dark"],[data-theme="black"]) .agentBar__item{ color:#e7edf5; opacity:.75; }
 
     .agentBar__dot{
       width:6px;
@@ -1237,14 +1238,15 @@
 
     .teamPicker__btn{
       width:100%;
-      min-height:44px;
+      min-height:28px;
       min-width:0;
-      padding:0 12px;
-      border-radius:999px;
-      border:1px solid color-mix(in srgb, var(--sidebar) 24%, transparent);
-      background:color-mix(in srgb, var(--sidebar) 10%, var(--bgFlat));
+      padding:0 4px;
+      border-radius:0;
+      border:none;
+      background:transparent;
       cursor:pointer;
-      color:var(--sbDark);
+      color:var(--text);
+      opacity:.8;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -1253,8 +1255,8 @@
       text-transform:none;
       letter-spacing:.02em;
       font-weight:600;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.45);
-      transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+      box-shadow:none;
+      transition:opacity .15s ease;
     }
 
     .teamPicker__btnLabel{
@@ -1294,20 +1296,30 @@
     .teamPicker__dropdown{
       display:flex;
       flex-direction:column;
-      gap:6px;
-      width:100%;
-      max-height:220px;
+      gap:2px;
+      position:absolute;
+      top:100%;
+      right:0;
+      width:280px;
+      max-height:300px;
       overflow-y:auto;
-      margin-top:2px;
-      padding:6px 0 0;
+      margin-top:4px;
+      padding:4px;
+      background:var(--bgFlat, #fbf8f1);
+      border:1px solid color-mix(in srgb, var(--sidebar) 18%, var(--bgFlat));
+      border-radius:8px;
+      box-shadow:0 8px 24px rgba(0,0,0,.18);
+      z-index:20;
+      scrollbar-width:thin;
+      scrollbar-color:color-mix(in srgb, var(--sidebar) 25%, transparent) transparent;
     }
 
     .teamPicker__dropdown[hidden]{ display:none; }
 
     html:is([data-theme="dark"],[data-theme="black"]) .teamPicker__dropdown{
-      background:transparent;
-      border-color:transparent;
-      box-shadow:none;
+      background:#1a2240;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 8px 24px rgba(0,0,0,.5);
     }
 
     .teamPicker__item{
@@ -1315,32 +1327,32 @@
       align-items:center;
       gap:8px;
       width:100%;
-      min-height:44px;
-      padding:0 12px;
-      font-size:11px;
-      color:var(--sbDark);
+      min-height:36px;
+      padding:6px 10px;
+      font-size:13px;
+      font-weight:500;
+      color:#3d3d3a;
       cursor:pointer;
       transition:background .12s;
       border:none;
-      border-radius:12px;
-      background:#ffffff;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+      border-radius:6px;
+      background:var(--bgFlat, #fbf8f1);
+      box-shadow:none;
+      opacity:1;
     }
 
-    .teamPicker__item:hover{ background:color-mix(in srgb, var(--sidebar) 10%, #ffffff); }
+    .teamPicker__item:hover{ background:color-mix(in srgb, var(--sidebar) 15%, var(--bgFlat)); }
     .teamPicker__item--active{
-      background:color-mix(in srgb, var(--sidebar) 16%, #ffffff);
-      font-weight:600;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 0 0 1px color-mix(in srgb, var(--sidebar) 22%, transparent);
+      font-weight:700;
+      color:inherit;
     }
 
     html:is([data-theme="dark"],[data-theme="black"]) .teamPicker__item{
-      color:#c8d6e5;
-      background:rgba(255,255,255,.06);
-      box-shadow:0 1px 3px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
+      color:#e7edf5;
+      background:transparent;
     }
-    html:is([data-theme="dark"],[data-theme="black"]) .teamPicker__item:hover{ background:rgba(255,255,255,.06); }
-    html:is([data-theme="dark"],[data-theme="black"]) .teamPicker__item--active{ background:rgba(255,255,255,.10); }
+    html:is([data-theme="dark"],[data-theme="black"]) .teamPicker__item:hover{ background:color-mix(in srgb, var(--sidebar) 15%, var(--bgFlat)); }
+    html:is([data-theme="dark"],[data-theme="black"]) .teamPicker__item--active{ color:#e7edf5; font-weight:700; }
 
     .teamPicker__dot{
       width:6px;
@@ -1419,25 +1431,26 @@
     }
 
     .teamDisclosureBtn{
-      min-height:44px;
-      min-width:54px;
-      padding:0 9px;
-      border-radius:999px;
-      border:1px solid color-mix(in srgb, var(--sidebar) 24%, transparent);
-      background:color-mix(in srgb, var(--sidebar) 10%, var(--bgFlat));
+      min-height:28px;
+      min-width:auto;
+      padding:0 4px;
+      border-radius:0;
+      border:none;
+      background:transparent;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       gap:4px;
-      color:var(--sbDark);
+      color:var(--text);
+      opacity:.6;
       cursor:pointer;
       font-size:10px;
       font-weight:600;
       letter-spacing:.02em;
       text-transform:uppercase;
       white-space:nowrap;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.45);
-      transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+      box-shadow:none;
+      transition:opacity .15s ease;
       flex:0 0 auto;
     }
 
@@ -1467,17 +1480,26 @@
     html:is([data-theme="dark"],[data-theme="black"]) .teamSummaryPill,
     html:is([data-theme="dark"],[data-theme="black"]) .teamDisclosureBtn{
       color:#e7edf5;
-      background:rgba(255,255,255,.06);
-      border-color:rgba(255,255,255,.08);
-      box-shadow:0 1px 3px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
+      background:transparent;
+      border-color:transparent;
+      box-shadow:none;
     }
 
     .memberBar{
       display:flex;
       flex-direction:column;
       width:100%;
-      gap:6px;
-      padding-top:4px;
+      gap:1px;
+      padding:2px 0;
+      background:color-mix(in srgb, var(--sidebar) 20%, var(--bgFlat));
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      z-index:18;
+      max-height:220px;
+      overflow-y:auto;
+      box-shadow:0 6px 16px rgba(0,0,0,.2);
     }
 
     .memberBar[hidden]{ display:none; }
@@ -1488,13 +1510,13 @@
       align-items:center;
       justify-content:space-between;
       gap:8px;
-      padding:8px 10px;
+      padding:6px 10px;
       font-size:11px;
-      color:#3d3d3a;
-      background:#ffffff;
-      border:1px solid rgba(0,0,0,.06);
-      border-radius:14px;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+      color:var(--text, #3d3d3a);
+      background:color-mix(in srgb, var(--sidebar) 12%, var(--bgFlat));
+      border:none;
+      border-radius:0;
+      box-shadow:none;
     }
 
     .memberChip__main{
@@ -1546,9 +1568,9 @@
 
     html:is([data-theme="dark"],[data-theme="black"]) .memberChip{
       color:#e7edf5;
-      background:rgba(255,255,255,.06);
-      border-color:rgba(255,255,255,.08);
-      box-shadow:0 1px 3px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
+      background:rgba(255,255,255,.04);
+      border:none;
+      box-shadow:none;
     }
 
     .memberChip__dot{
@@ -1815,7 +1837,8 @@
       background:color-mix(in srgb, var(--sidebar) 6%, #ffffff);
       border:1px dashed color-mix(in srgb, var(--sidebar) 24%, transparent);
       box-shadow:0 10px 24px rgba(0,0,0,.05);
-      color:var(--muted);
+      color:var(--text, #3d3d3a);
+      opacity:.75;
       font-size:12px;
       line-height:1.45;
       text-align:center;
@@ -1887,26 +1910,26 @@
 
     .boardComposer__summary{
       font-size:10px;
-      color:var(--muted);
+      color:var(--text, #3d3d3a);
+      opacity:.7;
       min-width:0;
       letter-spacing:.01em;
     }
 
     .boardComposer__target{
-      min-height:22px;
-      padding:0 8px;
-      border-radius:999px;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
+      min-height:auto;
+      padding:0;
+      border-radius:0;
+      display:inline;
       font-size:9px;
       font-weight:700;
       letter-spacing:.04em;
       text-transform:uppercase;
       white-space:nowrap;
-      color:var(--sbDark);
-      background:color-mix(in srgb, var(--sidebar) 16%, #ffffff);
-      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
+      color:var(--text);
+      opacity:.6;
+      background:none;
+      border:none;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.55);
     }
 
@@ -1918,12 +1941,12 @@
     }
 
     .chatCamera{
-      width:44px;
-      height:44px;
-      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
-      border-radius:14px;
-      background:color-mix(in srgb, var(--sidebar) 16%, var(--bgFlat));
-      color:var(--accent);
+      width:32px;
+      height:32px;
+      border:none;
+      border-radius:50%;
+      background:transparent;
+      color:var(--accent, #2cd8d8);
       display:grid;
       place-items:center;
       cursor:pointer;
@@ -1933,40 +1956,32 @@
     .chatCamera svg{
       width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
     }
-    html[data-theme="warm"] .chatCamera,
-    html[data-theme="light"] .chatCamera,
-    html[data-theme="rose"] .chatCamera{
-      border-color:rgba(0,0,0,.08);
-      background:#ffffff;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
-    }
+    .chatCamera:hover{ color:var(--text); }
     html:is([data-theme="dark"],[data-theme="black"]) .chatCamera{
       color:#2cd8d8;
-      background:rgba(255,255,255,.06);
-      border-color:rgba(255,255,255,.08);
-      box-shadow:0 1px 3px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
     }
 
     .chatAttach{
-      width:48px;
-      height:48px;
-      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
-      border-radius:16px;
-      background:color-mix(in srgb, var(--sidebar) 16%, var(--bgFlat));
-      color:var(--sbDark);
+      width:32px;
+      height:32px;
+      border:none;
+      border-radius:50%;
+      background:transparent;
+      color:var(--text, #3d3d3a);
+      opacity:.65;
       display:grid;
       place-items:center;
       cursor:pointer;
-      box-shadow:0 8px 20px rgba(0,0,0,.08);
-      transition:background .15s ease, transform .12s ease, opacity .15s ease;
+      box-shadow:none;
+      transition:color .15s ease, opacity .15s ease;
     }
+    .chatAttach:hover{ opacity:1; }
 
     html[data-theme="warm"] .chatAttach,
     html[data-theme="light"] .chatAttach,
     html[data-theme="rose"] .chatAttach{
-      border-color:rgba(0,0,0,.08);
-      background:#ffffff;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+      background:transparent;
+      box-shadow:none;
     }
 
     .chatAttach svg{
@@ -1987,19 +2002,20 @@
 
     .boardComposer__inputWrap{
       min-width:0;
-      border-radius:16px;
-      background:color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat));
-      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
-      box-shadow:0 8px 20px rgba(0,0,0,.06);
-      padding:0 12px;
+      border-radius:0;
+      background:transparent;
+      border:none;
+      border-bottom:1px solid color-mix(in srgb, var(--sidebar) 15%, transparent);
+      box-shadow:none;
+      padding:0 4px;
     }
 
     html[data-theme="warm"] .boardComposer__inputWrap,
     html[data-theme="light"] .boardComposer__inputWrap,
     html[data-theme="rose"] .boardComposer__inputWrap{
-      background:#ffffff;
+      background:transparent;
       border-color:rgba(0,0,0,.08);
-      box-shadow:0 1px 4px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+      box-shadow:none;
     }
 
     .boardComposer textarea{
@@ -2030,25 +2046,25 @@
     .boardComposer textarea::placeholder{ color:var(--muted); }
 
     .chatSend{
-      width:48px;
-      height:48px;
-      border:1px solid color-mix(in srgb, var(--sidebar) 18%, transparent);
-      border-radius:16px;
-      background:color-mix(in srgb, var(--sidebar) 16%, var(--bgFlat));
-      color:var(--sbDark);
+      width:32px;
+      height:32px;
+      border:none;
+      border-radius:50%;
+      background:transparent;
+      color:var(--accent, #2cd8d8);
       display:grid;
       place-items:center;
       cursor:pointer;
-      box-shadow:0 8px 20px rgba(0,0,0,.08);
-      transition:background .15s ease, transform .12s ease, opacity .15s ease;
+      box-shadow:none;
+      transition:color .15s ease, transform .12s ease;
     }
+    .chatSend:not(:disabled):hover{ color:var(--text); }
 
     html[data-theme="warm"] .chatSend,
     html[data-theme="light"] .chatSend,
     html[data-theme="rose"] .chatSend{
-      border-color:rgba(0,0,0,.08);
-      background:#ffffff;
-      box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+      background:transparent;
+      box-shadow:none;
     }
 
     .chatSend svg{
@@ -2484,7 +2500,19 @@
           <section class="mobileBoard mobileBoard--management" id="managementBoard" aria-labelledby="managementBoardTitle">
             <header class="boardHeaderMobile boardHeaderMobile--management" id="managementBoardHeader">
               <span class="boardHeader__title" id="managementBoardTitle">Management-Board</span>
-              <div class="boardHeader__agents" id="managementAgentsBar" aria-label="Management-Team"></div>
+              <div class="teamPicker" id="managerPicker">
+                <button class="teamPicker__btn" id="managerPickerBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="managerPickerDropdown">
+                  <span class="agentBar__dot agentBar__dot--dead" id="managerPickerDot"></span>
+                  <span class="teamPicker__btnLabel" id="managerPickerBtnLabel">Buddy</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6"></path>
+                  </svg>
+                </button>
+                <div class="teamPicker__dropdown" id="managerPickerDropdown" hidden></div>
+              </div>
+              <button class="boardActionBtn" id="managementCallBtn" type="button" aria-label="Buddy anrufen" title="Buddy anrufen" style="color:var(--accent,#2cd8d8)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </button>
               <button class="boardActionBtn" id="managementBoardToggleBtn" type="button" aria-label="Management-Board ausblenden" title="Management-Board ausblenden" data-icon="up">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path class="boardActionBtn__up" d="M8 10l4-4 4 4"></path>
@@ -2678,7 +2706,11 @@
     const boardDivider = document.getElementById('boardDivider');
     const managementBoardToggleBtn = document.getElementById('managementBoardToggleBtn');
     const teamBoardToggleBtn = document.getElementById('teamBoardToggleBtn');
-    const managementAgentsBar = document.getElementById('managementAgentsBar');
+    const managerPicker = document.getElementById('managerPicker');
+    const managerPickerBtn = document.getElementById('managerPickerBtn');
+    const managerPickerBtnLabel = document.getElementById('managerPickerBtnLabel');
+    const managerPickerDot = document.getElementById('managerPickerDot');
+    const managerPickerDropdown = document.getElementById('managerPickerDropdown');
     const managementMessages = document.getElementById('managementMessages');
     const managementMessagesInner = document.getElementById('managementMessagesInner');
     const managementComposerInput = document.getElementById('managementComposerInput');
@@ -3078,6 +3110,22 @@
       else closeTeamPicker();
     }
 
+    function closeManagerPicker() {
+      managerPickerDropdown.hidden = true;
+      managerPickerBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function openManagerPicker() {
+      renderManagerDropdown();
+      managerPickerDropdown.hidden = false;
+      managerPickerBtn.setAttribute('aria-expanded', 'true');
+    }
+
+    function toggleManagerPicker() {
+      if (managerPickerDropdown.hidden) openManagerPicker();
+      else closeManagerPicker();
+    }
+
     function closeMemberBar() {
       memberBar.hidden = true;
       memberToggleBtn.setAttribute('aria-expanded', 'false');
@@ -3403,9 +3451,52 @@
       return `<div class="agentBar__item"><span class="agentBar__dot ${statusClass(status)}"></span><span class="agentBar__name">${escapeHtml(label)}</span>${role ? `<span class="agentBar__role">${escapeHtml(role)}</span>` : ''}</div>`;
     }
 
+    let selectedManagerId = BUDDY_ID;
+
     function renderManagementHeader() {
-      const buddyInfo = getAgentInfo(BUDDY_ID) || {name: 'Buddy', role: 'concierge', status: 'disconnected'};
-      managementAgentsBar.innerHTML = createAgentBarItem(buddyInfo.name || 'Buddy', buddyInfo.role || 'concierge', buddyInfo.status || 'disconnected');
+      const info = getAgentInfo(selectedManagerId) || {name: 'Buddy', role: 'concierge', status: 'disconnected'};
+      managerPickerBtnLabel.textContent = prettyAgentName(selectedManagerId);
+      managerPickerDot.className = 'agentBar__dot ' + statusClass(info.status);
+    }
+
+    function getManagerAgents() {
+      const managers = [];
+      const seen = new Set();
+      const buddyInfo = getAgentInfo(BUDDY_ID);
+      if (buddyInfo) { managers.push({id: BUDDY_ID, ...buddyInfo}); seen.add(BUDDY_ID); }
+      for (const [id, info] of orgchartAgentMap.entries()) {
+        if (seen.has(id)) continue;
+        if (isLeadRole(info.role) || /koordinat|architekt|projektleiter/i.test(String(info.role || ''))) {
+          managers.push({id, ...info});
+          seen.add(id);
+        }
+      }
+      for (const team of teamProjectsCache) {
+        for (const m of (team.members || [])) {
+          if (seen.has(m.id)) continue;
+          if (isLeadRole(m.role) || /koordinat|architekt|projektleiter/i.test(String(m.role || ''))) {
+            managers.push({id: m.id, ...m});
+            seen.add(m.id);
+          }
+        }
+      }
+      return managers;
+    }
+
+    function renderManagerDropdown() {
+      const managers = getManagerAgents();
+      if (!managers.length) {
+        managerPickerDropdown.innerHTML = '<div class="teamPicker__empty">Keine Manager verfuegbar.</div>';
+        return;
+      }
+      managerPickerDropdown.innerHTML = managers.map(m => {
+        const activeClass = m.id === selectedManagerId ? ' teamPicker__item--active' : '';
+        return `<button class="teamPicker__item${activeClass}" type="button" data-manager-id="${escapeHtml(m.id)}">
+          <span class="teamPicker__dot ${statusClass(m.status)}"></span>
+          <span class="teamPicker__name">${escapeHtml(prettyAgentName(m.id))}</span>
+          <span class="teamPicker__count">${escapeHtml(String(m.role || '').substring(0, 20))}</span>
+        </button>`;
+      }).join('');
     }
 
     function renderTeamPicker() {
@@ -3889,6 +3980,24 @@
     menuBtn.addEventListener('click', () => {
       if (drawerLayer.hidden || drawerLayer.dataset.open !== 'true') openDrawer();
       else closeDrawer();
+    });
+
+    managerPickerBtn.addEventListener('click', () => {
+      toggleManagerPicker();
+    });
+
+    managerPickerDropdown.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-manager-id]');
+      if (!button) return;
+      selectedManagerId = button.dataset.managerId || BUDDY_ID;
+      renderManagementHeader();
+      closeManagerPicker();
+      const info = getAgentInfo(selectedManagerId) || {};
+      managementComposerSummary.textContent = selectedManagerId === BUDDY_ID
+        ? 'Buddy ist dein direkter Steuerpunkt.'
+        : `Direkt an ${prettyAgentName(selectedManagerId)}.`;
+      const targetLabel = document.querySelector('.boardComposer__target');
+      if (targetLabel) targetLabel.textContent = prettyAgentName(selectedManagerId);
     });
 
     teamPickerBtn.addEventListener('click', () => {
