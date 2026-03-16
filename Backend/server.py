@@ -4739,8 +4739,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
             if real_msgs:
                 action_type = "message"
                 msg = real_msgs[-1]  # newest
-                sender = msg.get("from", "unknown")
-                content = str(msg.get("content", ""))[:500]
+                _raw_sender = str(msg.get("from", "unknown"))
+                sender = re.sub(r"[^a-zA-Z0-9_-]", "", _raw_sender)[:32] or "unknown"
+                content = re.sub(r"[\x00-\x1f]", "", str(msg.get("content", "")))[:500]
                 prompt_parts.append(
                     f"You have {len(real_msgs)} pending message(s). "
                     f"Call bridge_receive() now. The newest is from '{sender}'.\n\n"
@@ -4759,10 +4760,11 @@ class BridgeHandler(BaseHTTPRequestHandler):
             elif my_tasks:
                 action_type = "task"
                 task = my_tasks[0]
-                title = str(task.get("title", ""))[:200]
-                desc = str(task.get("description", ""))[:500]
-                tid = task.get("task_id", "")
-                creator = task.get("created_by", "unknown")
+                title = re.sub(r"[\x00-\x1f]", "", str(task.get("title", "")))[:200]
+                desc = re.sub(r"[\x00-\x1f]", "", str(task.get("description", "")))[:500]
+                tid = re.sub(r"[^a-zA-Z0-9_-]", "", str(task.get("task_id", "")))[:64]
+                _raw_creator = str(task.get("created_by", "unknown"))
+                creator = re.sub(r"[^a-zA-Z0-9_-]", "", _raw_creator)[:32] or "unknown"
                 prompt_parts.append(
                     f"You have an active task: '{title}'\n"
                     f"Task ID: {tid}\n"
@@ -4782,8 +4784,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
             elif available_tasks:
                 action_type = "available_task"
                 task = available_tasks[0]
-                title = str(task.get("title", ""))[:200]
-                tid = task.get("task_id", "")
+                title = re.sub(r"[\x00-\x1f]", "", str(task.get("title", "")))[:200]
+                tid = re.sub(r"[^a-zA-Z0-9_-]", "", str(task.get("task_id", "")))[:64]
                 prompt_parts.append(
                     f"There is an open task in the queue: '{title}'\n"
                     f"Task ID: {tid}\n\n"
