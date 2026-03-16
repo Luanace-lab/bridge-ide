@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bridge-ide"
 version = "0.1.0"
-description = "Bridge IDE local multi-agent platform wrapper CLI"
+description = "Bridge ACE — Agentic Collab Engine"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -15,6 +15,7 @@ dependencies = [
   "httpx>=0.25,<1.0",
   "mcp>=0.1",
   "watchdog>=3.0,<5.0",
+  "cryptography>=41.0",
 ]
 
 [project.optional-dependencies]
