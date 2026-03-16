@@ -1,6 +1,6 @@
-# Bridge IDE — Server Deployment Guide
+# Bridge ACE — Server Deployment Guide
 
-Deploy Bridge IDE on a VPS with Docker, Caddy (auto-TLS), and your own domain.
+Deploy Bridge ACE on a VPS with Docker, Caddy (auto-TLS), and your own domain.
 
 ## Prerequisites
 
