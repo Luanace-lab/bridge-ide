@@ -192,10 +192,14 @@
       border-bottom:1px solid color-mix(in srgb, var(--sidebar) 12%, transparent);
     }
     html[data-theme="light"] .boardHeaderMobile{ border-color:transparent; }
+    html:is([data-theme="dark"],[data-theme="black"]) .logoBtn{
+      background:transparent;
+      border-color:rgba(255,255,255,.06);
+    }
     html:is([data-theme="dark"],[data-theme="black"]) .boardHeaderMobile{
-      background:rgba(255,255,255,.06);
-      border-color:rgba(255,255,255,.08);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      border-color:rgba(255,255,255,.06);
+      box-shadow:none;
     }
 
     .boardHeader__title{
@@ -313,7 +317,7 @@
     }
     html:is([data-theme="dark"],[data-theme="black"]) .metricCard{
       background:rgba(255,255,255,.04);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      box-shadow:none;
     }
     .metricCard__label{
       font-size:11px;
