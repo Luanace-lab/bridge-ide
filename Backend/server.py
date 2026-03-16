@@ -3411,7 +3411,7 @@ def _finalize_graceful_shutdown() -> None:
                            capture_output=True, timeout=5)
             print(f"[graceful-shutdown] Killed tmux session: {_sname}")
         except Exception as exc:
-            print(f"[graceful-shutdown] Failed to kill {_session_name_for(aid)}: {exc}")
+            print(f"[graceful-shutdown] Failed to kill {_sname}: {exc}")
 
     # Update system status
     _SYSTEM_STATUS["shutdown_active"] = True
@@ -3447,6 +3447,7 @@ def _handle_shutdown_ack(agent_id: str) -> None:
 # Auto-restart toggle (can be changed via API if needed)
 AUTO_RESTART_AGENTS = True
 _AGENT_LAST_RESTART: dict[str, float] = {}  # agent_id -> timestamp
+_RESTART_LOCK = threading.Lock()  # guards _AGENT_LAST_RESTART check-and-set
 _RESTART_COOLDOWN = 120.0  # 2 min between restarts per agent
 _AGENT_OAUTH_FAILURES: dict[str, int] = {}  # agent_id -> consecutive OAuth restart count
 _AGENT_AUTH_BLOCKED: set[str] = set()  # agents blocked from auto-restart due to OAuth
@@ -3492,8 +3493,11 @@ def _ensure_agent_online(agent_id: str, task_id: str = "", requester: str = "") 
 
     # 3. tmux session dead → try auto-restart
     if AUTO_RESTART_AGENTS:
-        last_restart = _AGENT_LAST_RESTART.get(agent_id, 0)
-        if (time.time() - last_restart) >= _RESTART_COOLDOWN:
+        with _RESTART_LOCK:
+            last_restart = _AGENT_LAST_RESTART.get(agent_id, 0)
+            if (time.time() - last_restart) < _RESTART_COOLDOWN:
+                remaining = int(_RESTART_COOLDOWN - (time.time() - last_restart))
+                return {"online": False, "action": "cooldown", "detail": f"{agent_id} restart cooldown ({remaining}s remaining)"}
             restarted = _auto_restart_agent(agent_id)
             if restarted:
                 _AGENT_LAST_RESTART[agent_id] = time.time()
@@ -3518,9 +3522,6 @@ def _ensure_agent_online(agent_id: str, task_id: str = "", requester: str = "") 
                                  f"Agent {agent_id} offline — Auto-Start fehlgeschlagen",
                                  task_id=task_id, severity="critical", ttl_seconds=600)
                 return {"online": False, "action": "start_failed", "detail": f"{agent_id} auto-start failed"}
-        else:
-            remaining = int(_RESTART_COOLDOWN - (time.time() - last_restart))
-            return {"online": False, "action": "cooldown", "detail": f"{agent_id} restart cooldown ({remaining}s remaining)"}
 
     return {"online": False, "action": "no_auto_restart", "detail": f"{agent_id} is offline, auto-restart disabled"}
 

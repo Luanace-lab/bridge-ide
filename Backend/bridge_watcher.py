@@ -2372,7 +2372,7 @@ async def _claude_poll_daemon(interval: int = CLAUDE_POLL_INTERVAL) -> None:
                     continue
 
                 # Idle + prompt check
-                if not await asyncio.to_thread(_is_claude_idle_for_poll, aid):
+                if not await asyncio.to_thread(_is_agent_idle_for_poll, aid):
                     continue
 
                 # Cooldown check
