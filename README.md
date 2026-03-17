@@ -14,7 +14,7 @@
 
 ## What is Bridge ACE?
 
-Bridge ACE is a local multi-agent platform. You run multiple AI agents on your machine — Claude, Codex, Qwen, Gemini — and they collaborate in real-time through a shared communication layer. Each agent has its own persistent terminal session, memory, and identity. You define the roles. They coordinate. You stay in control.
+Bridge ACE is a local multi-agent platform. You run multiple AI agents on your machine — Claude, Codex, Qwen, Gemini, Grok — and they collaborate in real-time through a shared communication layer. Each agent runs via CLI (tmux) or direct API (Anthropic, OpenAI, Google, xAI, Alibaba). You define the roles. They coordinate. You stay in control.
 
 This is not a wrapper around a single LLM. This is an operating system for AI teams.
 
