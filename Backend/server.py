@@ -1279,7 +1279,7 @@ def _append_runtime_configure_audit(
 # Auto-saved on /activity, /send; auto-restored on /register.
 AGENT_STATE_DIR = os.path.join(BASE_DIR, "agent_state")
 os.makedirs(AGENT_STATE_DIR, exist_ok=True)
-_AGENT_STATE_WRITE_LOCK = threading.Lock()
+_AGENT_STATE_WRITE_LOCK = threading.RLock()  # RLock: _save_agent_state calls _load_agent_state re-entrantly
 
 
 _build_context_restore_message = _build_context_restore_message_impl
@@ -7607,7 +7607,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
             _save_agent_state(agent_id, state_updates)
 
             # Skills auto-provisioning: assign suggested skills if empty
-            _auto_provision_skills(agent_id)
+            # MUST run in background — acquires TEAM_CONFIG_LOCK which can
+            # deadlock the register handler if held by health daemon or writes.
+            def _bg_auto_provision(aid: str) -> None:
+                try:
+                    _auto_provision_skills(aid)
+                except Exception as exc:
+                    print(f"[register] Auto-provision skills failed for {aid}: {exc}")
+            threading.Thread(target=_bg_auto_provision, args=(agent_id,), daemon=True).start()
 
             if send_restore:
                 saved_state = _load_agent_state(agent_id)
