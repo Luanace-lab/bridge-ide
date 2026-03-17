@@ -412,6 +412,80 @@ class XaiApiBackend:
 
 
 # ---------------------------------------------------------------------------
+# Alibaba/Qwen API Backend (DashScope)
+# ---------------------------------------------------------------------------
+
+class QwenApiBackend:
+    """Alibaba DashScope API backend for Qwen models — OpenAI-compatible."""
+
+    def __init__(self, api_key: str = "", model: str = "qwen-max"):
+        self._api_key = api_key or os.environ.get("DASHSCOPE_API_KEY", os.environ.get("ALIBABA_API_KEY", ""))
+        self._model = model
+        self._sessions: dict[str, ApiAgentSession] = {}
+        self._base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+    async def start(self, agent_id: str, config: dict[str, Any]) -> bool:
+        if not self._api_key:
+            print(f"[api-backend] ERROR: No DashScope API key for {agent_id}")
+            return False
+        session = ApiAgentSession(
+            agent_id=agent_id,
+            provider="alibaba",
+            model=config.get("model", self._model),
+            system_prompt=config.get("system_prompt", ""),
+            started_at=time.time(),
+            last_activity=time.time(),
+            alive=True,
+        )
+        self._sessions[agent_id] = session
+        print(f"[api-backend] Started Qwen/DashScope session for {agent_id} (model={session.model})")
+        return True
+
+    async def send(self, agent_id: str, message: str) -> str:
+        session = self._sessions.get(agent_id)
+        if not session or not session.alive:
+            return json.dumps({"error": f"No active session for {agent_id}"})
+
+        session.messages.append({"role": "user", "content": message})
+        session.last_activity = time.time()
+
+        try:
+            import openai
+            client = openai.OpenAI(api_key=self._api_key, base_url=self._base_url)
+            messages = []
+            if session.system_prompt:
+                messages.append({"role": "system", "content": session.system_prompt})
+            messages.extend(session.messages)
+            response = client.chat.completions.create(
+                model=session.model,
+                messages=messages,
+                max_tokens=4096,
+            )
+            assistant_text = response.choices[0].message.content or ""
+            session.messages.append({"role": "assistant", "content": assistant_text})
+            if response.usage:
+                session.total_tokens += response.usage.total_tokens
+            return assistant_text
+        except Exception as exc:
+            return json.dumps({"error": str(exc)})
+
+    async def stop(self, agent_id: str) -> bool:
+        session = self._sessions.pop(agent_id, None)
+        if session:
+            session.alive = False
+            print(f"[api-backend] Stopped Qwen session for {agent_id} ({session.total_tokens} tokens)")
+            return True
+        return False
+
+    def is_alive(self, agent_id: str) -> bool:
+        session = self._sessions.get(agent_id)
+        return bool(session and session.alive)
+
+    def get_engine_name(self) -> str:
+        return "qwen-api"
+
+
+# ---------------------------------------------------------------------------
 # Backend Registry
 # ---------------------------------------------------------------------------
 
@@ -462,6 +536,12 @@ def init_api_backends(api_keys: ApiKeyConfig | None = None) -> dict[str, str]:
     else:
         results["xai"] = "no_key"
 
+    if keys.alibaba:
+        register_backend("qwen-api", QwenApiBackend(api_key=keys.alibaba))
+        results["alibaba"] = "ready"
+    else:
+        results["alibaba"] = "no_key"
+
     return results
 
 
@@ -478,7 +558,9 @@ def resolve_backend(engine: str, backend_pref: str = "") -> EngineBackend | None
             "openai": "openai-api",
             "gemini": "gemini-api",
             "google": "gemini-api",
-            "qwen": None,  # No direct API backend yet (DashScope)
+            "qwen": "qwen-api",
+            "alibaba": "qwen-api",
+            "dashscope": "qwen-api",
             "grok": "xai-api",
             "xai": "xai-api",
         }
