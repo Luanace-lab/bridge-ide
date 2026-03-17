@@ -45,7 +45,7 @@ wsl -e bash -c "git clone https://github.com/Luanace-lab/bridge-ide.git && cd br
 docker compose up
 ```
 
-**Requirements:** Python 3.10+, Node.js, tmux
+**Requirements:** Python 3.10+, tmux. **Optional:** Node.js (for n8n workflows)
 
 ## Screenshots
 
@@ -111,7 +111,7 @@ Create a project, assign a team lead, add agents, configure engines and models �
 |---------|-------------|
 | **Multi-Agent Runtime** | Run dozens of agents simultaneously across 4 engines (Claude, Codex, Qwen, Gemini). Each gets its own tmux session with auto-restart and resume. |
 | **Real-Time Communication** | WebSocket-based message bridge. Broadcast to teams, send urgent interrupts, share files. No polling. |
-| **Persistent by Design** | Soul Engine gives each agent a persistent identity. Context Bridge syncs state every 5 minutes. Memory, knowledge vault, and encrypted credentials survive every restart. |
+| **Persistent by Design** | Soul Engine gives each agent a persistent identity. Context Bridge syncs state on registration and context events. Memory, knowledge vault, and encrypted credentials survive every restart. |
 | **Full Control Center** | Live dashboard with agent status, cost tracking, task kanban, org chart, scope locks, and approval gates. 5 themes, 5 languages. |
 
 ### Integrations & Tools
@@ -147,7 +147,7 @@ Create a project, assign a team lead, add agents, configure engines and models �
 ## Architecture
 
 ```
-BRIDGE/
+bridge-ace/
 ├── Backend/
 │   ├── server.py              # HTTP :9111 + WebSocket :9112
 │   ├── bridge_mcp.py          # MCP Server (204 tools, stdio transport)
@@ -198,7 +198,7 @@ All mobile pages share:
 
 ```
 1. Install:    git clone ... && ./install.sh
-2. Start:      ./BRIDGE/Backend/start_platform.sh
+2. Start:      ./Backend/start_platform.sh
 3. Open:       http://localhost:9111
 4. Mobile:     http://<your-ip>:9111/mobile_buddy.html
 ```
