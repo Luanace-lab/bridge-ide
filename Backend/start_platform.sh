@@ -815,8 +815,8 @@ try:
     with urllib.request.urlopen(req, timeout=http_timeout) as resp:
         body = resp.read().decode("utf-8")
 except Exception as exc:  # noqa: BLE001
-    print(f"runtime configure failed: {exc}", file=sys.stderr)
-    sys.exit(1)
+    print(f"runtime configure failed: {exc} (non-fatal — server continues without CLI runtime)", file=sys.stderr)
+    sys.exit(0)  # Non-fatal: server runs without CLI agents
 
 print(body)
 PY
@@ -836,11 +836,12 @@ for attempt in 1 2 3; do
 done
 
 if [[ "${configured}" != "1" ]]; then
-  echo "runtime configure failed after retries" >&2
-  exit 1
+  echo "[WARN] runtime configure failed after retries — server runs without CLI agents" >&2
+  echo "       Install an AI CLI and restart, or use the API for agent management." >&2
+  # Do NOT exit — server is usable for UI, API, and manual agent start
 fi
 
-if ! wait_for_configured_runtime 20 0.25; then
+if [[ "${configured}" == "1" ]] && ! wait_for_configured_runtime 20 0.25; then
   echo "runtime endpoint is not configured after configure" >&2
   curl -fsS "${SERVER_URL}/runtime" >&2 || true
   tail -n 40 "${LOG_DIR}/server.log" 2>/dev/null || true
