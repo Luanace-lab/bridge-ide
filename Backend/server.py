@@ -1637,6 +1637,9 @@ def _start_agent_from_conf(agent_id: str) -> bool:
     agent_model = str(_ac.get("model", "")).strip()
     agent_role_desc = _role_description_for(_ac, fallback=agent_role)
     agent_team_members = _team_members_for(agent_id)
+    # API Backend: If team.json has "backend": "api", pass mode="api" to create_agent_session
+    agent_backend = str(_ac.get("backend", "")).strip().lower()
+    agent_mode = "api" if agent_backend == "api" else "normal"
     success = create_agent_session(
         agent_id=agent_id,
         role=agent_role,
@@ -1647,6 +1650,7 @@ def _start_agent_from_conf(agent_id: str) -> bool:
         role_description=agent_role_desc,
         config_dir=config_dir,
         mcp_servers=agent_mcp_servers,
+        mode=agent_mode,
         model=agent_model,
         permissions=_ac.get("permissions"),
         scope=_ac.get("scope"),
