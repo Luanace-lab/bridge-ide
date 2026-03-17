@@ -5546,7 +5546,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
                         # replaying sticky history as new events for caller-side loops.
                         CURSORS[agent_id] = len(MESSAGES)
                 else:
-                    CURSORS[agent_id] = len(MESSAGES)
+                    # P0-FIX: Advance cursor by exactly the number of delivered messages.
+                    # Using len(MESSAGES) would skip messages that arrived between
+                    # cursor read and cursor write (race with concurrent senders).
+                    CURSORS[agent_id] = cursor + len(unread)
 
             if unread:
                 # Agent will now process these messages — mark as BUSY
