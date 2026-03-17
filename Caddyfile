@@ -3,12 +3,13 @@
 # Usage: BRIDGE_DOMAIN=bridgeide.com docker compose up
 
 {$BRIDGE_DOMAIN:localhost} {
-	# HTTP API + Frontend → bridge-server:9111
+	# WebSocket → bridge-server:9112
 	reverse_proxy /ws bridge-server:9112
-	reverse_proxy bridge-server:9111
 
-	# Forward proto so CSP can detect HTTPS
-	header_up X-Forwarded-Proto {scheme}
+	# HTTP API + Frontend → bridge-server:9111
+	reverse_proxy bridge-server:9111 {
+		header_up X-Forwarded-Proto {scheme}
+	}
 
 	# Security headers (Caddy adds most by default)
 	header {
