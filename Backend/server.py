@@ -935,6 +935,7 @@ AUTH_TIER3_POST_PATHS = {
 AUTH_TIER3_PATTERNS = [
     re.compile(r"^/agents/[^/]+/start$"),
     re.compile(r"^/agents/[^/]+/restart$"),
+    re.compile(r"^/agents/[^/]+/stop$"),
     re.compile(r"^/agents/[^/]+/active$"),
     re.compile(r"^/agents/[^/]+/mode$"),
     re.compile(r"^/agents/[^/]+/parent$"),
@@ -6252,6 +6253,17 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if _handle_api_agent_send(self, path):
             return
         if _handle_api_agent_stop(self, path):
+            return
+
+        # POST /agents/{id}/stop — Kill agent tmux session (no restart)
+        _stop_match = re.match(r"^/agents/([^/]+)/stop$", path)
+        if _stop_match:
+            _stop_aid = _stop_match.group(1)
+            if is_session_alive(_stop_aid):
+                kill_agent_session(_stop_aid)
+                self._respond(200, {"ok": True, "agent_id": _stop_aid, "action": "stopped"})
+            else:
+                self._respond(200, {"ok": True, "agent_id": _stop_aid, "action": "already_stopped"})
             return
 
         if _handle_credentials_post(self, path):
