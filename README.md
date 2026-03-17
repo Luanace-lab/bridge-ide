@@ -109,7 +109,7 @@ Create a project, assign a team lead, add agents, configure engines and models �
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-Agent Runtime** | Run dozens of agents simultaneously across 4 engines (Claude, Codex, Qwen, Gemini). Each gets its own tmux session with auto-restart and resume. |
+| **Multi-Agent Runtime** | Run dozens of agents simultaneously across 5 engines (Claude, Codex, Qwen, Gemini, Grok). **Dual backend**: CLI mode (tmux sessions with MCP, resume, interactive) or API mode (direct API calls — no tmux needed). Each agent can use either backend. |
 | **Real-Time Communication** | WebSocket-based message bridge. Broadcast to teams, send urgent interrupts, share files. No polling. |
 | **Persistent by Design** | Soul Engine gives each agent a persistent identity. Context Bridge syncs state on registration and context events. Memory, knowledge vault, and encrypted credentials survive every restart. |
 | **Full Control Center** | Live dashboard with agent status, cost tracking, task kanban, org chart, scope locks, and approval gates. 5 themes, 5 languages. |
@@ -142,7 +142,8 @@ Create a project, assign a team lead, add agents, configure engines and models �
 | Background Daemons | 15 |
 | Supported Themes | 5 |
 | Supported Languages | 5 |
-| Supported AI Engines | 4 |
+| Supported AI Engines | 5 (Claude, Codex, Qwen, Gemini, Grok) |
+| API Providers | 5 (Anthropic, OpenAI, Google, xAI, Alibaba) |
 
 ## Architecture
 
@@ -174,6 +175,22 @@ bridge-ace/
 └── config/
     └── capability_library.json # MCP tool index (auto-built)
 ```
+
+## Dual Backend: CLI + API
+
+Bridge ACE supports two agent backends — choose per agent:
+
+| Backend | When to Use | Requirements |
+|---------|------------|--------------|
+| **CLI** (default) | Full-featured agents with MCP tools, resume, file editing | tmux + CLI installed |
+| **API** | Lightweight workers, Docker, cloud, fast tasks | API key only |
+
+**Setup API backend:**
+1. Control Center → **API Keys** tab → enter your key
+2. Or set environment variable: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.
+3. In `team.json`: set `"backend": "api"` on any agent
+
+Both backends work transparently — agents communicate via Bridge regardless of backend.
 
 ## Mobile
 
