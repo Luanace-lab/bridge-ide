@@ -12623,5 +12623,34 @@ async def bridge_git_hook_install(repo_dir: str) -> str:
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _startup_auto_register():
+    """Auto-register agent when MCP server starts (not when agent calls tool).
+
+    Solves the post-compact registration gap: after /compact, the agent loses
+    context and may not call bridge_register(). This ensures the agent is always
+    registered as long as the MCP server process is alive.
+    """
+    import asyncio
+    import time as _t
+
+    _t.sleep(3)  # Wait for MCP transport to stabilize
+
+    agent_id = os.environ.get("BRIDGE_CLI_AGENT_ID", "").strip()
+    if not agent_id:
+        return
+
+    try:
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(bridge_register(
+            agent_id,
+            role=os.environ.get("BRIDGE_CLI_ROLE", "agent"),
+        ))
+        log.info("[auto-register] Agent %s registered at MCP startup", agent_id)
+    except Exception as exc:
+        log.warning("[auto-register] Failed for %s: %s", agent_id, exc)
+
+
 if __name__ == "__main__":
+    import threading
+    threading.Thread(target=_startup_auto_register, daemon=True).start()
     mcp.run(transport="stdio")
