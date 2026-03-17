@@ -386,6 +386,17 @@ from handlers.git_lock_routes import (
     handle_post as _handle_git_lock_post,
     init as _init_git_lock_routes,
 )
+from handlers.api_keys_routes import (
+    handle_api_keys_get as _handle_api_keys_get,
+    handle_api_keys_post as _handle_api_keys_post,
+    handle_api_keys_delete as _handle_api_keys_delete,
+)
+from handlers.api_agent_routes import (
+    handle_api_agent_start as _handle_api_agent_start,
+    handle_api_agent_send as _handle_api_agent_send,
+    handle_api_agent_stop as _handle_api_agent_stop,
+    handle_api_agent_status as _handle_api_agent_status,
+)
 from daemons.supervisor import (
     _PROCESS_SUPERVISOR_STATE,
     _SUPERVISOR_INTERVAL,
@@ -5268,6 +5279,12 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if _handle_git_lock_get(self, path):
             return
 
+        # ===== API KEYS + API AGENT ENDPOINTS =====
+        if _handle_api_keys_get(self, path):
+            return
+        if _handle_api_agent_status(self, path):
+            return
+
         # ===== CREDENTIAL STORE ENDPOINTS =====
         if _handle_credentials_get(self, path):
             return
@@ -6223,6 +6240,16 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         # ===== CREDENTIAL STORE POST ENDPOINT (E1) =====
+        # ===== API KEYS + API AGENT ENDPOINTS =====
+        if _handle_api_keys_post(self, path):
+            return
+        if _handle_api_agent_start(self, path):
+            return
+        if _handle_api_agent_send(self, path):
+            return
+        if _handle_api_agent_stop(self, path):
+            return
+
         if _handle_credentials_post(self, path):
             return
 
@@ -9385,6 +9412,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if _handle_guardrails_delete(self, path):
             return
 
+        # ===== API KEYS DELETE =====
+        if _handle_api_keys_delete(self, path):
+            return
+
         # ===== CREDENTIAL DELETE ENDPOINT (E1) =====
         if _handle_credentials_delete(self, path):
             return
@@ -9857,6 +9888,18 @@ _init_git_lock_routes(
     save_locks_fn=_gc_save_locks,
     is_management_agent_fn=_is_management_agent,
 )
+
+# Initialize API backends from environment variables
+try:
+    from engine_backend import init_api_backends, ApiKeyConfig
+    _api_results = init_api_backends()
+    _api_ready = [k for k, v in _api_results.items() if v == "ready"]
+    if _api_ready:
+        print(f"[server] API backends initialized: {', '.join(_api_ready)}")
+    else:
+        print("[server] No API keys configured — API backends inactive")
+except Exception as _exc:
+    print(f"[server] API backend init skipped: {_exc}")
 
 _init_workflows(
     get_port_fn=lambda: PORT,
