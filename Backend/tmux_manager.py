@@ -1012,6 +1012,74 @@ def _ensure_persistent_symlinks(
     alt_projects.symlink_to(primary_projects)
 
 
+def _ensure_memory_symlink(workspace: Path, home_dir: Path) -> None:
+    """Ensure workspace's Claude memory dir symlinks to home_dir's memory dir.
+
+    Claude Code stores auto-memory under ~/.claude/projects/{mangled_cwd}/memory/.
+    When home_dir != workspace (the common case for Bridge-managed agents), two
+    separate memory directories exist.  This function makes the workspace memory
+    a symlink to the home_dir memory, creating a single source of truth.
+
+    The SoT is home_dir's memory because manual starts (``cd AgentDir && claude``)
+    use home_dir as CWD — that's the path the user expects.
+    """
+    if workspace.resolve() == home_dir.resolve():
+        return
+
+    mangled_home = re.sub(r"[^a-zA-Z0-9-]", "-", str(home_dir))
+    mangled_ws = re.sub(r"[^a-zA-Z0-9-]", "-", str(workspace))
+
+    if mangled_home == mangled_ws:
+        return
+
+    primary_config = Path.home() / ".claude"
+    sot_project = primary_config / "projects" / mangled_home
+    sot_memory = sot_project / "memory"
+
+    ws_project = primary_config / "projects" / mangled_ws
+    ws_memory = ws_project / "memory"
+
+    # Ensure directories exist
+    sot_project.mkdir(parents=True, exist_ok=True)
+    sot_memory.mkdir(parents=True, exist_ok=True)
+    ws_project.mkdir(parents=True, exist_ok=True)
+
+    # Case 1: Already correct symlink
+    if ws_memory.is_symlink():
+        try:
+            if ws_memory.resolve() == sot_memory.resolve():
+                return
+        except OSError:
+            pass
+        ws_memory.unlink()
+        ws_memory.symlink_to(sot_memory)
+        print(f"[memory-sot] Fixed symlink: {ws_memory} -> {sot_memory}")
+        return
+
+    # Case 2: Real directory with content — merge into SoT, then symlink
+    if ws_memory.is_dir():
+        import shutil
+        merged = 0
+        for item in ws_memory.iterdir():
+            target = sot_memory / item.name
+            if not target.exists():
+                shutil.move(str(item), str(target))
+                merged += 1
+            elif item.name == "MEMORY.md":
+                # MEMORY.md conflict: larger file wins (more accumulated knowledge)
+                if item.stat().st_size > target.stat().st_size:
+                    shutil.copy2(str(item), str(target))
+                    merged += 1
+        shutil.rmtree(str(ws_memory))
+        ws_memory.symlink_to(sot_memory)
+        print(f"[memory-sot] Merged {merged} files, symlink: {ws_memory} -> {sot_memory}")
+        return
+
+    # Case 3: Does not exist — just create symlink
+    ws_memory.symlink_to(sot_memory)
+    print(f"[memory-sot] Created symlink: {ws_memory} -> {sot_memory}")
+
+
 # ---------------------------------------------------------------------------
 # Skills Deploy — Per-Agent Skills-Filtering
 # ---------------------------------------------------------------------------
@@ -1966,6 +2034,15 @@ def create_agent_session(
 
     # Ensure persistent symlinks (SOUL.md → project-level, MEMORY.md → primary config)
     _ensure_persistent_symlinks(workspace, project_path, config_dir)
+
+    # Ensure unified memory: workspace memory → home_dir memory (SoT)
+    if spec.engine == "claude":
+        _home = layout["home_dir"]
+        if _home.resolve() != workspace.resolve():
+            try:
+                _ensure_memory_symlink(workspace, _home)
+            except Exception as exc:
+                print(f"[memory-sot] WARNING: Failed for {agent_id}: {exc}", file=sys.stderr)
 
     # 1a  Resolve and persist soul (SOUL.md created only if missing)
     guardrail_prolog, soul_section = prepare_agent_identity(agent_id, workspace)

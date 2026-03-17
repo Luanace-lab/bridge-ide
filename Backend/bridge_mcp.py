@@ -12647,9 +12647,18 @@ def _startup_auto_register():
             agent_id,
             role=os.environ.get("BRIDGE_CLI_ROLE", "agent"),
         ))
+        loop.close()
         log.info("[auto-register] Agent %s registered at MCP startup", agent_id)
     except Exception as exc:
         log.warning("[auto-register] Failed for %s: %s", agent_id, exc)
+    finally:
+        # P0-3 FIX: Background tasks (heartbeat, WS listener) were created on the
+        # throwaway event loop which is now dead. Reset references so
+        # _ensure_background_tasks() creates fresh tasks on the real MCP
+        # event loop when bridge_register is called as a tool later.
+        global _ws_task, _heartbeat_task
+        _ws_task = None
+        _heartbeat_task = None
 
 
 if __name__ == "__main__":

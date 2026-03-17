@@ -47,7 +47,9 @@ from common import (
 )
 from persistence_utils import (
     detect_instruction_filename,
+    find_agent_memory_path,
     first_existing_path,
+    memory_backup_target,
     resolve_agent_cli_layout,
 )
 from routing_policy import derive_aliases as shared_derive_aliases, derive_routes as shared_derive_routes
@@ -1777,6 +1779,58 @@ async def _context_bridge_refresh_daemon(interval: int = CONTEXT_BRIDGE_REFRESH_
         await asyncio.sleep(bounded_interval)
 
 
+def _backup_agent_memory(agent_id: str) -> bool:
+    """Backup MEMORY.md to MEMORY_BACKUP.md — runs from watcher, no agent input needed."""
+    home_dir = _get_agent_home_dir(agent_id)
+    if not home_dir:
+        return False
+    # Resolve to absolute path — agent_state has the absolute workspace
+    try:
+        payload = http_get_json(
+            f"{BRIDGE_HTTP}/agents/{agent_id}",
+            timeout=5.0,
+            headers=build_bridge_auth_headers(agent_id="system"),
+        )
+        abs_workspace = str(payload.get("workspace", "")).strip()
+        abs_home = str(payload.get("home_dir", "")).strip()
+        if abs_workspace and os.path.isabs(abs_workspace):
+            home_dir = abs_workspace
+        elif abs_home and os.path.isabs(abs_home):
+            home_dir = abs_home
+        else:
+            layout = resolve_agent_cli_layout(home_dir, agent_id)
+            home_dir = layout.get("workspace") or home_dir
+    except Exception:
+        layout = resolve_agent_cli_layout(home_dir, agent_id)
+        home_dir = layout.get("workspace") or home_dir
+
+    mem_path = find_agent_memory_path(agent_id, home_dir, "")
+    if not mem_path:
+        return False
+
+    try:
+        with open(mem_path, "r", encoding="utf-8") as fh:
+            content = fh.read()
+    except OSError:
+        return False
+
+    if not content.strip():
+        return False
+
+    backup_path = memory_backup_target(agent_id, home_dir)
+    try:
+        os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+        tmp_path = backup_path + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        os.replace(tmp_path, backup_path)
+        _flush(f"[memory_backup] {agent_id}: MEMORY_BACKUP.md geschrieben ({len(content)} chars)")
+        return True
+    except OSError as exc:
+        _flush(f"[memory_backup] {agent_id}: MEMORY_BACKUP.md fehlgeschlagen: {exc}")
+        return False
+
+
 def _get_context_usage(agent_id: str) -> int | None:
     """Parse context usage percentage from agent status line."""
     session_name = _get_session_name(agent_id)
@@ -1860,6 +1914,7 @@ async def _force_context_stop(agent_id: str, pct_used: int) -> None:
         # Engine has no compact — only write CONTEXT_BRIDGE.md
         _flush(f"[watcher] {agent_id}: Engine '{engine}' hat keinen Compact-Befehl. Nur CONTEXT_BRIDGE.md geschrieben.")
         await asyncio.to_thread(_write_context_bridge, agent_id, pct_used)
+        await asyncio.to_thread(_backup_agent_memory, agent_id)
         _log_event(f"context_{agent_id}", "watcher", agent_id, "no_compact_available", 0)
         return
 
@@ -2006,8 +2061,8 @@ async def _context_monitor(interval: int = 15) -> None:
                     await asyncio.to_thread(
                         smart_inject,
                         agent_id,
-                        "Du wurdest compacted. Lies CONTEXT_BRIDGE.md und arbeite "
-                        "an deiner letzten Aktivitaet weiter.",
+                        "Du wurdest compacted. Lies CONTEXT_BRIDGE.md und deine MEMORY.md. "
+                        "Arbeite an deiner letzten Aktivitaet weiter.",
                     )
                     recently_compacted.discard(agent_id)
                     await asyncio.to_thread(_set_activity, agent_id, "resuming", "Auto-Resume nach Compact")
@@ -2026,8 +2081,9 @@ async def _context_monitor(interval: int = 15) -> None:
                     _compact_detect_ts[agent_id] = now
                     _flush(f"[watcher] M1 pre-compact detected: {agent_id} bei {pct_used}%")
                     await asyncio.to_thread(_write_context_bridge, agent_id, pct_used)
+                    await asyncio.to_thread(_backup_agent_memory, agent_id)
                     await asyncio.to_thread(
-                        _set_activity, agent_id, "pre_compact", f"Manual compact detected — State gesichert"
+                        _set_activity, agent_id, "pre_compact", f"Manual compact detected — State+Memory gesichert"
                     )
 
             # Stage 1: warning
@@ -2037,26 +2093,28 @@ async def _context_monitor(interval: int = 15) -> None:
                 await asyncio.to_thread(_write_context_bridge, agent_id, pct_used)
                 await asyncio.to_thread(_set_activity, agent_id, "context_warning", f"Context bei {pct_used}%")
 
-            # Stage 2: write bridge
+            # Stage 2: write bridge + memory backup
             if pct_used >= 85 and agent_id not in context_bridged:
                 context_bridged.add(agent_id)
                 _flush(f"[watcher] context bridge: {agent_id} bei {pct_used}%")
                 await asyncio.to_thread(_write_context_bridge, agent_id, pct_used)
+                await asyncio.to_thread(_backup_agent_memory, agent_id)
                 await asyncio.to_thread(
                     _set_activity,
                     agent_id,
                     "context_saving",
-                    f"Context bei {pct_used}% — State wird gesichert",
+                    f"Context bei {pct_used}% — State+Memory gesichert",
                 )
 
-            # Stage 3: pre-stop injection
+            # Stage 3: pre-stop injection + memory backup
             if pct_used >= 90 and agent_id not in context_injected:
                 context_injected.add(agent_id)
                 _flush(f"[watcher] context inject: {agent_id} bei {pct_used}%")
+                await asyncio.to_thread(_backup_agent_memory, agent_id)
                 await asyncio.to_thread(
                     smart_inject,
                     agent_id,
-                    f"CONTEXT BEI {pct_used}%. State gesichert. Beende deinen aktuellen Gedanken.",
+                    f"CONTEXT BEI {pct_used}%. State+Memory gesichert. Speichere JETZT deine MEMORY.md falls du Aenderungen hast.",
                 )
 
             # Stage 4: hard stop
@@ -2759,6 +2817,16 @@ async def _memory_health_daemon(interval: int = 300) -> None:
                 except OSError:
                     continue
                 age_hours = (now - st.st_mtime) / 3600
+                # Periodic memory backup: if MEMORY.md newer than MEMORY_BACKUP.md
+                home_dir_for_backup = _get_agent_home_dir(aid)
+                if home_dir_for_backup:
+                    backup_path = memory_backup_target(aid, home_dir_for_backup)
+                    try:
+                        backup_mtime = os.path.getmtime(backup_path)
+                    except OSError:
+                        backup_mtime = 0.0
+                    if st.st_mtime > backup_mtime + 60:
+                        _backup_agent_memory(aid)
                 lines = 0
                 try:
                     with open(mem_path) as f:

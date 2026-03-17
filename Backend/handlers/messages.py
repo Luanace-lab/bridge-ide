@@ -371,6 +371,38 @@ def messages_for_agent(from_index: int, agent_id: str, team_filter: str | None =
     return subset
 
 
+def messages_for_agent_from_snapshot(
+    snapshot: list[dict[str, Any]], agent_id: str, team_filter: str | None = None
+) -> list[dict[str, Any]]:
+    """Filter a pre-copied snapshot for a specific agent — NO lock required."""
+    subset: list[dict[str, Any]] = []
+    _is_mgmt: bool | None = None
+    for msg in snapshot:
+        if team_filter:
+            if msg.get("team") != team_filter:
+                continue
+        target = str(msg.get("to", "")).strip()
+        if target == "all_managers":
+            if _is_mgmt is None:
+                _is_mgmt = _is_management_agent(agent_id)  # type: ignore[misc]
+            if not _is_mgmt:
+                continue
+        elif target.startswith("team:"):
+            team_id = target[len("team:"):]
+            members = _get_team_members(team_id)  # type: ignore[misc]
+            if agent_id not in members:
+                continue
+        elif target not in {agent_id, "all"}:
+            continue
+        msg_channel = msg.get("channel")
+        if msg_channel and target == "all":
+            team_members = _get_team_members(str(msg_channel))  # type: ignore[misc]
+            if team_members and agent_id not in team_members:
+                continue
+        subset.append(msg)
+    return subset
+
+
 def cursor_index_after_message_id(last_message_id: Any) -> int | None:
     """Translate a persisted message ID into the next unread list index.
 
