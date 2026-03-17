@@ -10375,14 +10375,30 @@
       if(!sql) return;
       const statusEl = document.getElementById('dataSqlStatus');
       const resultEl = document.getElementById('dataSqlResult');
-      statusEl.textContent = dryRun ? 'Pruefe…' : 'Fuehre aus…';
+      statusEl.textContent = dryRun ? 'Pruefe…' : 'Lade Datasets…';
       resultEl.innerHTML = '';
       try {
+        // DATA-UI-01: Auto-resolve dataset_version_ids from registered datasets
+        let datasetVersionIds = [];
+        if(!dryRun){
+          try {
+            const dsRes = await fetch(API_BASE + '/data/datasets');
+            if(dsRes.ok){
+              const dsData = await dsRes.json();
+              const items = dsData.items || dsData.datasets || [];
+              datasetVersionIds = items.map(d => d.dataset_version_id).filter(Boolean);
+            }
+          } catch(e){ /* fallback: empty array triggers server error with clear message */ }
+        }
+        statusEl.textContent = dryRun ? 'Pruefe…' : 'Fuehre aus…';
         const endpoint = dryRun ? '/data/query/dry-run' : '/data/query';
+        const payload = dryRun
+          ? {sql: sql, allowed_tables: datasetVersionIds.map(id => id.replace(/^dsv_/, 'ds_'))}
+          : {sql: sql, dataset_version_ids: datasetVersionIds};
         const res = await fetch(API_BASE + endpoint, {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({sql: sql})
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if(!res.ok){
