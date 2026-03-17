@@ -2092,9 +2092,33 @@ def create_agent_session(
         print(f"[tmux_manager] ERROR creating tmux session {session_name}", file=sys.stderr)
         return False
 
-    # 3a  Set BROWSER=false in tmux session environment to prevent OAuth browser tabs.
-    #     This ensures ALL processes in this session inherit the variable, including
-    #     the Claude CLI and any child processes it spawns.
+    # 3a  ENGINE-BUG: Extend PATH in tmux session to include user-local Node.js paths.
+    #     Server process often runs with restricted PATH that excludes ~/.nvm/ or ~/.local/bin/.
+    #     Without this, Node.js-based CLIs (codex, qwen, gemini) fail with "command not found".
+    import shutil
+    _user_home = os.path.expanduser("~")
+    _extra_paths = []
+    for _candidate in [
+        os.path.join(_user_home, ".local", "bin"),
+        os.path.join(_user_home, ".nvm", "versions", "node"),  # nvm base
+    ]:
+        if os.path.isdir(_candidate):
+            if "nvm" in _candidate:
+                # Find newest node version
+                try:
+                    _versions = sorted(os.listdir(_candidate), reverse=True)
+                    if _versions:
+                        _extra_paths.append(os.path.join(_candidate, _versions[0], "bin"))
+                except OSError:
+                    pass
+            else:
+                _extra_paths.append(_candidate)
+    if _extra_paths:
+        _current_path = os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin")
+        _extended_path = ":".join(_extra_paths) + ":" + _current_path
+        _run(["tmux", "set-environment", "-t", session_name, "PATH", _extended_path])
+
+    # 3a2 Set BROWSER=false in tmux session environment to prevent OAuth browser tabs.
     if spec.engine == "claude":
         _run(["tmux", "set-environment", "-t", session_name, "BROWSER", "false"])
 
