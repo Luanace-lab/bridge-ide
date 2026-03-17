@@ -15,8 +15,6 @@ Backend/execution_runs/
 tasks.json
 whiteboard.json
 task_transition_wal.jsonl
-Backend/agent_state/
-Backend/execution_runs/
 build/
 dist/
 *.egg-info/
@@ -26,7 +24,6 @@ screenshots/
 uploads/
 *.bak*
 .cred_key
-task_transition_wal.jsonl
 .whatsapp_watcher*
 *.tmp
 escalation_state.json
