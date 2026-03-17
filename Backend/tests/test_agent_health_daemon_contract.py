@@ -52,6 +52,7 @@ class TestAgentHealthDaemonContract(unittest.TestCase):
             "check_codex_health": lambda _agent_id: {"crashed": False, "detail": ""},
             "auto_restart_agents": lambda: True,
             "agent_last_restart": self.agent_last_restart,
+            "restart_lock": threading.Lock(),
             "restart_cooldown": lambda: 60.0,
             "auto_restart_agent": self.auto_restart_agent,
             "start_agent_from_conf": self.start_agent_from_conf,
