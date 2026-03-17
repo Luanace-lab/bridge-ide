@@ -128,7 +128,7 @@ Create a project, assign a team lead, add agents, configure engines and models �
 | Feature | Description |
 |---------|-------------|
 | **Runs Everywhere** | Native on Linux and macOS. Windows via WSL2. Docker for isolation. One install script. |
-| **15 Background Daemons** | Health monitoring, auto-restart, crash recovery, idle nudging, rate-limit detection, context tracking. |
+| **16 Background Daemons** | Health monitoring, auto-restart, crash recovery, idle nudging, rate-limit detection, context tracking. |
 | **Task System with Evidence** | Full lifecycle (create → claim → ack → done/fail) with mandatory evidence on completion. Kanban board and task tracker included. |
 | **3-Tier Auth** | Public, Agent, and Admin tiers with timing-safe tokens, rate limiting, RBAC, and scope locks. |
 
@@ -139,7 +139,7 @@ Create a project, assign a team lead, add agents, configure engines and models �
 | HTTP Endpoints | 120+ |
 | MCP Tools (built-in) | 204 |
 | MCP Ecosystem Tools | 5,387 |
-| Background Daemons | 15 |
+| Background Daemons | 16 |
 | Supported Themes | 5 |
 | Supported Languages | 5 |
 | Supported AI Engines | 5 (Claude, Codex, Qwen, Gemini, Grok) |
@@ -157,8 +157,8 @@ bridge-ace/
 │   ├── bridge_watchdog.py     # Health watchdog (cron-based)
 │   ├── soul_engine.py         # Persistent agent identity
 │   ├── capability_library.py  # 5,387 MCP tool index
-│   ├── daemons/               # 15 background monitoring threads
-│   ├── handlers/              # 38 HTTP handler modules
+│   ├── daemons/               # 16 background monitoring threads
+│   ├── handlers/              # 40 HTTP handler modules
 │   ├── start_platform.sh      # One-command platform start
 │   └── team.json              # Agent definitions (Single Source of Truth)
 ├── Frontend/
