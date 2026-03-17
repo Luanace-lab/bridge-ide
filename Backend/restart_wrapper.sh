@@ -149,7 +149,8 @@ while true; do
 
     if [ "$_healthy" = "1" ]; then
         if [ "$SKIP_AUTOSTART" = "1" ]; then
-            log "Server healthy. Wrapper autostart disabled; waiting for external bootstrap."
+            log "Server healthy. First boot — external bootstrap handles agents."
+            SKIP_AUTOSTART=0  # P0-3 FIX: Allow wrapper to auto-start agents on subsequent restarts
             wait_for_server_exit
             EXIT_CODE=$SERVER_EXIT_CODE
             END_TIME=$(date +%s)

@@ -290,7 +290,7 @@ def build_context_restore_message(agent_id: str, state: dict[str, Any]) -> str:
         lines.append("")
 
     memory_path = artifacts.get("memory_path", "")
-    memory_content = _read_text_if_present(memory_path, 2000)
+    memory_content = _read_text_if_present(memory_path, 8000)
     if memory_content:
         lines.append("")
         if os.path.basename(memory_path) == "MEMORY.md":

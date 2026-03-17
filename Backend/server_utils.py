@@ -66,11 +66,11 @@ def ensure_parent_dir(path: str) -> None:
 
 def parse_wait(value: str | None) -> float:
     if value is None:
-        return 20.0
+        return 3.0
     try:
         wait = float(value)
     except ValueError:
-        return 20.0
+        return 3.0
     if wait < 0:
         return 0.0
     if wait > _MAX_WAIT_SECONDS:

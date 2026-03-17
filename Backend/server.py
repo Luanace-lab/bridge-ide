@@ -121,6 +121,7 @@ from handlers.messages import (
     persist_message,
     append_message,
     messages_for_agent,
+    messages_for_agent_from_snapshot,
     cursor_index_after_message_id,
     _broadcast_fingerprint,
     _is_duplicate_broadcast,
@@ -5520,40 +5521,36 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     filtered = [m for m in filtered if m.get("from") == from_filter]
                 return filtered
 
+            # P0-1 SUSTAINABLE FIX: Minimize lock hold time.
+            # Lock is held ONLY for snapshot + cursor update (<1ms).
+            # Filtering happens OUTSIDE the lock — no blocking of /send, /health, etc.
             with COND:
                 cursor = CURSORS.get(agent_id, 0)
-                unread = _apply_receive_filters(
-                    messages_for_agent(cursor, agent_id, team_filter=team_filter)
-                )
+                snapshot = list(MESSAGES[cursor:])
+                new_cursor = len(MESSAGES)
 
-                if not unread and wait > 0:
+                if not snapshot and wait > 0:
                     COND.wait(timeout=wait)
                     cursor = CURSORS.get(agent_id, 0)
-                    unread = _apply_receive_filters(
-                        messages_for_agent(cursor, agent_id, team_filter=team_filter)
-                    )
+                    snapshot = list(MESSAGES[cursor:])
+                    new_cursor = len(MESSAGES)
 
-                # S1-F1 FIX: Only advance cursor if ALL unread messages are delivered.
-                # When limit truncates, don't advance — avoids silent message loss.
-                # Duplicates on next poll are acceptable, message loss is not.
+            # Filter OUTSIDE lock — no contention with other endpoints
+            unread = messages_for_agent_from_snapshot(snapshot, agent_id, team_filter=team_filter)
+            unread = _apply_receive_filters(unread)
+
+            # Cursor advancement (lock-free decision, atomic update)
+            # S1-F1 FIX: Only advance cursor if ALL unread messages are delivered.
+            with COND:
                 if from_filter:
                     # from-Filter: don't advance cursor (other messages must remain)
-                    unread = [m for m in unread if m.get("from") == from_filter]
+                    pass
                 elif limit is not None and len(unread) > limit:
                     unread = unread[-limit:]
                     if fresh_only:
-                        # Fresh-only mode intentionally drops older backlog to avoid
-                        # replaying sticky history as new events for caller-side loops.
-                        CURSORS[agent_id] = len(MESSAGES)
+                        CURSORS[agent_id] = new_cursor
                 else:
-                    # P0-FIX v2: Advance cursor to end of MESSAGES list.
-                    # We are inside `with COND:` — the same lock that protects
-                    # MESSAGES.append() + notify_all(), so no race is possible.
-                    # Previous fix (cursor + len(unread)) was wrong: unread is a
-                    # filtered subset (only messages for this agent), but cursor
-                    # is an index into the full MESSAGES list. This caused the
-                    # cursor to advance too slowly, creating stuck cursors.
-                    CURSORS[agent_id] = len(MESSAGES)
+                    CURSORS[agent_id] = new_cursor
 
             if unread:
                 # Agent will now process these messages — mark as BUSY
@@ -7589,6 +7586,11 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 AGENT_NONCES[agent_id] = session_nonce
 
             _restore_receive_cursor_from_state(agent_id, existing_state)
+            # P0-1 FIX: Ensure cursor is initialized on registration.
+            # Without this, a new agent starts at cursor=0 and scans ALL messages.
+            with COND:
+                if CURSORS.get(agent_id) is None:
+                    CURSORS[agent_id] = len(MESSAGES)
 
             # Save role to state store (preserve existing mode)
             state_updates: dict[str, Any] = {"role": role, "last_seen": now_iso}
