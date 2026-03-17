@@ -898,6 +898,39 @@ def _init_auth_tokens() -> tuple[str, str, str]:
 
 BRIDGE_USER_TOKEN, BRIDGE_REGISTER_TOKEN, _UI_SESSION_TOKEN = _init_auth_tokens()
 
+_live_tokens_cache: dict[str, str | float] = {"mtime": 0.0, "user_token": "", "register_token": ""}
+
+
+def _get_live_tokens() -> dict[str, str]:
+    """Read tokens from disk with mtime-based caching.
+
+    Env vars (os.environ) take absolute precedence.
+    Otherwise tokens are read from _TOKEN_CONFIG_FILE, re-read only
+    when the file's mtime changes.  This avoids disk I/O on every
+    request while still picking up rotations within seconds.
+    """
+    env_user = os.environ.get("BRIDGE_USER_TOKEN", "").strip()
+    env_reg = os.environ.get("BRIDGE_REGISTER_TOKEN", "").strip()
+    if env_user and env_reg:
+        return {"user_token": env_user, "register_token": env_reg}
+
+    try:
+        st = os.stat(_TOKEN_CONFIG_FILE)
+        if st.st_mtime != _live_tokens_cache["mtime"]:
+            with open(_TOKEN_CONFIG_FILE, "r") as f:
+                saved = json.load(f)
+            _live_tokens_cache["mtime"] = st.st_mtime
+            _live_tokens_cache["user_token"] = saved.get("user_token", "")
+            _live_tokens_cache["register_token"] = saved.get("register_token", "")
+    except Exception:
+        pass
+
+    return {
+        "user_token": env_user or str(_live_tokens_cache.get("user_token", "")),
+        "register_token": env_reg or str(_live_tokens_cache.get("register_token", "")),
+    }
+
+
 # ===== 3-TIER AUTH MODEL =====
 # Tier 1 — Public (NO auth): Always accessible. Frontend + Chat need these.
 # Tier 2 — Agent (Session-Token): Write-ops. Needs X-Bridge-Token from /register.
@@ -5633,10 +5666,11 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 auth = str(self.headers.get("Authorization", "")).strip()
                 if len(auth) > 7 and auth[:7].lower() == "bearer ":
                     register_token = auth[7:].strip()
-            if not BRIDGE_REGISTER_TOKEN:
+            live_tokens = _get_live_tokens()
+            if not live_tokens["register_token"]:
                 self._respond(503, {"error": "BRIDGE_REGISTER_TOKEN not configured on server"})
                 return
-            if not register_token or not secrets.compare_digest(register_token, BRIDGE_REGISTER_TOKEN):
+            if not register_token or not secrets.compare_digest(register_token, live_tokens["register_token"]):
                 self._respond(403, {"error": "invalid register token"})
                 return
 
@@ -9541,7 +9575,7 @@ def main() -> None:
 
 # --- Initialize extracted websocket module with shared state & callbacks ---
 _init_websocket_server(
-    bridge_user_token_getter=lambda: BRIDGE_USER_TOKEN,
+    bridge_user_token_getter=lambda: _get_live_tokens()['user_token'],
     ui_session_token_getter=lambda: _UI_SESSION_TOKEN,
     strict_auth_getter=lambda: BRIDGE_STRICT_AUTH,
     agent_state_lock=AGENT_STATE_LOCK,
@@ -9640,7 +9674,7 @@ _init_server_context_restore(
 )
 
 _init_server_request_auth(
-    bridge_user_token_getter=lambda: BRIDGE_USER_TOKEN,
+    bridge_user_token_getter=lambda: _get_live_tokens()['user_token'],
     ui_session_token_getter=lambda: _UI_SESSION_TOKEN,
     platform_operator_agents_getter=lambda: PLATFORM_OPERATOR_AGENTS,
     agent_state_lock=AGENT_STATE_LOCK,
@@ -9935,7 +9969,7 @@ except Exception as _exc:
 
 _init_workflows(
     get_port_fn=lambda: PORT,
-    get_bridge_user_token_fn=lambda: BRIDGE_USER_TOKEN,
+    get_bridge_user_token_fn=lambda: _get_live_tokens()['user_token'],
     get_auth_tier2_post_paths_fn=lambda: AUTH_TIER2_POST_PATHS,
     get_auth_tier3_post_paths_fn=lambda: AUTH_TIER3_POST_PATHS,
     get_auth_tier3_patterns_fn=lambda: AUTH_TIER3_PATTERNS,
