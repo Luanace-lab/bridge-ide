@@ -1889,6 +1889,28 @@ def create_agent_session(
     _validate_agent_id(agent_id)
     consume_agent_start_failure(agent_id)
     _clear_credential_failure(agent_id)
+
+    # API Backend: If caller signals backend="api" via mode, use API instead of tmux.
+    # team.json agents can set "backend": "api" — server passes this as mode="api".
+    if mode == "api":
+        try:
+            from engine_backend import resolve_backend
+            api_backend = resolve_backend(engine, "api")
+            if api_backend:
+                import asyncio
+                config = {"model": model, "system_prompt": role_description or role}
+                try:
+                    ok = asyncio.run(api_backend.start(agent_id, config))
+                    if ok:
+                        print(f"[tmux_manager] Agent {agent_id} started via API backend ({api_backend.get_engine_name()})")
+                        return True
+                except Exception as exc:
+                    print(f"[tmux_manager] API backend failed for {agent_id}: {exc} — falling back to tmux")
+            else:
+                print(f"[tmux_manager] No API backend for engine '{engine}' — falling back to tmux")
+        except ImportError:
+            print(f"[tmux_manager] engine_backend not available — falling back to tmux")
+
     try:
         spec = _tmux_engine_spec(engine)
     except ValueError as exc:
