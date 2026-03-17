@@ -1965,6 +1965,31 @@
     }
     .boardHeader--expanded{ height:auto; padding-bottom:6px; }
     .boardHeader--expanded .memberBar{ display:flex; }
+    /* Agent Search + Stop */
+    .agentSearchWrap{position:relative;margin-left:auto;flex-shrink:0;}
+    .agentSearchInput{
+      width:140px;padding:4px 8px;border-radius:6px;border:1px solid rgba(128,128,128,.2);
+      background:rgba(128,128,128,.05);color:var(--text,#e7edf5);font-size:11px;
+    }
+    .agentSearchInput::placeholder{color:rgba(128,128,128,.5);}
+    .agentSearchResults{
+      position:absolute;top:100%;right:0;z-index:999;min-width:220px;max-height:300px;overflow-y:auto;
+      background:rgba(10,12,20,.96);border:1px solid rgba(255,255,255,.08);border-radius:8px;
+      box-shadow:0 8px 24px rgba(0,0,0,.6);margin-top:4px;
+    }
+    .agentSearchItem{
+      display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;
+      border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:#e7edf5;
+    }
+    .agentSearchItem:hover{background:rgba(255,255,255,.06);}
+    .agentSearchItem__dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+    .agentSearchItem__name{flex:1;}
+    .agentSearchItem__role{font-size:10px;color:rgba(255,255,255,.4);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .agentStopBtn{
+      border:none;background:rgba(239,68,68,.15);color:#ef4444;border-radius:4px;
+      padding:2px 8px;font-size:10px;cursor:pointer;white-space:nowrap;
+    }
+    .agentStopBtn:hover{background:rgba(239,68,68,.3);}
     .memberChip{
       display:inline-flex; align-items:center; gap:4px;
       padding:0; cursor:pointer;
@@ -3990,6 +4015,10 @@
   <header class="boardHeader boardHeader--left" id="boardHeaderLeft" role="banner" aria-label="Management-Board">
     <span class="boardHeader__title" data-i18n="boardManagement">Management-Board</span>
     <div class="memberBar" id="mgmtMemberBar" aria-label="Management-Team"></div>
+    <div class="agentSearchWrap" id="mgmtAgentSearch">
+      <input type="text" class="agentSearchInput" id="mgmtSearchInput" placeholder="Agent suchen..." autocomplete="off">
+      <div class="agentSearchResults" id="mgmtSearchResults" hidden></div>
+    </div>
   </header>
   <header class="boardHeader boardHeader--right" id="boardHeaderRight" role="banner" aria-label="Team-Board">
     <div class="teamPicker" id="teamPicker">
@@ -10694,6 +10723,91 @@
         if(data.lead_id && data.team_name) showLeadOfflineModal(data.lead_id, data.team_name);
       }
     }
+
+    // ========== Agent Search + Stop ==========
+    (function(){
+      const searchInput = document.getElementById('mgmtSearchInput');
+      const searchResults = document.getElementById('mgmtSearchResults');
+      if(!searchInput || !searchResults) return;
+
+      let allAgents = [];
+      async function loadAllAgents(){
+        try {
+          const res = await safeFetch(API_BASE + '/team/orgchart');
+          if(!res) return;
+          const data = await res.json();
+          allAgents = (data.agents || []).map(a => ({
+            id: a.id, name: a.name || a.id,
+            role: a.role || a.description || '',
+            status: a.status || 'unknown',
+            level: a.level
+          }));
+        } catch(e){}
+      }
+      loadAllAgents();
+
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim().toLowerCase();
+        if(!q){ searchResults.hidden = true; return; }
+        const matches = allAgents.filter(a =>
+          a.id.toLowerCase().includes(q) || a.name.toLowerCase().includes(q) || a.role.toLowerCase().includes(q)
+        ).slice(0, 10);
+        if(matches.length === 0){ searchResults.innerHTML = '<div style="padding:12px;font-size:11px;opacity:.5">Kein Agent gefunden</div>'; searchResults.hidden = false; return; }
+        searchResults.innerHTML = matches.map(a => {
+          const dotColor = a.status === 'online' ? '#22c55e' : a.status === 'waiting' ? '#f59e0b' : '#ef4444';
+          return '<div class="agentSearchItem" data-agent="'+a.id+'">'
+            + '<span class="agentSearchItem__dot" style="background:'+dotColor+'"></span>'
+            + '<span class="agentSearchItem__name">'+a.name+'</span>'
+            + '<span class="agentSearchItem__role">'+a.role.slice(0,20)+'</span>'
+            + '<button class="agentStopBtn" data-stop="'+a.id+'" title="Agent stoppen">Stop</button>'
+            + '</div>';
+        }).join('');
+        searchResults.hidden = false;
+      });
+
+      searchResults.addEventListener('click', async (e) => {
+        const stopBtn = e.target.closest('[data-stop]');
+        if(stopBtn){
+          e.stopPropagation();
+          const agentId = stopBtn.dataset.stop;
+          if(!confirm('Agent "'+agentId+'" stoppen? tmux Session wird gekillt.')) return;
+          stopBtn.textContent = '...';
+          try {
+            const res = await fetch(API_BASE + '/agents/' + agentId + '/stop', {
+              method: 'POST', headers: {'Content-Type':'application/json'}
+            });
+            const data = await res.json();
+            if(data.ok){
+              stopBtn.textContent = '✓';
+              stopBtn.style.color = '#22c55e';
+              stopBtn.style.background = 'rgba(34,197,94,.15)';
+              // Refresh agent list
+              setTimeout(loadAllAgents, 2000);
+            } else {
+              stopBtn.textContent = 'Fehler';
+            }
+          } catch(err){ stopBtn.textContent = 'Fehler'; }
+          return;
+        }
+        // Click on agent name → focus on that agent in chat
+        const item = e.target.closest('[data-agent]');
+        if(item){
+          const agentId = item.dataset.agent;
+          searchInput.value = '';
+          searchResults.hidden = true;
+          // Select this agent as chat target
+          const targetBtn = document.querySelector('.msgTarget[data-target="'+agentId+'"]');
+          if(targetBtn) targetBtn.click();
+        }
+      });
+
+      // Close on click outside
+      document.addEventListener('click', (e) => {
+        if(!searchInput.contains(e.target) && !searchResults.contains(e.target)){
+          searchResults.hidden = true;
+        }
+      });
+    })();
 
     // ========== i18n: Initial Translation ==========
     if(typeof applyTranslations === 'function') applyTranslations();
