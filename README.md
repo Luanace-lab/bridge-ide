@@ -157,7 +157,7 @@ bridge-ace/
 │   ├── soul_engine.py         # Persistent agent identity
 │   ├── capability_library.py  # 5,387 MCP tool index
 │   ├── daemons/               # 15 background monitoring threads
-│   ├── handlers/              # 40+ HTTP handler modules
+│   ├── handlers/              # 38 HTTP handler modules
 │   ├── start_platform.sh      # One-command platform start
 │   └── team.json              # Agent definitions (Single Source of Truth)
 ├── Frontend/
