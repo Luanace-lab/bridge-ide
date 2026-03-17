@@ -45,9 +45,15 @@ fi
 echo "[OK] tmux available"
 
 # Install Python dependencies
+# PEP 668: Ubuntu 24.04+ blocks global pip installs. Use --break-system-packages
+# as Bridge is typically installed on a dedicated system or container.
 echo ""
 echo "Installing Python dependencies..."
-"${PYTHON}" -m pip install --quiet -r "${SCRIPT_DIR}/requirements.txt"
+PIP_ARGS="--quiet"
+if "${PYTHON}" -m pip install --help 2>&1 | grep -q "break-system-packages"; then
+  PIP_ARGS="${PIP_ARGS} --break-system-packages"
+fi
+"${PYTHON}" -m pip install ${PIP_ARGS} -r "${SCRIPT_DIR}/requirements.txt"
 echo "[OK] Dependencies installed"
 
 # Create runtime directories
