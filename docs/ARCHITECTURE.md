@@ -68,6 +68,7 @@ Bridge ACE (Agentic Collab Engine) is a local multi-agent platform. Multiple AI 
 - `bridge_mcp.py` — MCP server (stdio transport) providing 204 tools to agents
 - `bridge_watcher.py` — WebSocket-to-tmux message router (delivers messages to agent terminals)
 - `tmux_manager.py` — Agent session lifecycle manager
+- `engine_backend.py` — Dual CLI+API backend abstraction (5 providers: Anthropic, OpenAI, Google, xAI, Alibaba)
 - `server_startup.py` — Orchestrates daemon threads, automation scheduler, WebSocket thread, restart-wake, supervisor
 
 ## Directory Structure
