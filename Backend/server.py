@@ -9992,7 +9992,7 @@ _init_server_startup(
     rate_limit_resume_loop_fn=_rate_limit_resume_loop,
     v3_cleanup_loop_fn=_v3_cleanup_loop,
     task_timeout_loop_fn=_task_timeout_loop,
-    heartbeat_prompt_loop_fn=_heartbeat_prompt_loop,
+    heartbeat_prompt_loop_fn=lambda: None,  # Disabled: redundant with WebSocket heartbeat + health daemon + tmux nudge
     codex_hook_loop_fn=_codex_hook_loop,
     distillation_daemon_loop_fn=_distillation_daemon_loop,
     idle_agent_task_pusher_fn=_idle_agent_task_pusher,
