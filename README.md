@@ -10,6 +10,14 @@
   <a href="#installation">Install</a> · <a href="#features">Features</a> · <a href="#screenshots">Screenshots</a> · <a href="#architecture">Architecture</a> · <a href="https://github.com/Luanace-lab/bridge-ide/issues">Issues</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Luanace-lab/bridge-ide/releases"><img src="https://img.shields.io/github/v/release/Luanace-lab/bridge-ide?style=flat-square&color=blue" alt="Release"></a>
+  <a href="https://github.com/Luanace-lab/bridge-ide/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square" alt="License"></a>
+  <a href="https://github.com/Luanace-lab/bridge-ide/stargazers"><img src="https://img.shields.io/github/stars/Luanace-lab/bridge-ide?style=flat-square" alt="Stars"></a>
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square" alt="Python">
+  <img src="https://img.shields.io/badge/engines-Claude%20%7C%20Codex%20%7C%20Gemini%20%7C%20Grok%20%7C%20Qwen-orange?style=flat-square" alt="Engines">
+</p>
+
 ---
 
 ## What is Bridge ACE?
