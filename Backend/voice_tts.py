@@ -21,7 +21,7 @@ _ELEVENLABS_KEY_PATH = os.environ.get(
     "ELEVENLABS_KEY_PATH",
     os.path.expanduser("~/.config/bridge/elevenlabs_api_key"),
 )
-_DEFAULT_VOICE_ID = "REDACTED_VOICE_ID"  # Carla Blum
+_DEFAULT_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
 _MODEL_ID = "eleven_flash_v2_5"
 _OUTPUT_DIR = os.environ.get("BRIDGE_TTS_DIR", "/tmp/bridge_tts")
 _API_BASE = "https://api.elevenlabs.io/v1"
