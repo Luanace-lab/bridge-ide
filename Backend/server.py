@@ -5546,10 +5546,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
                         # replaying sticky history as new events for caller-side loops.
                         CURSORS[agent_id] = len(MESSAGES)
                 else:
-                    # P0-FIX: Advance cursor by exactly the number of delivered messages.
-                    # Using len(MESSAGES) would skip messages that arrived between
-                    # cursor read and cursor write (race with concurrent senders).
-                    CURSORS[agent_id] = cursor + len(unread)
+                    # P0-FIX v2: Advance cursor to end of MESSAGES list.
+                    # We are inside `with COND:` — the same lock that protects
+                    # MESSAGES.append() + notify_all(), so no race is possible.
+                    # Previous fix (cursor + len(unread)) was wrong: unread is a
+                    # filtered subset (only messages for this agent), but cursor
+                    # is an index into the full MESSAGES list. This caused the
+                    # cursor to advance too slowly, creating stuck cursors.
+                    CURSORS[agent_id] = len(MESSAGES)
 
             if unread:
                 # Agent will now process these messages — mark as BUSY

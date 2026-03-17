@@ -1676,9 +1676,11 @@ async def _bridge_receive_server_fallback(limit: int = 50) -> list[dict[str, Any
     global _last_seen_msg_id
     if _agent_id is None:
         return []
+    # P0-FIX: Do NOT send after_id — it conflicts with the server-side cursor.
+    # The WS listener advances _last_seen_msg_id independently, which caused
+    # the HTTP fallback to filter out ALL cursor-based unread messages.
+    # MCP-side dedup via _last_seen_msg_id (below) handles duplicates.
     params: dict[str, Any] = {"wait": 0, "limit": limit, "fresh_only": 1}
-    if _last_seen_msg_id >= 0:
-        params["after_id"] = _last_seen_msg_id
     try:
         resp = await _bridge_get(
             f"/receive/{_agent_id}",
