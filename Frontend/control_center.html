@@ -3729,6 +3729,7 @@
       <button class="ccTab" data-tab="creator" role="tab" aria-selected="false" aria-controls="tabCreator">Creator</button>
       <button class="ccTab" data-tab="marketing" role="tab" aria-selected="false" aria-controls="tabMarketing">Marketing</button>
       <button class="ccTab" data-tab="legal" role="tab" aria-selected="false" aria-controls="tabLegal">Legal</button>
+      <button class="ccTab" data-tab="apikeys" role="tab" aria-selected="false" aria-controls="tabApiKeys">API Keys</button>
     </div>
 
     <!-- ═══ DASHBOARD TAB ═══ -->
@@ -4345,6 +4346,15 @@
       </div>
 
     </div><!-- /tabLegal -->
+
+    <!-- API Keys Tab -->
+    <div class="ccTabPanel" id="tabApiKeys" data-panel="apikeys" role="tabpanel">
+      <div class="sectionLabel"><span class="sectionLabel__dot"></span> API Keys konfigurieren</div>
+      <p style="font-size:13px;color:var(--muted);margin:8px 0 16px">Gib deine API-Keys ein um Agents direkt ueber die API zu steuern — ohne CLI-Installation.</p>
+      <div id="apiKeysContainer" style="display:grid;gap:12px;max-width:600px">
+        <div style="opacity:.5;font-size:12px;padding:16px">Lade Provider...</div>
+      </div>
+    </div><!-- /tabApiKeys -->
 
   </main><!-- /combined -->
 
@@ -6735,6 +6745,7 @@
       if(tabName === 'creator'){ loadCreatorLibrary(); loadCreatorJobs(); loadCreatorVoices(); }
       if(tabName === 'marketing'){ loadMktWorkItems(); loadMktLibrary(); }
       if(tabName === 'legal'){ loadLegalClauses(); loadLegalDpa(); }
+      if(tabName === 'apikeys'){ loadApiKeys(); }
     }
 
     ccTabBtns.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
@@ -10609,6 +10620,59 @@
     }
 
     document.getElementById('mktRefreshBtn')?.addEventListener('click', () => { loadMktWorkItems(); loadMktLibrary(); });
+
+    /* ═══════════════════════════════════════════
+       API KEYS TAB
+    ═══════════════════════════════════════════ */
+    async function loadApiKeys(){
+      const container = document.getElementById('apiKeysContainer');
+      try {
+        const res = await fetch(API_BASE + '/api/keys');
+        if(!res.ok){ container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">API nicht verfuegbar</div>'; return; }
+        const data = await res.json();
+        const providers = data.providers || [];
+        if(providers.length === 0){ container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">Keine Provider konfiguriert</div>'; return; }
+        container.innerHTML = '';
+        providers.forEach(p => {
+          const card = document.createElement('div');
+          card.style.cssText = 'padding:14px;border-radius:12px;border:1px solid rgba(128,128,128,.15);display:flex;flex-direction:column;gap:8px';
+          const statusColor = p.configured ? '#22c55e' : 'rgba(128,128,128,.4)';
+          const statusText = p.configured ? 'Konfiguriert' : 'Nicht konfiguriert';
+          card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between">'
+            + '<div><strong style="font-size:14px">'+esc(p.name)+'</strong>'
+            + '<div style="font-size:11px;color:var(--muted);margin-top:2px">Engines: '+esc((p.engines||[]).join(', '))+'</div></div>'
+            + '<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:rgba('+(p.configured?'34,197,94':'128,128,128')+',.12);color:'+statusColor+'">'+statusText+'</span>'
+            + '</div>'
+            + (p.key_preview ? '<div style="font-size:11px;color:var(--muted)">Key: '+esc(p.key_preview)+'</div>' : '')
+            + '<div style="display:flex;gap:6px;align-items:center">'
+            + '<input type="password" placeholder="API Key eingeben..." data-provider="'+esc(p.id)+'" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(128,128,128,.2);background:rgba(128,128,128,.05);color:var(--text);font-size:13px">'
+            + '<button class="boardActionBtn" onclick="saveApiKey(\''+esc(p.id)+'\')" style="padding:6px 14px;font-size:12px">Speichern</button>'
+            + '</div>'
+            + (p.docs_url ? '<a href="'+esc(p.docs_url)+'" target="_blank" rel="noreferrer" style="font-size:11px;color:var(--accent)">API Key holen →</a>' : '');
+          container.appendChild(card);
+        });
+      } catch(e){ container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">Fehler: '+esc(e.message)+'</div>'; }
+    }
+
+    async function saveApiKey(providerId){
+      const input = document.querySelector('input[data-provider="'+providerId+'"]');
+      if(!input || !input.value.trim()) return;
+      try {
+        const res = await fetch(API_BASE + '/api/keys', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({provider: providerId, api_key: input.value.trim()})
+        });
+        const data = await res.json();
+        if(data.ok){
+          input.value = '';
+          input.placeholder = 'Gespeichert!';
+          setTimeout(() => loadApiKeys(), 1000);
+        } else {
+          alert('Fehler: '+(data.error || 'Unbekannt'));
+        }
+      } catch(e){ alert('Fehler: '+e.message); }
+    }
 
     /* ═══════════════════════════════════════════
        LEGAL PLATFORM TAB
