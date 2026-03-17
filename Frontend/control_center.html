@@ -10302,14 +10302,30 @@
     ═══════════════════════════════════════════ */
     let _dataSources = [];
 
+    let _allDatasets = []; // DATA-UI-02: cache datasets for cross-reference
+
     async function loadDataSources(){
       const tbody = document.getElementById('dataSourcesBody');
       const countEl = document.getElementById('dataSourceCount');
       try {
-        const res = await fetch(API_BASE + '/data/sources');
-        if(!res.ok){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px">API nicht verfuegbar ('+res.status+')</td></tr>'; return; }
-        const data = await res.json();
-        _dataSources = data.items || data.sources || (Array.isArray(data) ? data : []);
+        // DATA-UI-02: Load sources AND datasets in parallel for status enrichment
+        const [srcRes, dsRes] = await Promise.all([
+          fetch(API_BASE + '/data/sources'),
+          fetch(API_BASE + '/data/datasets')
+        ]);
+        if(!srcRes.ok){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px">API nicht verfuegbar ('+srcRes.status+')</td></tr>'; return; }
+        const srcData = await srcRes.json();
+        _dataSources = srcData.items || srcData.sources || (Array.isArray(srcData) ? srcData : []);
+        if(dsRes.ok){
+          const dsData = await dsRes.json();
+          _allDatasets = dsData.items || dsData.datasets || [];
+        }
+        // Build dataset count per source
+        const dsCountBySource = {};
+        _allDatasets.forEach(ds => {
+          const srcName = (ds.dataset_id || '').replace(/^ds_/, '');
+          dsCountBySource[srcName] = (dsCountBySource[srcName] || 0) + 1;
+        });
         countEl.textContent = _dataSources.length + ' Quellen';
         if(_dataSources.length === 0){
           tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px">Keine Datenquellen registriert</td></tr>';
@@ -10318,14 +10334,19 @@
         tbody.innerHTML = '';
         _dataSources.forEach(s => {
           const tr = document.createElement('tr');
-          const dsCount = (s.datasets || []).length;
-          tr.innerHTML = '<td>'+esc(s.name || s.source_id || '—')+'</td>'
+          const srcName = s.name || s.source_id || '';
+          const dsCount = dsCountBySource[srcName] || (s.datasets || []).length || s.dataset_count || 0;
+          const hasDatasets = dsCount > 0;
+          const effectiveStatus = hasDatasets ? 'ingested' : (s.status || 'registered');
+          tr.innerHTML = '<td>'+esc(srcName || '—')+'</td>'
             + '<td>'+esc(s.kind || s.type || s.source_type || '—')+'</td>'
-            + '<td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:'+(s.status==='ingested'?'rgba(34,197,94,.15);color:#22c55e':'rgba(128,128,128,.1);color:inherit')+'">'+esc(s.status || 'registered')+'</span></td>'
-            + '<td>'+(s.dataset_count || dsCount)+'</td>'
+            + '<td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:'+(effectiveStatus==='ingested'?'rgba(34,197,94,.15);color:#22c55e':'rgba(128,128,128,.1);color:inherit')+'">'+esc(effectiveStatus)+'</span></td>'
+            + '<td>'+dsCount+'</td>'
             + '<td><button class="boardActionBtn" style="font-size:10px;padding:2px 8px" onclick="loadDataProfile(\''+esc(s.source_id || s.id || '')+'\')">Profil</button></td>';
           tbody.appendChild(tr);
         });
+        // DATA-UI-03: Also load runs
+        loadDataRuns();
       } catch(e){
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px">Fehler: '+esc(e.message)+'</td></tr>';
       }
@@ -10337,10 +10358,20 @@
       const container = document.getElementById('dataProfileCards');
       container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">Lade Profil…</div>';
       try {
-        const res = await fetch(API_BASE + '/data/sources/' + encodeURIComponent(sourceId));
-        if(!res.ok){ container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">Fehler '+res.status+'</div>'; return; }
-        const data = await res.json();
-        const datasets = data.datasets || [];
+        // DATA-UI-03: Use cached _allDatasets instead of source detail endpoint
+        const sourceName = sourceId.replace(/^src_/, '');
+        let datasets = _allDatasets.filter(ds => {
+          const dsName = (ds.dataset_id || '').replace(/^ds_/, '');
+          return dsName === sourceName || (ds.source_id || '') === sourceId;
+        });
+        // Fallback: try source detail endpoint
+        if(datasets.length === 0){
+          const res = await fetch(API_BASE + '/data/sources/' + encodeURIComponent(sourceId));
+          if(res.ok){
+            const data = await res.json();
+            datasets = data.datasets || [];
+          }
+        }
         if(datasets.length === 0){ container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">Keine Datasets</div>'; return; }
         container.innerHTML = '';
         for(const ds of datasets){
@@ -10368,6 +10399,29 @@
           container.appendChild(card);
         }
       } catch(e){ container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">Fehler: '+esc(e.message)+'</div>'; }
+    }
+
+    // DATA-UI-03: Load and display analysis runs
+    async function loadDataRuns(){
+      const container = document.getElementById('dataRunsList');
+      try {
+        const res = await fetch(API_BASE + '/data/runs');
+        if(!res.ok){ return; }
+        const data = await res.json();
+        const runs = data.items || data.runs || (Array.isArray(data) ? data : []);
+        if(runs.length === 0){ container.innerHTML = '<div style="opacity:.5;font-size:12px;padding:16px">Keine Runs vorhanden</div>'; return; }
+        container.innerHTML = '';
+        runs.slice(0, 20).forEach(run => {
+          const statusColor = run.status === 'completed' ? '#22c55e' : run.status === 'failed' ? '#ef4444' : '#f59e0b';
+          const card = document.createElement('div');
+          card.className = 'glanceWidget';
+          card.style.cssText = 'flex:1;min-width:280px;max-width:480px;padding:12px;border-radius:8px;border:1px solid rgba(128,128,128,.15)';
+          card.innerHTML = '<div class="glanceWidget__hdr"><span class="glanceWidget__title">'+esc(run.run_id || '—')+'</span>'
+            + '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba('+(run.status==='completed'?'34,197,94':'245,158,11')+',.15);color:'+statusColor+'">'+esc(run.status || 'unknown')+'</span></div>'
+            + '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+esc((run.question || '').slice(0,100))+'</div>';
+          container.appendChild(card);
+        });
+      } catch(e){ /* silent — runs are optional */ }
     }
 
     async function dataRunQuery(dryRun){
