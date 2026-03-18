@@ -271,6 +271,17 @@ Apache License 2.0 — see [LICENSE](LICENSE).
 
 ---
 
+## Blog & Articles
+
+Learn more about Bridge ACE on our [Dev.to blog](https://dev.to/bridgeace):
+
+- [I Built a Fleet Manager for AI Coding Agents](https://dev.to/bridgeace/i-built-a-fleet-manager-for-ai-coding-agents-heres-why-single-agent-ides-arent-enough-1ob0)
+- [Bridge ACE vs Claude Code vs Cursor vs Windsurf vs Devin](https://dev.to/bridgeace/bridge-ace-vs-claude-code-vs-cursor-vs-windsurf-vs-devin-an-honest-comparison-march-2026-1de0)
+- [Tutorial: Set Up Your First AI Agent Team in 5 Minutes](https://dev.to/bridgeace/tutorial-set-up-your-first-ai-agent-team-in-5-minutes-21gk)
+- [204 MCP Tools in One Server](https://dev.to/bridgeace/204-mcp-tools-in-one-server-how-bridge-ace-gives-ai-agents-real-world-superpowers-16n4)
+
+---
+
 <p align="center">
   <strong>Bridge ACE</strong> — Agentic Collab Engine<br>
   Free and open source.
