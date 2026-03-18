@@ -2882,8 +2882,9 @@ async def watch(ws_url: str) -> None:
     asyncio.create_task(_resilient_task("codex_poll", _codex_poll_daemon, CODEX_POLL_INTERVAL))
     _flush(f"[watcher] Codex-Poll-Daemon gestartet ({CODEX_POLL_INTERVAL}s interval, resilient)")
 
-    asyncio.create_task(_resilient_task("claude_poll", _claude_poll_daemon, CLAUDE_POLL_INTERVAL))
-    _flush(f"[watcher] Claude-Poll-Daemon gestartet ({CLAUDE_POLL_INTERVAL}s interval, resilient)")
+    # DISABLED by Leo 2026-03-18: Push-delivery reicht, Polling blockiert Agents
+    # asyncio.create_task(_resilient_task("claude_poll", _claude_poll_daemon, CLAUDE_POLL_INTERVAL))
+    _flush("[watcher] Claude-Poll-Daemon DEAKTIVIERT (Push-only Modus)")
 
     asyncio.create_task(_resilient_task("memory_health", _memory_health_daemon, 300))
     _flush("[watcher] Memory-Health-Daemon gestartet (5min interval, resilient)")
