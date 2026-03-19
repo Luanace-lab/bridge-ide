@@ -5289,6 +5289,76 @@ async def bridge_stealth_start(
             "error": f"max sessions ({_STEALTH_MAX_SESSIONS}) reached. Close a session first.",
         })
 
+    _use_camoufox = engine.lower() == "camoufox"
+
+    # ===== CAMOUFOX ENGINE (0% detection — Firefox-based, C++ level stealth) =====
+    if _use_camoufox:
+        try:
+            from camoufox.async_api import AsyncCamoufox
+        except ImportError:
+            return json.dumps({
+                "status": "error",
+                "error": "camoufox not installed. Run: pip install camoufox && python -m camoufox fetch",
+            })
+        try:
+            _is_proxy_session = bool(proxy)
+            cf_kwargs: dict[str, Any] = {
+                "headless": headless,
+                "humanize": True,
+                "os": "linux",
+            }
+            if proxy:
+                cf_kwargs["proxy"] = {"server": proxy}
+
+            cf_ctx = AsyncCamoufox(**cf_kwargs)
+            browser_or_context = await cf_ctx.__aenter__()
+
+            # Camoufox returns BrowserContext directly
+            if hasattr(browser_or_context, "new_page"):
+                context = browser_or_context
+                browser = getattr(context, "browser", None) or context
+            else:
+                browser = browser_or_context
+                context = await browser.new_context()
+
+            page = await context.new_page()
+
+            # Validate profile name
+            safe_profile = ""
+            if profile:
+                import re as _re_profile
+                safe_profile = _re_profile.sub(r"[^a-zA-Z0-9_-]", "", profile.strip())[:50]
+
+            session_id = uuid.uuid4().hex[:8]
+            session = StealthSession(
+                session_id=session_id,
+                browser=browser,
+                page=page,
+                pw_context=cf_ctx,  # Store for cleanup
+                agent_id=_agent_id,
+                profile="" if _is_proxy_session else safe_profile,
+                is_proxy=_is_proxy_session,
+                firefox_like=True,  # Camoufox is Firefox-based
+            )
+            _stealth_sessions[session_id] = session
+
+            # Load persisted cookies if profile specified
+            if session.profile:
+                await _stealth_load_cookies(session)
+
+            return json.dumps({
+                "status": "ok",
+                "session_id": session_id,
+                "engine": "camoufox",
+                "detection_score": "0%",
+                "headless": headless,
+                "humanize": True,
+                "proxy": bool(proxy),
+            })
+        except Exception as exc:
+            return json.dumps({"status": "error", "error": f"camoufox launch failed: {exc}"})
+
+    # ===== PATCHRIGHT/PLAYWRIGHT ENGINE (Chromium with JS spoofing) =====
     try:
         from patchright.async_api import async_playwright
     except ImportError:
