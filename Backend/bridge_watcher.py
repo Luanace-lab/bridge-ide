@@ -893,6 +893,18 @@ def _is_at_prompt(session_name: str) -> bool:
         # Engine-specific: Codex shows "codex>" or "$", Claude shows "❯"
         if any(p in last for p in ("codex>", "$ ", "> ", "❯ ")):
             return True
+        # CLI busy indicators — agent is working, do NOT inject
+        _busy = ("Working", "esc to interrupt", "Thinking", "Reading",
+                 "Editing", "Running", "Searching", "Explored", "Called",
+                 "plan mode on", "Gallivanting", "Hatching", "Transmuting",
+                 "Compacting", "✻")
+        if any(p in last for p in _busy):
+            return False
+        # Check second-to-last line too (busy indicator may be above cursor)
+        if len(lines) >= 2:
+            prev = lines[-2].rstrip()
+            if any(p in prev for p in _busy):
+                return False
         # Editor indicators (vi/vim/nano/less) — do NOT inject
         if any(p in last for p in ("-- INSERT --", "-- NORMAL --", "~", "(END)", "lines 1-")):
             return False
