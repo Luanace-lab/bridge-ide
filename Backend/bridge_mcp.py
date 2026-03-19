@@ -707,9 +707,10 @@ _STEALTH_PROXY_OPSEC_ARGS = [
     "--disable-background-networking",
 ]
 
-# Tor Browser User-Agent (matches Tor Browser 15.0 / Firefox ESR 140)
+# Tor Browser User-Agent (matches Tor Browser stable / Firefox ESR 128)
+# ALL Tor Browser users share this EXACT UA regardless of OS
 _STEALTH_TOR_UA = (
-    "Mozilla/5.0 (Windows NT 10.0; rv:140.0) Gecko/20100101 Firefox/140.0"
+    "Mozilla/5.0 (Windows NT 10.0; rv:128.0) Gecko/20100101 Firefox/128.0"
 )
 
 _STEALTH_FIREFOX_LIKE_STRIPPED_HEADERS = {
@@ -4099,7 +4100,7 @@ def _resolve_whatsapp_recipient(name_or_jid: str) -> str:
     """Resolve friendly name to JID. Returns input unchanged if already a JID."""
     if "@" in name_or_jid:
         return name_or_jid
-    # Normalize phone numbers: +4915111222906 → 4915111222906@s.whatsapp.net
+    # Normalize phone numbers: +49151XXXXXXXX → 49151XXXXXXXX@s.whatsapp.net
     stripped = name_or_jid.lstrip("+")
     if stripped.isdigit() and len(stripped) >= 7:
         return f"{stripped}@s.whatsapp.net"
@@ -5352,8 +5353,10 @@ async def bridge_stealth_start(
                 timezone_id="Etc/UTC",
                 viewport=_tor_viewport,
                 screen={"width": 1000, "height": 900},
-                # Tor Browser UA: Linux (must match actual OS to avoid platform mismatch)
-                user_agent="Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
+                # Tor Browser UA: Windows (all Tor Browser users share the SAME UA regardless of OS)
+                # ESR 128 = current Tor Browser stable. Linux platform mismatch is accepted
+                # because resistFingerprinting normalizes navigator.platform to "Linux x86_64"
+                user_agent="Mozilla/5.0 (Windows NT 10.0; rv:128.0) Gecko/20100101 Firefox/128.0",
             )
             page = await context.new_page()
 
@@ -6529,6 +6532,9 @@ _OBFS4_TORRC_TEMPLATE = """# Bridge ACE Tor Configuration — obfs4 pluggable tr
 # ISP sees HTTPS traffic, NOT Tor protocol
 UseBridges 1
 ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
+
+# Vanguards: Guard Discovery reduced from seconds to months (NSA/Europol countermeasure)
+VanguardsEnabled 1
 
 # Public obfs4 bridges (from bridges.torproject.org)
 # Replace with your own bridges for maximum security
