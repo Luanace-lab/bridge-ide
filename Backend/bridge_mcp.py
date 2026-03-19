@@ -5306,7 +5306,7 @@ async def bridge_stealth_start(
             _is_proxy_session = bool(proxy)
             pw = await _ff_pw().start()
 
-            # Tor-optimized Firefox preferences (resistFingerprinting)
+            # Tor-optimized Firefox preferences (resistFingerprinting + forensic hardening)
             _ff_prefs = {
                 "privacy.resistFingerprinting": True,
                 "privacy.resistFingerprinting.letterboxing": True,
@@ -5318,9 +5318,12 @@ async def bridge_stealth_start(
                 "media.navigator.enabled": False,                # Hide media devices
                 "geo.enabled": False,                            # No geolocation
                 "dom.battery.enabled": False,                    # No battery API
+                "dom.webaudio.enabled": False,                   # Kill AudioContext (fingerprint)
+                "dom.netinfo.enabled": False,                    # Kill NetworkInfo API
                 "network.dns.disablePrefetch": True,             # No DNS prefetch
                 "network.prefetch-next": False,                  # No link prefetch
                 "network.proxy.socks_remote_dns": True,          # DNS through SOCKS (critical!)
+                "network.trr.mode": 3,                           # DNS-over-HTTPS only (no system DNS fallback!)
                 "javascript.options.wasm": False,                # No WebAssembly (fingerprint vector)
                 "webgl.disabled": True,                          # No WebGL (fingerprint vector)
             }
@@ -5333,11 +5336,15 @@ async def bridge_stealth_start(
                 ff_launch["proxy"] = {"server": proxy}
 
             browser = await pw.firefox.launch(**ff_launch)
+            # Tor Browser viewport: 1000x900 (letterboxing standard)
+            _tor_viewport = {"width": 1000, "height": 900}
             context = await browser.new_context(
                 locale="en-US",
                 timezone_id="Etc/UTC",
-                viewport={"width": 1920, "height": 1080},
-                screen={"width": 1920, "height": 1080},
+                viewport=_tor_viewport,
+                screen={"width": 1000, "height": 900},
+                # Tor Browser UA: Linux (must match actual OS to avoid platform mismatch)
+                user_agent="Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
             )
             page = await context.new_page()
 
@@ -5363,10 +5370,8 @@ async def bridge_stealth_start(
                 except Exception as _dns_exc:
                     dns_leak_test = {"error": str(_dns_exc)}
 
+            # Tor: NEVER persist cookies (forensic isolation)
             safe_profile = ""
-            if profile:
-                import re as _re_profile
-                safe_profile = _re_profile.sub(r"[^a-zA-Z0-9_-]", "", profile.strip())[:50]
 
             session_id = uuid.uuid4().hex[:8]
             session = StealthSession(
@@ -5375,7 +5380,7 @@ async def bridge_stealth_start(
                 page=page,
                 pw_context=pw,
                 agent_id=_agent_id,
-                profile=safe_profile,
+                profile="",  # Tor: no cookie persistence (forensic hardening)
                 is_proxy=_is_proxy_session,
                 firefox_like=True,
             )
@@ -5632,6 +5637,12 @@ async def bridge_stealth_goto(session_id: str, url: str, timeout: int = 30000) -
         return json.dumps({"status": "error", "error": f"invalid URL: must start with http:// or https://"})
 
     try:
+        # Forensic hardening: human-like navigation delay for Tor/proxy sessions
+        if session.is_proxy or session.firefox_like:
+            _nav_jitter = random.gauss(2.5, 0.8)  # Mean 2.5s, std 0.8s
+            _nav_jitter = max(0.5, min(5.0, _nav_jitter))  # Clamp 0.5-5.0s
+            await asyncio.sleep(_nav_jitter)
+
         response = await session.page.goto(url, wait_until="commit", timeout=timeout)
         _nav_scripts = _stealth_scripts_for_session(
             is_proxy=session.is_proxy,
