@@ -79,19 +79,26 @@ _N8N_ENV_FILE = os.path.expanduser("~/.config/bridge/n8n.env")
 
 
 def _load_bridge_register_token(token_file: str | None = None) -> str:
-    token = os.environ.get("BRIDGE_REGISTER_TOKEN", "").strip()
-    if token:
-        return token
+    """Load register token — ALWAYS prefer disk over env var.
 
+    The env var BRIDGE_REGISTER_TOKEN is a snapshot frozen at agent launch.
+    After server restart, tokens.json is updated but the env var stays stale.
+    Reading from disk ensures we always use the current token.
+    Env var is only used as last-resort fallback if the file is unreadable.
+    """
     configured_path = os.environ.get("BRIDGE_TOKEN_CONFIG_FILE", "").strip()
     path = os.path.expanduser(token_file or configured_path or _TOKEN_CONFIG_FILE)
     try:
         with open(path, encoding="utf-8") as f:
             payload = json.load(f)
+        disk_token = str(payload.get("register_token", "")).strip()
+        if disk_token:
+            return disk_token
     except (OSError, json.JSONDecodeError):
-        return ""
+        pass
 
-    return str(payload.get("register_token", "")).strip()
+    # Fallback: env var (may be stale after server restart, but better than nothing)
+    return os.environ.get("BRIDGE_REGISTER_TOKEN", "").strip()
 
 
 def _load_n8n_config() -> tuple[str, str]:
