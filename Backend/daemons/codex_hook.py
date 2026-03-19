@@ -92,80 +92,9 @@ def _codex_hook_tick() -> list[str]:
         "bridge_send",
         "bridge_task",
     ]
-    prompt = (
-        "\nbridge_receive und weiterarbeiten. "
-        "Rufe bridge_receive() auf, lies Nachrichten, "
-        "pruefe bridge_task_queue(state='created'). Starte JETZT.\n"
-    )
-
-    for agent_id in codex_agents:
-        if not agent_id:
-            continue
-        last_inject = _CODEX_HOOK_COOLDOWN.get(agent_id, 0.0)
-        if now - last_inject < _CODEX_HOOK_MIN_GAP:
-            continue
-
-        session_name = _tmux_session_for_cb(agent_id)
-        try:
-            chk = subprocess.run(
-                ["tmux", "has-session", "-t", session_name],
-                capture_output=True,
-                timeout=3,
-            )
-            if chk.returncode != 0:
-                continue
-        except Exception:
-            continue
-
-        try:
-            cap = subprocess.run(
-                ["tmux", "capture-pane", "-t", session_name, "-p", "-l", "5"],
-                capture_output=True,
-                text=True,
-                timeout=3,
-            )
-            if cap.returncode != 0:
-                continue
-            pane_text = cap.stdout.strip()
-        except Exception:
-            continue
-        if not pane_text:
-            continue
-
-        last_lines = pane_text.splitlines()[-3:]
-        combined = " ".join(last_lines).lower()
-        if any(indicator in combined for indicator in busy_indicators):
-            continue
-
-        has_work = False
-        with _msg_lock:
-            cursor = _cursors.get(agent_id, 0)
-            for msg in _messages[cursor:]:
-                if msg.get("to") in (agent_id, "all") and msg.get("from") != agent_id:
-                    has_work = True
-                    break
-
-        if not has_work:
-            with _task_lock:
-                for task in _tasks.values():
-                    if task.get("state") == "created":
-                        if not task.get("assigned_to") or task.get("assigned_to") == agent_id:
-                            has_work = True
-                            break
-
-        if not has_work:
-            continue
-
-        _CODEX_HOOK_COOLDOWN[agent_id] = now
-        try:
-            subprocess.run(
-                ["tmux", "send-keys", "-t", session_name, "-l", prompt],
-                capture_output=True,
-                timeout=3,
-            )
-            injected.append(agent_id)
-        except Exception:
-            pass
+    # Disabled: tmux injections waste agent context tokens.
+    # Codex agents should self-poll via bridge_receive.
+    # Previously injected "bridge_receive und weiterarbeiten" via tmux send-keys.
 
     return injected
 

@@ -3852,13 +3852,16 @@ _NUDGE_BUFFER = "bridge_nudge"  # tmux buffer name for nudge text
 
 
 def _nudge_idle_agent(agent_id: str, reason: str = "at_prompt") -> bool:
-    """Send recovery prompt to agent sitting at idle prompt. Ref: ISSUE-002.
+    """Disabled: tmux nudges waste agent context tokens.
 
-    Uses tmux load-buffer + paste-buffer (reliable for TUI apps like Claude Code).
-    tmux send-keys sends characters individually which TUIs can mishandle.
-    Buffer paste inserts text as a block — much more reliable.
-    Engine-aware enter_count: Claude needs 2x Enter (TUI), others 1x.
+    Previously sent 'bridge_receive und weiterarbeiten.' via tmux paste-buffer.
+    This was interpreted as user input by the agent CLI, burning context with
+    no value. Agents should self-poll via bridge_receive in their own loop.
     """
+    print(f"[recovery] Nudge skipped for {agent_id} (reason={reason}) — disabled to save context")
+    return False
+
+    # Dead code below kept for reference during transition
     session_name = _tmux_session_for(agent_id)
     engine = _get_agent_engine(agent_id)
     enter_count = 2 if engine == "claude" else 1

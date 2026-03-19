@@ -2475,13 +2475,10 @@ async def _claude_poll_daemon(interval: int = CLAUDE_POLL_INTERVAL) -> None:
                 if time.time() - last_inj < COOLDOWN_AGENT_DIRECT:
                     continue
 
-                trigger = (
-                    "bridge_receive und weiterarbeiten. "
-                    "Danach bridge_task_queue(state='created', limit=5) pruefen."
-                )
-                ok = await asyncio.to_thread(smart_inject, aid, trigger)
-                if ok:
-                    _last_injection_time[session_name] = time.time()
+                # Disabled: tmux injections waste agent context tokens.
+                # Agents should self-poll via bridge_receive.
+                ok = False
+                print(f"[claude_poll] Skipping tmux injection for {aid} — disabled to save context")
 
                 _claude_poll_state["last_poll_ts"] = time.time()
                 _claude_poll_state["last_poll_agent"] = aid
