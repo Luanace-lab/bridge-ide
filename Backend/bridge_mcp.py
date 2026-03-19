@@ -5409,6 +5409,10 @@ async def bridge_stealth_start(
             }
             if dns_leak_test:
                 result["dns_leak_test"] = dns_leak_test
+            # Auto-start traffic padding for Tor sessions
+            if _is_proxy_session and "9050" in proxy:
+                _start_tor_padding(session_id)
+                result["traffic_padding"] = True
             return json.dumps(result)
         except Exception as exc:
             return json.dumps({"status": "error", "error": f"Firefox Tor launch failed: {exc}"})
@@ -5879,6 +5883,9 @@ async def bridge_stealth_close(session_id: str) -> str:
     session = _stealth_sessions.pop(session_id, None)
     if not session:
         return json.dumps({"status": "error", "error": f"session '{session_id}' not found"})
+
+    # Stop traffic padding if active
+    _stop_tor_padding(session_id)
 
     try:
         # Save cookies before closing
@@ -6463,6 +6470,132 @@ async def bridge_tor_status() -> str:
         "ip_leaked": ip_leaked,
         "leak_test": "PASS" if ip_leaked is False else ("FAIL — IPs match!" if ip_leaked else "INCONCLUSIVE"),
     })
+
+
+# --- Tor Traffic Padding (anti-traffic-analysis) ---
+
+_TOR_PADDING_SITES = [
+    "https://www.wikipedia.org", "https://www.bbc.com", "https://www.reuters.com",
+    "https://www.nature.com", "https://www.arxiv.org", "https://www.gutenberg.org",
+    "https://www.python.org", "https://www.rust-lang.org", "https://www.mozilla.org",
+    "https://www.debian.org", "https://www.kernel.org", "https://www.apache.org",
+    "https://www.w3.org", "https://www.ietf.org", "https://www.unicode.org",
+    "https://www.archive.org", "https://www.openstreetmap.org", "https://www.fsf.org",
+    "https://www.eff.org", "https://www.torproject.org",
+]
+_TOR_PADDING_TASKS: dict[str, asyncio.Task] = {}  # session_id → padding task
+
+
+async def _tor_padding_loop(session_id: str) -> None:
+    """Background task: send dummy HTTPS requests through Tor at human-like intervals."""
+    try:
+        async with httpx.AsyncClient(
+            proxy=f"socks5://127.0.0.1:{_TOR_SOCKS_PORT}",
+            timeout=10.0,
+            follow_redirects=True,
+        ) as client:
+            while session_id in _stealth_sessions:
+                url = random.choice(_TOR_PADDING_SITES)
+                try:
+                    await client.get(url)
+                except Exception:
+                    pass  # Silent — padding is best-effort
+                # Human-like interval: Gauss(500ms, 200ms), clamped 200ms-2s
+                delay = max(0.2, min(2.0, random.gauss(0.5, 0.2)))
+                await asyncio.sleep(delay)
+    except asyncio.CancelledError:
+        pass
+    except Exception:
+        pass
+
+
+def _start_tor_padding(session_id: str) -> None:
+    """Start traffic padding for a Tor session."""
+    if session_id not in _TOR_PADDING_TASKS:
+        task = asyncio.ensure_future(_tor_padding_loop(session_id))
+        _TOR_PADDING_TASKS[session_id] = task
+
+
+def _stop_tor_padding(session_id: str) -> None:
+    """Stop traffic padding for a session."""
+    task = _TOR_PADDING_TASKS.pop(session_id, None)
+    if task and not task.done():
+        task.cancel()
+
+
+# --- Obfs4 Bridge Configuration ---
+
+_OBFS4_TORRC_TEMPLATE = """# Bridge ACE Tor Configuration — obfs4 pluggable transport
+# ISP sees HTTPS traffic, NOT Tor protocol
+UseBridges 1
+ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
+
+# Public obfs4 bridges (from bridges.torproject.org)
+# Replace with your own bridges for maximum security
+Bridge obfs4 193.11.166.194:27020 2D82C2E354D531A68469ADA8C1E43D973CB6FF87 cert=4TLQPIAyzbkLFMKpKNT6GNMJKcBvydBM4OTH4QMVi4JB/cFlMM3ARfyLGCbhzI7bWI4v0A iat-mode=0
+Bridge obfs4 193.11.166.194:27015 2D82C2E354D531A68469ADA8C1E43D973CB6FF87 cert=4TLQPIAyzbkLFMKpKNT6GNMJKcBvydBM4OTH4QMVi4JB/cFlMM3ARfyLGCbhzI7bWI4v0A iat-mode=0
+Bridge obfs4 85.31.186.98:443 011F2599C0E9B27EE74B353155E244813763C3E5 cert=ayq0XzCwhpdysn5o0EyDUbmSOx3X/oTEbzDMvczHOl79AzVCBNF3Xqsf9O9mHR96VGMpA iat-mode=0
+
+SocksPort 9050
+"""
+
+
+@mcp.tool(
+    name="bridge_tor_obfs4_enable",
+    description=(
+        "Enable obfs4 pluggable transport for Tor. ISP sees HTTPS traffic instead of Tor protocol. "
+        "Writes torrc with obfs4 bridge config and restarts Tor. Requires obfs4proxy installed."
+    ),
+)
+async def bridge_tor_obfs4_enable() -> str:
+    if _agent_id is None:
+        return json.dumps({"status": "error", "error": "not registered"})
+
+    # Check obfs4proxy
+    import shutil
+    if not shutil.which("obfs4proxy"):
+        return json.dumps({
+            "status": "error",
+            "error": "obfs4proxy not installed. Run: sudo apt install obfs4proxy",
+        })
+
+    torrc_path = os.path.expanduser("~/.config/bridge/torrc")
+    os.makedirs(os.path.dirname(torrc_path), exist_ok=True)
+
+    # Backup existing torrc
+    if os.path.isfile(torrc_path):
+        import shutil as _sh
+        _sh.copy2(torrc_path, torrc_path + ".bak")
+
+    with open(torrc_path, "w") as f:
+        f.write(_OBFS4_TORRC_TEMPLATE)
+
+    # Restart Tor with new config
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "tor", "-f", torrc_path, "--quiet",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
+        await asyncio.sleep(10)  # Wait for Tor + obfs4 bootstrap
+
+        import socket
+        try:
+            s = socket.create_connection(("127.0.0.1", _TOR_SOCKS_PORT), timeout=3)
+            s.close()
+            tor_ok = True
+        except (ConnectionRefusedError, OSError):
+            tor_ok = False
+
+        return json.dumps({
+            "status": "ok" if tor_ok else "warning",
+            "obfs4_enabled": True,
+            "torrc_path": torrc_path,
+            "tor_socks": f"127.0.0.1:{_TOR_SOCKS_PORT}",
+            "tor_running": tor_ok,
+            "isp_sees": "HTTPS (obfs4 encrypted, NOT Tor protocol)",
+        })
+    except Exception as exc:
+        return json.dumps({"status": "error", "error": f"Tor restart failed: {exc}"})
 
 
 # ===== CDP BROWSER CONNECT (Leo's Real Browser) =====
