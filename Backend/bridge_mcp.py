@@ -5303,7 +5303,7 @@ async def bridge_stealth_start(
         try:
             _is_proxy_session = bool(proxy)
             cf_kwargs: dict[str, Any] = {
-                "headless": headless,
+                "headless": "virtual" if headless else False,  # Xvfb virtual display (0% detection)
                 "humanize": True,
                 "os": "linux",
             }
