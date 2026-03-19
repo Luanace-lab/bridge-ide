@@ -5350,7 +5350,7 @@ async def bridge_stealth_start(
             _tor_viewport = {"width": 1000, "height": 900}
             context = await browser.new_context(
                 locale="en-US",
-                timezone_id="Etc/UTC",
+                timezone_id="UTC",
                 viewport=_tor_viewport,
                 screen={"width": 1000, "height": 900},
                 # Tor Browser UA: Windows (all Tor Browser users share the SAME UA regardless of OS)

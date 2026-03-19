@@ -5667,7 +5667,6 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 self._respond(503, {"error": "BRIDGE_REGISTER_TOKEN not configured on server"})
                 return
             if not register_token or not secrets.compare_digest(register_token, live_tokens["register_token"]):
-                print(f"[auth-debug] /register 403: received_token={register_token[:16] if register_token else 'EMPTY'}... expected={live_tokens['register_token'][:16]}...")
                 self._respond(403, {"error": "invalid register token"})
                 return
 
