@@ -283,21 +283,7 @@ def _agent_health_tick(cleanup_counter: int) -> int:
                     time.time(),
                 )
                 if _hb_age > 300:
-                    _nudge_key = f"recovery_nudge:{agent_id}"
-                    _last_nudge = _agent_last_restart.get(_nudge_key, 0)
-                    if (time.time() - _last_nudge) > 120:
-                        _agent_last_restart[_nudge_key] = time.time()
-                        _needs_nudge = True
-            if _needs_nudge:
-                session_name = f"acw_{agent_id}"
-                try:
-                    import subprocess as _sp
-                    _sp.run(["tmux", "send-keys", "-t", session_name,
-                             "Lies deine Dokumentation. Registriere dich via bridge_register.",
-                             "Enter"], capture_output=True, timeout=3)
-                    print(f"[health] Recovery-nudge sent to {agent_id} (no heartbeat {int(_hb_age)}s)")
-                except Exception:
-                    pass
+                    print(f"[health] Agent {agent_id}: no heartbeat for {int(_hb_age)}s — skipping tmux nudge (context waste)")
 
         if _is_session_alive_cb(agent_id) and agent_id in conf_ids:
             if _is_agent_at_oauth_prompt_cb(agent_id):

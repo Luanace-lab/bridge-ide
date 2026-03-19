@@ -3533,27 +3533,20 @@ def _ensure_agent_online(agent_id: str, task_id: str = "", requester: str = "") 
     tmux_alive = is_session_alive(agent_id)
 
     if tmux_alive:
-        # Session alive but not registered → send wake message via tmux
-        wake_msg = (
-            f"bridge_receive und weiterarbeiten. "
-            f"Du hast einen neuen Task: {task_id}. Registriere dich mit bridge_register."
-        )
-        try:
-            send_to_session(agent_id, wake_msg)
-        except Exception as exc:
-            print(f"[ensure_online] Failed to send wake to {agent_id}: {exc}")
+        # Session alive but not registered — log only, no tmux send-keys (wastes agent context)
+        print(f"[ensure_online] {agent_id}: tmux alive but not registered. No nudge sent (context waste).")
         # Notify requester
         if requester:
             try:
                 append_message("system", requester,
-                               f"[AGENT WAKE] {agent_id} laeuft aber war nicht registriert. Wake-Signal gesendet.")
+                               f"[AGENT WAKE] {agent_id} laeuft aber ist nicht registriert. Kein tmux-Nudge (spart Kontext).")
             except Exception:
                 pass
         # Post whiteboard alert
         _whiteboard_post("system", "alert",
-                         f"Agent {agent_id} nicht registriert — Wake-Signal gesendet",
+                         f"Agent {agent_id} nicht registriert — tmux lebt, kein Nudge",
                          task_id=task_id, severity="warning", ttl_seconds=300)
-        return {"online": False, "action": "wake_sent", "detail": f"tmux alive, wake sent to {agent_id}"}
+        return {"online": False, "action": "no_nudge", "detail": f"tmux alive, no nudge sent to {agent_id} (context waste)"}
 
     # 3. tmux session dead → try auto-restart
     if AUTO_RESTART_AGENTS:
