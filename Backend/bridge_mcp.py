@@ -6173,6 +6173,168 @@ async def bridge_captcha_solve_native(
     return json.dumps(result)
 
 
+# ===== TOR INTEGRATION (IP Anonymization) =====
+
+_TOR_SOCKS_PORT = 9050
+_TOR_CONTROL_PORT = 9051
+
+
+@mcp.tool(
+    name="bridge_tor_start",
+    description=(
+        "Check if Tor service is running. Returns SOCKS proxy address. "
+        "If Tor is not running, attempts to start it."
+    ),
+)
+async def bridge_tor_start() -> str:
+    if _agent_id is None:
+        return json.dumps({"status": "error", "error": "not registered"})
+    import socket
+    # Check if Tor SOCKS port is open
+    try:
+        s = socket.create_connection(("127.0.0.1", _TOR_SOCKS_PORT), timeout=2)
+        s.close()
+        tor_running = True
+    except (ConnectionRefusedError, OSError):
+        tor_running = False
+
+    if not tor_running:
+        # Try to start Tor
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "tor", "--runas-tor", "--SocksPort", str(_TOR_SOCKS_PORT),
+                "--ControlPort", str(_TOR_CONTROL_PORT),
+                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+            )
+            await asyncio.sleep(5)  # Wait for Tor to bootstrap
+            s = socket.create_connection(("127.0.0.1", _TOR_SOCKS_PORT), timeout=2)
+            s.close()
+            tor_running = True
+        except Exception as exc:
+            return json.dumps({"status": "error", "error": f"Tor not running and failed to start: {exc}"})
+
+    # Verify by fetching exit IP
+    try:
+        async with httpx.AsyncClient(
+            proxy=f"socks5://127.0.0.1:{_TOR_SOCKS_PORT}",
+            timeout=15.0,
+        ) as client:
+            resp = await client.get("https://ifconfig.me/ip")
+            exit_ip = resp.text.strip()
+    except Exception as exc:
+        exit_ip = f"UNKNOWN ({exc})"
+
+    return json.dumps({
+        "status": "ok",
+        "tor_running": True,
+        "socks_proxy": f"socks5://127.0.0.1:{_TOR_SOCKS_PORT}",
+        "exit_ip": exit_ip,
+        "hint": "Use proxy='socks5://127.0.0.1:9050' in bridge_stealth_start()",
+    })
+
+
+@mcp.tool(
+    name="bridge_tor_rotate",
+    description=(
+        "Request a new Tor circuit (new exit IP). Uses stem NEWNYM signal. "
+        "Returns the new exit IP after rotation."
+    ),
+)
+async def bridge_tor_rotate() -> str:
+    if _agent_id is None:
+        return json.dumps({"status": "error", "error": "not registered"})
+    try:
+        from stem import Signal
+        from stem.control import Controller
+    except ImportError:
+        return json.dumps({"status": "error", "error": "stem not installed. Run: pip install stem"})
+
+    try:
+        with Controller.from_port(port=_TOR_CONTROL_PORT) as controller:
+            controller.authenticate()
+            controller.signal(Signal.NEWNYM)
+    except Exception as exc:
+        return json.dumps({"status": "error", "error": f"Tor circuit rotation failed: {exc}. Is ControlPort {_TOR_CONTROL_PORT} enabled in torrc?"})
+
+    # Wait for new circuit
+    await asyncio.sleep(3)
+
+    # Fetch new exit IP
+    try:
+        async with httpx.AsyncClient(
+            proxy=f"socks5://127.0.0.1:{_TOR_SOCKS_PORT}",
+            timeout=15.0,
+        ) as client:
+            resp = await client.get("https://ifconfig.me/ip")
+            new_ip = resp.text.strip()
+    except Exception as exc:
+        new_ip = f"UNKNOWN ({exc})"
+
+    return json.dumps({
+        "status": "ok",
+        "new_exit_ip": new_ip,
+        "rotated": True,
+    })
+
+
+@mcp.tool(
+    name="bridge_tor_status",
+    description=(
+        "Check Tor status: running, exit IP, SOCKS port. "
+        "Also performs IP leak test — verifies traffic goes through Tor."
+    ),
+)
+async def bridge_tor_status() -> str:
+    if _agent_id is None:
+        return json.dumps({"status": "error", "error": "not registered"})
+    import socket
+
+    # Check SOCKS port
+    try:
+        s = socket.create_connection(("127.0.0.1", _TOR_SOCKS_PORT), timeout=2)
+        s.close()
+        socks_open = True
+    except (ConnectionRefusedError, OSError):
+        socks_open = False
+
+    if not socks_open:
+        return json.dumps({"status": "error", "tor_running": False, "error": "Tor SOCKS port not open"})
+
+    # Get exit IP via Tor
+    tor_ip = "UNKNOWN"
+    try:
+        async with httpx.AsyncClient(
+            proxy=f"socks5://127.0.0.1:{_TOR_SOCKS_PORT}",
+            timeout=15.0,
+        ) as client:
+            resp = await client.get("https://ifconfig.me/ip")
+            tor_ip = resp.text.strip()
+    except Exception as exc:
+        tor_ip = f"ERROR: {exc}"
+
+    # Get real IP (without Tor) for leak comparison
+    real_ip = "UNKNOWN"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get("https://ifconfig.me/ip")
+            real_ip = resp.text.strip()
+    except Exception:
+        pass
+
+    # Leak test
+    ip_leaked = (tor_ip == real_ip) if tor_ip != "UNKNOWN" and real_ip != "UNKNOWN" else None
+
+    return json.dumps({
+        "status": "ok",
+        "tor_running": True,
+        "socks_proxy": f"socks5://127.0.0.1:{_TOR_SOCKS_PORT}",
+        "tor_exit_ip": tor_ip,
+        "real_ip": real_ip,
+        "ip_leaked": ip_leaked,
+        "leak_test": "PASS" if ip_leaked is False else ("FAIL — IPs match!" if ip_leaked else "INCONCLUSIVE"),
+    })
+
+
 # ===== CDP BROWSER CONNECT (Leo's Real Browser) =====
 
 # Singleton: one CDP connection shared across all tools in this MCP process
