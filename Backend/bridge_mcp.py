@@ -5267,11 +5267,11 @@ async def bridge_browser_action(
 @mcp.tool(
     name="bridge_stealth_start",
     description=(
-        "Start a stealth browser session. engine='camoufox' (0% detection, recommended), "
-        "'firefox' (Tor-optimized with resistFingerprinting, 15 privacy prefs), "
-        "or 'patchright' (Chromium with JS spoofing). "
-        "Returns session_id for subsequent calls. Max 3 concurrent sessions. "
-        "Optional profile parameter enables cookie persistence across sessions."
+        "Start a stealth browser session. For Tor: just pass proxy='socks5://127.0.0.1:9050' — "
+        "Firefox with resistFingerprinting, Tor UA, 1000x900 viewport, DNS protection, and "
+        "navigation jitter are set AUTOMATICALLY. No engine selection needed. "
+        "For normal browsing: engine='camoufox' (0% detection, default). "
+        "Returns session_id for subsequent calls. Max 3 concurrent sessions."
     ),
 )
 async def bridge_stealth_start(
@@ -5281,7 +5281,11 @@ async def bridge_stealth_start(
     profile: str = "",
     engine: str = "camoufox",
 ) -> str:
-    """Start stealth browser. engine: 'camoufox' (0% detection), 'firefox' (Tor-optimized), 'patchright' (Chromium)."""
+    """Start stealth browser. engine: 'camoufox' (0% detection), 'firefox' (Tor-optimized), 'patchright' (Chromium).
+    AUTO-DETECTION: If proxy contains port 9050 (Tor), automatically uses Firefox with
+    resistFingerprinting, Tor UA, 1000x900 viewport, DNS leak protection, navigation jitter.
+    Agent only needs: bridge_stealth_start(proxy="socks5://127.0.0.1:9050") — everything else is automatic.
+    """
     if _agent_id is None:
         return json.dumps({"status": "error", "error": "not registered"})
 
@@ -5292,6 +5296,11 @@ async def bridge_stealth_start(
         })
 
     _engine = engine.lower()
+
+    # AUTO-TOR-DETECTION: If proxy is Tor (port 9050), force Firefox engine
+    _is_tor_proxy = bool(proxy) and ("9050" in proxy or "tor" in proxy.lower())
+    if _is_tor_proxy and _engine != "firefox":
+        _engine = "firefox"  # Override: Tor MUST use Firefox (resistFingerprinting)
 
     # ===== FIREFOX TOR ENGINE (resistFingerprinting + Tor SOCKS) =====
     if _engine == "firefox":
