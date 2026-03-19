@@ -5267,7 +5267,8 @@ async def bridge_browser_action(
 @mcp.tool(
     name="bridge_stealth_start",
     description=(
-        "Start a stealth browser session. engine='camoufox' (0% detection, recommended) "
+        "Start a stealth browser session. engine='camoufox' (0% detection, recommended), "
+        "'firefox' (Tor-optimized with resistFingerprinting, 15 privacy prefs), "
         "or 'patchright' (Chromium with JS spoofing). "
         "Returns session_id for subsequent calls. Max 3 concurrent sessions. "
         "Optional profile parameter enables cookie persistence across sessions."
@@ -5280,6 +5281,7 @@ async def bridge_stealth_start(
     profile: str = "",
     engine: str = "camoufox",
 ) -> str:
+    """Start stealth browser. engine: 'camoufox' (0% detection), 'firefox' (Tor-optimized), 'patchright' (Chromium)."""
     if _agent_id is None:
         return json.dumps({"status": "error", "error": "not registered"})
 
@@ -5289,7 +5291,115 @@ async def bridge_stealth_start(
             "error": f"max sessions ({_STEALTH_MAX_SESSIONS}) reached. Close a session first.",
         })
 
-    _use_camoufox = engine.lower() == "camoufox"
+    _engine = engine.lower()
+
+    # ===== FIREFOX TOR ENGINE (resistFingerprinting + Tor SOCKS) =====
+    if _engine == "firefox":
+        try:
+            from patchright.async_api import async_playwright as _ff_pw
+        except ImportError:
+            try:
+                from playwright.async_api import async_playwright as _ff_pw
+            except ImportError:
+                return json.dumps({"status": "error", "error": "playwright/patchright not installed"})
+        try:
+            _is_proxy_session = bool(proxy)
+            pw = await _ff_pw().start()
+
+            # Tor-optimized Firefox preferences (resistFingerprinting)
+            _ff_prefs = {
+                "privacy.resistFingerprinting": True,
+                "privacy.resistFingerprinting.letterboxing": True,
+                "privacy.trackingprotection.enabled": True,
+                "privacy.trackingprotection.socialtracking.enabled": True,
+                "media.peerconnection.enabled": False,           # Kill WebRTC
+                "media.peerconnection.ice.default_address_only": True,
+                "media.peerconnection.ice.no_host": True,
+                "media.navigator.enabled": False,                # Hide media devices
+                "geo.enabled": False,                            # No geolocation
+                "dom.battery.enabled": False,                    # No battery API
+                "network.dns.disablePrefetch": True,             # No DNS prefetch
+                "network.prefetch-next": False,                  # No link prefetch
+                "network.proxy.socks_remote_dns": True,          # DNS through SOCKS (critical!)
+                "javascript.options.wasm": False,                # No WebAssembly (fingerprint vector)
+                "webgl.disabled": True,                          # No WebGL (fingerprint vector)
+            }
+
+            ff_launch: dict[str, Any] = {
+                "headless": headless,
+                "firefox_user_prefs": _ff_prefs,
+            }
+            if proxy:
+                ff_launch["proxy"] = {"server": proxy}
+
+            browser = await pw.firefox.launch(**ff_launch)
+            context = await browser.new_context(
+                locale="en-US",
+                timezone_id="Etc/UTC",
+                viewport={"width": 1920, "height": 1080},
+                screen={"width": 1920, "height": 1080},
+            )
+            page = await context.new_page()
+
+            # DNS Leak Test if Tor proxy
+            dns_leak_test = None
+            if _is_proxy_session and "9050" in proxy:
+                try:
+                    async with httpx.AsyncClient(
+                        proxy=f"socks5://127.0.0.1:{_TOR_SOCKS_PORT}",
+                        timeout=10.0,
+                    ) as _dns_client:
+                        _ip_resp = await _dns_client.get("https://ifconfig.me/ip")
+                        tor_ip = _ip_resp.text.strip()
+                    async with httpx.AsyncClient(timeout=5.0) as _real_client:
+                        _real_resp = await _real_client.get("https://ifconfig.me/ip")
+                        real_ip = _real_resp.text.strip()
+                    dns_leak_test = {
+                        "tor_ip": tor_ip,
+                        "real_ip": real_ip,
+                        "leaked": tor_ip == real_ip,
+                        "result": "FAIL" if tor_ip == real_ip else "PASS",
+                    }
+                except Exception as _dns_exc:
+                    dns_leak_test = {"error": str(_dns_exc)}
+
+            safe_profile = ""
+            if profile:
+                import re as _re_profile
+                safe_profile = _re_profile.sub(r"[^a-zA-Z0-9_-]", "", profile.strip())[:50]
+
+            session_id = uuid.uuid4().hex[:8]
+            session = StealthSession(
+                session_id=session_id,
+                browser=browser,
+                page=page,
+                pw_context=pw,
+                agent_id=_agent_id,
+                profile=safe_profile,
+                is_proxy=_is_proxy_session,
+                firefox_like=True,
+            )
+            _stealth_sessions[session_id] = session
+
+            if session.profile:
+                await _stealth_load_cookies(session)
+
+            result: dict[str, Any] = {
+                "status": "ok",
+                "session_id": session_id,
+                "engine": "firefox",
+                "resistFingerprinting": True,
+                "headless": headless,
+                "proxy": bool(proxy),
+                "prefs_applied": len(_ff_prefs),
+            }
+            if dns_leak_test:
+                result["dns_leak_test"] = dns_leak_test
+            return json.dumps(result)
+        except Exception as exc:
+            return json.dumps({"status": "error", "error": f"Firefox Tor launch failed: {exc}"})
+
+    _use_camoufox = _engine == "camoufox"
 
     # ===== CAMOUFOX ENGINE (0% detection — Firefox-based, C++ level stealth) =====
     if _use_camoufox:
