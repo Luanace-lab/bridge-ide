@@ -95,7 +95,6 @@ def _codex_hook_tick() -> list[str]:
     # Disabled: tmux injections waste agent context tokens.
     # Codex agents should self-poll via bridge_receive.
     # Previously injected "bridge_receive und weiterarbeiten" via tmux send-keys.
-
     return injected
 
 

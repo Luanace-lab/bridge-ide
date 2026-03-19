@@ -896,8 +896,6 @@ def _init_auth_tokens() -> tuple[str, str, str]:
     return user_tok, reg_tok, ui_tok
 
 
-BRIDGE_USER_TOKEN, BRIDGE_REGISTER_TOKEN, _UI_SESSION_TOKEN = _init_auth_tokens()
-
 _live_tokens_cache: dict[str, str | float] = {"mtime": 0.0, "user_token": "", "register_token": ""}
 
 
@@ -930,6 +928,8 @@ def _get_live_tokens() -> dict[str, str]:
         "register_token": env_reg or str(_live_tokens_cache.get("register_token", "")),
     }
 
+
+BRIDGE_USER_TOKEN, BRIDGE_REGISTER_TOKEN, _UI_SESSION_TOKEN = _init_auth_tokens()
 
 # ===== 3-TIER AUTH MODEL =====
 # Tier 1 — Public (NO auth): Always accessible. Frontend + Chat need these.
@@ -5667,6 +5667,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 self._respond(503, {"error": "BRIDGE_REGISTER_TOKEN not configured on server"})
                 return
             if not register_token or not secrets.compare_digest(register_token, live_tokens["register_token"]):
+                print(f"[auth-debug] /register 403: received_token={register_token[:16] if register_token else 'EMPTY'}... expected={live_tokens['register_token'][:16]}...")
                 self._respond(403, {"error": "invalid register token"})
                 return
 

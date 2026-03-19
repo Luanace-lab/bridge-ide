@@ -564,7 +564,7 @@ def _runtime_overlay_orgchart_response(overlay: dict[str, Any]) -> dict[str, Any
         })
     return {
         "version": 1,
-        "owner": {"id": "user", "name": "Owner", "role": "owner", "status": "online"},
+        "owner": {"id": "user", "name": "Leo", "role": "owner", "status": "online"},
         "agents": enriched_agents,
     }
 

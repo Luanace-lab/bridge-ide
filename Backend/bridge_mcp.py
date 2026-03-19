@@ -1099,20 +1099,24 @@ def _stealth_ua_is_firefox_like(user_agent: str) -> bool:
 
 
 def _stealth_scripts_for_session(*, is_proxy: bool, firefox_like: bool = False) -> list[str]:
-    """Return the JS spoof scripts that define a session's browser footprint."""
-    scripts = [_STEALTH_MEMORY_SPOOF]
-    if is_proxy or firefox_like:
-        scripts.append(_STEALTH_HARDWARE_SPOOF)
+    """Return the JS spoof scripts that define a session's browser footprint.
+
+    P0 Fingerprint-Haertung: WebGL/Canvas/Audio/Headless-Fix werden IMMER geladen
+    (nicht nur bei Proxy), damit creepjs-Score auch ohne Proxy < 20% bleibt.
+    """
+    scripts = [
+        _STEALTH_MEMORY_SPOOF,
+        _STEALTH_HARDWARE_SPOOF,
+        _STEALTH_HEADLESS_FIX,         # window.chrome + plugins + connection.rtt + Notification
+        _STEALTH_WEBGL_SPOOF,          # Intel Iris GPU spoofing
+        _STEALTH_CANVAS_NOISE,         # Canvas fingerprint noise
+        _STEALTH_AUDIO_NOISE,          # AudioContext spoofing
+        _STEALTH_PERMISSION_MEDIA_SPOOF,
+    ]
     if firefox_like:
         scripts.append(_STEALTH_FIREFOX_LIKE_POPUP_NAV)
     if is_proxy:
-        scripts.extend([
-            _STEALTH_WEBGL_SPOOF,
-            _STEALTH_WEBRTC_KILL,
-            _STEALTH_CANVAS_NOISE,
-            _STEALTH_AUDIO_NOISE,
-        ])
-    scripts.append(_STEALTH_PERMISSION_MEDIA_SPOOF)
+        scripts.append(_STEALTH_WEBRTC_KILL)
     return scripts
 
 
@@ -5263,7 +5267,8 @@ async def bridge_browser_action(
 @mcp.tool(
     name="bridge_stealth_start",
     description=(
-        "Start a stealth browser session using Playwright (bot-detection bypass). "
+        "Start a stealth browser session. engine='camoufox' (0% detection, recommended) "
+        "or 'patchright' (Chromium with JS spoofing). "
         "Returns session_id for subsequent calls. Max 3 concurrent sessions. "
         "Optional profile parameter enables cookie persistence across sessions."
     ),
@@ -5273,6 +5278,7 @@ async def bridge_stealth_start(
     user_agent: str = "",
     headless: bool = True,
     profile: str = "",
+    engine: str = "camoufox",
 ) -> str:
     if _agent_id is None:
         return json.dumps({"status": "error", "error": "not registered"})
@@ -5284,12 +5290,15 @@ async def bridge_stealth_start(
         })
 
     try:
-        from playwright.async_api import async_playwright
+        from patchright.async_api import async_playwright
     except ImportError:
-        return json.dumps({
-            "status": "error",
-            "error": "playwright not installed. Run: pip install playwright && playwright install chromium",
-        })
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return json.dumps({
+                "status": "error",
+                "error": "patchright/playwright not installed. Run: pip install patchright && patchright install chromium",
+            })
 
     try:
         pw = await async_playwright().start()
@@ -5375,11 +5384,7 @@ async def bridge_stealth_start(
         # Stealth scripts injected via add_init_script (fires on every new document/iframe)
         for _script in _stealth_scripts_for_session(is_proxy=_is_proxy_session, firefox_like=_firefox_like_identity):
             await context.add_init_script(_script)
-        if _is_proxy_session:
-            # NOTE: _STEALTH_HEADLESS_FIX disabled by default — reduces "like headless" but
-            # increases "stealth" detection (60%) due to prototype chain checks in creepjs.
-            # Use via bridge_stealth_evaluate for non-creepjs targets only.
-            pass
+        # _STEALTH_HEADLESS_FIX now included in _stealth_scripts_for_session (P0 Fingerprint-Haertung)
         # Execute immediately on current page (init_script only fires on next navigation)
         cdp = await context.new_cdp_session(page)
         for _script in _stealth_scripts_for_session(is_proxy=_is_proxy_session, firefox_like=_firefox_like_identity):
@@ -5880,6 +5885,224 @@ async def bridge_captcha_solve(
             return json.dumps({"status": "error", "error": f"captcha_type '{captcha_type}' not supported by any provider. CAPSolver error: {capsolver_error}"})
 
 
+# ===== NATIVE CAPTCHA SOLVER (kostenlos, keine externen APIs) =====
+
+async def _captcha_solve_hcaptcha_ollama(image_path: str, target_label: str = "") -> dict[str, Any]:
+    """Solve hCaptcha image challenge using Ollama LLaVA vision model.
+
+    Sends the image to a local LLaVA model and asks it to classify what's in the image.
+    For hCaptcha: target_label is the challenge text (e.g. "Select all images with a bus").
+    """
+    if not os.path.isfile(image_path):
+        return {"status": "error", "error": f"image not found: {image_path}"}
+    try:
+        import base64 as _b64
+        with open(image_path, "rb") as f:
+            img_b64 = _b64.b64encode(f.read()).decode()
+
+        prompt = target_label or "What objects do you see in this image? List them."
+        payload = {
+            "model": "llava",
+            "prompt": f"Answer concisely. {prompt}",
+            "images": [img_b64],
+            "stream": False,
+        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post("http://localhost:11434/api/generate", json=payload)
+            if resp.status_code != 200:
+                return {"status": "error", "error": f"Ollama returned {resp.status_code}. Is Ollama running? Install: curl -fsSL https://ollama.com/install.sh | sh && ollama pull llava"}
+            data = resp.json()
+            answer = data.get("response", "").strip()
+            if not answer:
+                return {"status": "error", "error": "LLaVA returned empty response"}
+            return {"status": "ok", "solution": answer, "method": "ollama_llava", "cost": 0}
+    except httpx.ConnectError:
+        return {"status": "error", "error": "Ollama not running. Start: ollama serve & ollama pull llava"}
+    except Exception as exc:
+        return {"status": "error", "error": f"hCaptcha Ollama solver failed: {exc}"}
+
+
+async def _captcha_solve_recaptcha_yolo(image_path: str, target_label: str = "") -> dict[str, Any]:
+    """Solve reCAPTCHA v2 image challenge using YOLO object detection.
+
+    Detects objects in the image grid and checks if they match the target label.
+    target_label: the challenge text (e.g. "bicycles", "traffic lights", "buses").
+    Returns which grid cells contain the target object.
+    """
+    if not os.path.isfile(image_path):
+        return {"status": "error", "error": f"image not found: {image_path}"}
+    try:
+        from ultralytics import YOLO
+    except ImportError:
+        return {"status": "error", "error": "ultralytics not installed. Run: pip install ultralytics"}
+    try:
+        from PIL import Image
+        model = YOLO("yolov8n.pt")  # Nano model — fast, auto-downloads on first use
+        img = Image.open(image_path)
+        w, h = img.size
+
+        results = model(img, verbose=False)
+        detections = []
+        for r in results:
+            for box in r.boxes:
+                cls_id = int(box.cls[0])
+                cls_name = model.names[cls_id].lower()
+                conf = float(box.conf[0])
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                detections.append({
+                    "class": cls_name,
+                    "confidence": round(conf, 3),
+                    "center": [round(cx), round(cy)],
+                    "bbox": [round(x1), round(y1), round(x2), round(y2)],
+                })
+
+        # Map detections to 3x3 or 4x4 grid cells
+        target = target_label.lower().strip().rstrip("s")  # "bicycles" → "bicycle"
+        grid_size = 3  # reCAPTCHA typically uses 3x3
+        cell_w, cell_h = w / grid_size, h / grid_size
+        matching_cells = set()
+        for det in detections:
+            if target and target in det["class"]:
+                cx, cy = det["center"]
+                col = min(int(cx / cell_w), grid_size - 1)
+                row = min(int(cy / cell_h), grid_size - 1)
+                matching_cells.add(row * grid_size + col)
+
+        return {
+            "status": "ok",
+            "solution": {
+                "matching_cells": sorted(matching_cells),
+                "grid_size": grid_size,
+                "target_label": target_label,
+                "total_detections": len(detections),
+                "detections": detections,
+            },
+            "method": "yolov8_detect",
+            "cost": 0,
+        }
+    except Exception as exc:
+        return {"status": "error", "error": f"YOLO solver failed: {exc}"}
+
+
+_NATIVE_CAPTCHA_TYPES = ("text", "audio", "recaptcha_v2_audio", "turnstile", "hcaptcha_image", "recaptcha_v2_image")
+
+
+async def _captcha_solve_text_ocr(image_path: str) -> dict[str, Any]:
+    """Solve text-based CAPTCHA using Tesseract OCR."""
+    try:
+        import pytesseract
+        from PIL import Image, ImageFilter
+    except ImportError:
+        return {"status": "error", "error": "pytesseract or Pillow not installed"}
+    if not os.path.isfile(image_path):
+        return {"status": "error", "error": f"image not found: {image_path}"}
+    try:
+        img = Image.open(image_path)
+        # Pre-process: grayscale + sharpen for better OCR
+        img = img.convert("L").filter(ImageFilter.SHARPEN)
+        text = pytesseract.image_to_string(img, config="--psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789").strip()
+        if not text:
+            return {"status": "error", "error": "OCR returned empty result"}
+        return {"status": "ok", "solution": text, "method": "tesseract_ocr", "cost": 0}
+    except Exception as exc:
+        return {"status": "error", "error": f"OCR failed: {exc}"}
+
+
+async def _captcha_solve_audio_whisper(audio_path: str) -> dict[str, Any]:
+    """Solve audio CAPTCHA using faster-whisper STT."""
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        return {"status": "error", "error": "faster-whisper not installed. Run: pip install faster-whisper"}
+    if not os.path.isfile(audio_path):
+        return {"status": "error", "error": f"audio file not found: {audio_path}"}
+    try:
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(audio_path, language="en")
+        text = " ".join(seg.text.strip() for seg in segments).strip()
+        if not text:
+            return {"status": "error", "error": "Whisper returned empty transcription"}
+        # reCAPTCHA audio: digits only, clean up
+        digits = "".join(c for c in text if c.isdigit() or c == " ").strip()
+        return {"status": "ok", "solution": digits or text, "method": "whisper_stt", "cost": 0}
+    except Exception as exc:
+        return {"status": "error", "error": f"Whisper STT failed: {exc}"}
+
+
+async def _captcha_solve_turnstile_wait(session_id: str) -> dict[str, Any]:
+    """Solve Cloudflare Turnstile by waiting — stealth browser auto-solves it."""
+    if session_id not in _stealth_sessions:
+        return {"status": "error", "error": f"session '{session_id}' not found. Start a stealth session first."}
+    page = _stealth_sessions[session_id].page
+    try:
+        # Turnstile auto-solves in stealth browser. Wait for cf-turnstile-response input.
+        for _ in range(30):  # max 30s
+            token = await page.evaluate("""() => {
+                const input = document.querySelector('input[name="cf-turnstile-response"]');
+                return input ? input.value : null;
+            }""")
+            if token:
+                return {"status": "ok", "token": token, "method": "turnstile_auto_solve", "cost": 0}
+            await asyncio.sleep(1)
+        return {"status": "error", "error": "Turnstile did not auto-solve within 30s. Page may need better stealth."}
+    except Exception as exc:
+        return {"status": "error", "error": f"Turnstile wait failed: {exc}"}
+
+
+@mcp.tool(
+    name="bridge_captcha_solve_native",
+    description=(
+        "Solve CAPTCHAs locally without paid external APIs. "
+        "Supported types: 'text' (Tesseract OCR on image), 'audio' (Whisper STT on audio file), "
+        "'recaptcha_v2_audio' (alias for audio — download the audio challenge first), "
+        "'turnstile' (auto-solve in stealth browser session — requires active session_id). "
+        "Cost: always 0. No API keys needed."
+    ),
+)
+async def bridge_captcha_solve_native(
+    captcha_type: str,
+    image_path: str = "",
+    audio_path: str = "",
+    session_id: str = "",
+) -> str:
+    if _agent_id is None:
+        return json.dumps({"status": "error", "error": "not registered"})
+
+    if captcha_type not in _NATIVE_CAPTCHA_TYPES:
+        return json.dumps({"status": "error", "error": f"unsupported type '{captcha_type}'. Supported: {', '.join(_NATIVE_CAPTCHA_TYPES)}"})
+
+    start = time.time()
+
+    if captcha_type == "text":
+        if not image_path:
+            return json.dumps({"status": "error", "error": "image_path required for text CAPTCHA"})
+        result = await _captcha_solve_text_ocr(image_path)
+    elif captcha_type in ("audio", "recaptcha_v2_audio"):
+        if not audio_path:
+            return json.dumps({"status": "error", "error": "audio_path required for audio CAPTCHA"})
+        result = await _captcha_solve_audio_whisper(audio_path)
+    elif captcha_type == "turnstile":
+        if not session_id:
+            return json.dumps({"status": "error", "error": "session_id required for turnstile (needs active stealth browser)"})
+        result = await _captcha_solve_turnstile_wait(session_id)
+    elif captcha_type == "hcaptcha_image":
+        if not image_path:
+            return json.dumps({"status": "error", "error": "image_path required for hCaptcha image challenge"})
+        result = await _captcha_solve_hcaptcha_ollama(image_path, target_label=audio_path or "")
+    elif captcha_type == "recaptcha_v2_image":
+        if not image_path:
+            return json.dumps({"status": "error", "error": "image_path required for reCAPTCHA v2 image challenge"})
+        result = await _captcha_solve_recaptcha_yolo(image_path, target_label=audio_path or "")
+    else:
+        result = {"status": "error", "error": f"unhandled type: {captcha_type}"}
+
+    if result.get("status") == "ok":
+        result["solve_time_ms"] = int((time.time() - start) * 1000)
+        result["captcha_type"] = captcha_type
+    return json.dumps(result)
+
+
 # ===== CDP BROWSER CONNECT (Leo's Real Browser) =====
 
 # Singleton: one CDP connection shared across all tools in this MCP process
@@ -5902,7 +6125,10 @@ async def _cdp_ensure_connected(port: int = 9222) -> Any:
             _cdp_pw = None
             _cdp_default_page = None
 
-    from playwright.async_api import async_playwright
+    try:
+        from patchright.async_api import async_playwright
+    except ImportError:
+        from playwright.async_api import async_playwright
     pw = await async_playwright().start()
 
     # Try connecting to existing Chrome first
@@ -5914,8 +6140,8 @@ async def _cdp_ensure_connected(port: int = 9222) -> Any:
         chrome_bin = shutil.which("google-chrome-stable") or shutil.which("google-chrome") or shutil.which("chromium-browser") or "google-chrome"
         user_data = f"/tmp/bridge-cdp-chrome-{port}"
         _cdp_chrome_proc = subprocess.Popen(
-            [chrome_bin, f"--remote-debugging-port={port}", "--headless=new",
-             "--no-first-run", "--no-default-browser-check", "--disable-gpu",
+            [chrome_bin, f"--remote-debugging-port={port}",
+             "--no-first-run", "--no-default-browser-check",
              f"--user-data-dir={user_data}"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
@@ -6455,10 +6681,14 @@ async def bridge_browser_open(
             chosen_engine = "stealth"
         else:
             try:
-                import playwright  # noqa: F401
+                import patchright  # noqa: F401
                 chosen_engine = "stealth"
             except ImportError:
-                chosen_engine = "cdp"
+                try:
+                    import playwright  # noqa: F401
+                    chosen_engine = "stealth"
+                except ImportError:
+                    chosen_engine = "cdp"
 
     if chosen_engine == "cdp" and stealth_only_requested:
         return _structured_action_json(

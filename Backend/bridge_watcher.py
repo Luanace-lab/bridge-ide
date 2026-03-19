@@ -822,7 +822,16 @@ def _inject_into_session(session_name: str, text: str) -> bool:
     """Inject text via tmux buffer paste + Enter.
 
     Using load-buffer/paste-buffer avoids shell/key escaping issues from send-keys text mode.
+    GEM-014: Waits for prompt before injection (max 3 retries, 2s apart).
     """
+    # Prompt-check with retry — don't inject while agent is working
+    for _attempt in range(3):
+        if _is_at_prompt(session_name):
+            break
+        time.sleep(2)
+    else:
+        print(f"[watcher] GEM-014: Skipping buffer-inject to {session_name} — not at prompt after 3 retries", file=sys.stderr)
+        return False
     try:
         load = subprocess.run(
             ["tmux", "load-buffer", "-b", TMUX_INJECT_BUFFER, "-"],

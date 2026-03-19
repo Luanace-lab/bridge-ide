@@ -519,6 +519,15 @@ def should_send_context_restore(agent_id: str, nonce: str | None, context_lost: 
 
     stored_nonce = _AGENT_NONCES.get(agent_id)
     if stored_nonce is None:
+        # First registration after server restart — nonce store is empty.
+        # Only send CONTEXT RESTORE if agent was NOT recently online (heartbeat > 5min ago).
+        # This prevents spam when agents re-register after a server restart while still alive.
+        if _AGENT_IS_LIVE_FN and _AGENT_IS_LIVE_FN(agent_id):
+            print(
+                f"[register] CONTEXT RESTORE suppressed for {agent_id}: "
+                "first nonce after restart but agent is live (re-register)"
+            )
+            return False
         return True
     if nonce != stored_nonce:
         return True

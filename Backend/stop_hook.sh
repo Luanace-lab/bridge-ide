@@ -31,7 +31,7 @@ fi
 # Track consecutive stop attempts per agent via temp file
 AGENT_ID="${CLAUDE_AGENT_ID:-unknown}"
 IDLE_FILE="/tmp/bridge_idle_counter_${AGENT_ID}"
-MAX_IDLE=5  # Nach 5 blocked stops: Standby-Modus
+MAX_IDLE=2  # Nach 2 blocked stops: Standby-Modus (reduziert von 5 — spart ~60% Idle-Tokens)
 
 # Read current counter
 IDLE_COUNT=0
