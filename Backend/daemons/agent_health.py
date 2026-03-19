@@ -365,13 +365,19 @@ def _agent_health_tick(cleanup_counter: int) -> int:
                 agent_info = _registered_agents.get(agent_id, {})
                 last_hb = agent_info.get("last_heartbeat", 0)
                 hb_stale = (time.time() - last_hb) > 120.0 if last_hb else True
-                if has_pending or hb_stale:
+                # FIX: Only nudge when there are actually pending messages.
+                # Stale heartbeat alone is NOT a reason to nudge — it causes
+                # token-rotation loops (BUG-1) when the agent re-registers.
+                if has_pending:
                     reason_detail = f"pending={has_pending}, hb_stale={hb_stale}"
                     print(f"[recovery] Detected {agent_id} at prompt ({reason_detail}), nudging...")
                     if _nudge_idle_agent_cb(agent_id, "health_checker"):
                         _agent_last_nudge[agent_id] = time.time()
                 else:
-                    print(f"[recovery] {agent_id} at prompt but no pending msgs and heartbeat fresh — skipping nudge")
+                    if hb_stale:
+                        print(f"[recovery] {agent_id} at prompt, hb_stale but no pending msgs — skipping nudge (BUG-1 fix)")
+                    else:
+                        print(f"[recovery] {agent_id} at prompt but no pending msgs and heartbeat fresh — skipping nudge")
 
         _update_agent_status_cb(agent_id)
 
