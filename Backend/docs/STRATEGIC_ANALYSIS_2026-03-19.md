@@ -215,3 +215,58 @@ Bridge IDE ist technisch auf Augenhöhe mit der Konkurrenz bei Browser-Stealth, 
 Kein Over-Engineering nötig. Die Quick Wins (Pre-Compaction Flush, Cookie-Store, Lazy Loading, Token-Budget) bringen uns in 1 Woche auf Competitive Parity mit Manus und Perplexity bei den kritischsten Gaps.
 
 Die wahre Differenzierung ist: **Lokale Multi-Agent-Plattform mit 0% Detection + Evidence-Gates + Privacy.** Das hat sonst niemand.
+
+---
+
+## 7. ZUSÄTZLICHE STRATEGISCHE INSIGHTS
+
+### Agent Skills Standard (agentskills.io)
+- Offener Standard (Dez 2025, Anthropic) für Skill-Definition
+- Adoptiert von: Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot, Cursor, 20+ Plattformen
+- Format: SKILL.md mit YAML-Frontmatter + Markdown-Instructions
+- **Bridge sollte dieses Format für eigene Skills nutzen** → Cross-Platform-Portabilität
+- Partner-Skills verfügbar: Canva, Stripe, Notion, Zapier
+
+### A2A Protokoll (Agent-to-Agent)
+- Neben MCP jetzt unter Linux Foundation's Agentic AI Foundation (AAIF)
+- Co-Founders: OpenAI, Anthropic, Google, Microsoft, AWS, Block
+- MCP = Agent↔Tool, A2A = Agent↔Agent
+- **Bridge-Federation sollte A2A evaluieren** für Bridge-zu-Bridge Kommunikation
+
+### MEMORY.md Injection (OpenClaw-Warnung)
+- OpenClaw: Malicious Skills schrieben in MEMORY.md und SOUL.md → persistente Backdoor
+- Atomic Stealer Payload: API-Key-Harvesting + Keylogger via SOUL.md Poisoning
+- **Direkt relevant für Bridge**: Unsere 7-Schichten-Persistenz nutzt dieselben Dateien
+- **Handlungsbedarf**: Write-Protection auf MEMORY.md/SOUL.md, Integrity-Checks
+
+### Autonomie-Kurve
+| Datum | Max autonome Dauer |
+|-------|-------------------|
+| Okt 2025 | ~25 Minuten |
+| Jan 2026 | ~45 Minuten |
+| Spät 2026 (Prognose) | 8+ Stunden |
+| Mitte 2027 (Prognose) | Wochen-Tasks |
+
+Verdopplung alle 3-7 Monate. Bridge muss Background-Jobs für 8h+ Tasks bis September 2026 unterstützen.
+
+### Manus Context Engineering (Kern-Pattern)
+- **Logits-Masking**: Tools nicht aus Context entfernen, sondern Output-Tokens masken → KV-Cache bleibt intakt (10x Kostenreduktion)
+- **Append-only Context**: Niemals vorherige Actions/Observations modifizieren
+- **Fehler im Context lassen**: Agent lernt, Fehler nicht zu wiederholen ("clearest indicator of true agentic behavior")
+- **Todo-Liste am Context-Ende**: Attention-Anchor gegen Lost-in-the-Middle über 50+ Tool-Calls
+
+### Claude Code Skill-Loading (Progressive Disclosure)
+- Tier 1: Nur Name+Description geladen (~100 Tokens/Skill) → 2% Context-Budget
+- Tier 2: Voller Skill-Body nur bei Invocation (<5000 Tokens empfohlen)
+- Tier 3: Resources (scripts/, references/) nur on-demand
+- **95% Token-Einsparung** vs. alles laden → Bridge sollte das kopieren
+
+### Orchestration-Frameworks Vergleich
+| Framework | Architektur | Bridge-Relevanz |
+|-----------|------------|-----------------|
+| CrewAI | Rollen-basiert | Ähnlichster Ansatz zu Bridge |
+| LangGraph | Graph/State-Machine | Stärker bei komplexen Workflows |
+| OpenAI Symphony | Kanban + Elixir/BEAM | Proof-of-Work Pattern wie Bridge Evidence-Gates |
+| Google ADK | Hierarchischer Agent-Tree | Multi-Language Support |
+
+Bridge ist ahead bei Echtzeit-Kommunikation, behind bei Workflow-Formalisierung.
