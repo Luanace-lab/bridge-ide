@@ -21,7 +21,9 @@ import asyncio
 import atexit
 import json
 import logging
+import math
 import os
+import random
 import re
 import signal
 import shlex
@@ -4086,7 +4088,7 @@ def _resolve_whatsapp_recipient(name_or_jid: str) -> str:
     """Resolve friendly name to JID. Returns input unchanged if already a JID."""
     if "@" in name_or_jid:
         return name_or_jid
-    # Normalize phone numbers: +49151XXXXXXXX → 49151XXXXXXXX@s.whatsapp.net
+    # Normalize phone numbers: +4915111222906 → 4915111222906@s.whatsapp.net
     stripped = name_or_jid.lstrip("+")
     if stripped.isdigit() and len(stripped) >= 7:
         return f"{stripped}@s.whatsapp.net"
@@ -10031,15 +10033,99 @@ async def bridge_desktop_screenshot_stream(
     })
 
 
+# ---------------------------------------------------------------------------
+# Bezier mouse-movement helpers (human-like cursor motion via xdotool)
+# ---------------------------------------------------------------------------
+
+_DESKTOP_DISPLAY_ENV = lambda: {**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")}
+
+
+def _desktop_bezier_curve(
+    start: tuple[int, int],
+    end: tuple[int, int],
+    steps: int = 25,
+) -> list[tuple[int, int]]:
+    """Return a list of (x, y) points along a cubic Bezier with random control
+    points and micro-tremor, producing a human-like arc between *start* and *end*."""
+    sx, sy = start
+    ex, ey = end
+    dx, dy = ex - sx, ey - sy
+    dist = math.sqrt(dx ** 2 + dy ** 2)
+    spread = max(50, dist * 0.3)
+
+    # Two random control points offset from the straight line
+    cp1 = (
+        sx + dx * 0.25 + random.gauss(0, spread * 0.3),
+        sy + dy * 0.25 + random.gauss(0, spread * 0.3),
+    )
+    cp2 = (
+        sx + dx * 0.75 + random.gauss(0, spread * 0.3),
+        sy + dy * 0.75 + random.gauss(0, spread * 0.3),
+    )
+
+    points: list[tuple[int, int]] = []
+    for i in range(steps + 1):
+        t = i / steps
+        u = 1 - t
+        x = u ** 3 * sx + 3 * u ** 2 * t * cp1[0] + 3 * u * t ** 2 * cp2[0] + t ** 3 * ex
+        y = u ** 3 * sy + 3 * u ** 2 * t * cp1[1] + 3 * u * t ** 2 * cp2[1] + t ** 3 * ey
+        # Gaussian micro-tremor
+        x += random.gauss(0, 1.5)
+        y += random.gauss(0, 1.5)
+        points.append((int(x), int(y)))
+
+    # Ensure the last point is exactly the target
+    points[-1] = (ex, ey)
+    return points
+
+
+async def _desktop_get_mouse_position() -> tuple[int, int]:
+    """Return current (x, y) mouse position via xdotool getmouselocation."""
+    proc = await asyncio.create_subprocess_exec(
+        "xdotool", "getmouselocation",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=_DESKTOP_DISPLAY_ENV(),
+    )
+    stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5)
+    # Output format: "x:123 y:456 screen:0 window:789"
+    parts = stdout.decode().strip().split()
+    x = int(parts[0].split(":")[1])
+    y = int(parts[1].split(":")[1])
+    return (x, y)
+
+
+async def _desktop_human_mouse_move(x: int, y: int) -> None:
+    """Move the mouse from its current position to (x, y) along a Bezier curve,
+    stepping through intermediate points with short random delays."""
+    current = await _desktop_get_mouse_position()
+    points = _desktop_bezier_curve(current, (x, y))
+
+    env = _DESKTOP_DISPLAY_ENV()
+    for px, py in points:
+        proc = await asyncio.create_subprocess_exec(
+            "xdotool", "mousemove", "--sync", str(px), str(py),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env=env,
+        )
+        await asyncio.wait_for(proc.communicate(), timeout=5)
+        await asyncio.sleep(random.uniform(0.005, 0.02))
+
+
+# ---------------------------------------------------------------------------
+# Desktop tools
+# ---------------------------------------------------------------------------
+
 @mcp.tool(
     name="bridge_desktop_type",
     description=(
         "Type text into the currently focused window using xdotool. "
-        "The text is typed character by character with a short delay."
+        "Characters are typed with human-like Gaussian timing variation."
     ),
 )
 async def bridge_desktop_type(text: str, delay_ms: int = 12) -> str:
-    """Type text via xdotool."""
+    """Type text via xdotool with human-like keystroke timing."""
     if _agent_id is None:
         return json.dumps({"error": "Not registered. Call bridge_register first."})
     if not text:
@@ -10048,14 +10134,47 @@ async def bridge_desktop_type(text: str, delay_ms: int = 12) -> str:
         return json.dumps({"error": "text too long (max 5000 chars)"})
 
     try:
-        proc = await asyncio.create_subprocess_exec(
-            "xdotool", "type", "--delay", str(max(1, min(delay_ms, 200))), "--", text,
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
-        )
-        _, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
-        if proc.returncode != 0:
-            return json.dumps({"error": f"xdotool type failed: {stderr.decode()[:200]}"})
+        env = _DESKTOP_DISPLAY_ENV()
+        for ch in text:
+            # Use xdotool key for each character for precise timing control
+            # Map special chars to xdotool key names
+            key_name: str
+            if ch == " ":
+                key_name = "space"
+            elif ch == "\n":
+                key_name = "Return"
+            elif ch == "\t":
+                key_name = "Tab"
+            else:
+                # xdotool type for regular characters (handles shift etc.)
+                proc = await asyncio.create_subprocess_exec(
+                    "xdotool", "type", "--clearmodifiers", "--", ch,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    env=env,
+                )
+                await asyncio.wait_for(proc.communicate(), timeout=5)
+                # Gaussian delay between keystrokes
+                delay = max(0.01, random.gauss(0.075, 0.02))
+                # 5% chance of a "thinking pause" (200-600ms)
+                if random.random() < 0.05:
+                    delay += random.uniform(0.2, 0.6)
+                await asyncio.sleep(delay)
+                continue
+
+            # Send special key
+            proc = await asyncio.create_subprocess_exec(
+                "xdotool", "key", key_name,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env,
+            )
+            await asyncio.wait_for(proc.communicate(), timeout=5)
+            delay = max(0.01, random.gauss(0.075, 0.02))
+            if random.random() < 0.05:
+                delay += random.uniform(0.2, 0.6)
+            await asyncio.sleep(delay)
+
         return json.dumps({"ok": True, "typed_chars": len(text)})
     except asyncio.TimeoutError:
         return json.dumps({"error": "xdotool type timed out after 30s"})
@@ -10137,11 +10256,12 @@ async def bridge_desktop_click(x: int, y: int, button: int = 1) -> str:
         )
 
     try:
-        # Move mouse, then click
+        # Human-like Bezier mouse movement, then click
+        await _desktop_human_mouse_move(x, y)
         proc = await asyncio.create_subprocess_exec(
-            "xdotool", "mousemove", str(x), str(y), "click", str(button),
+            "xdotool", "click", str(button),
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
+            env=_DESKTOP_DISPLAY_ENV(),
         )
         _, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
         if proc.returncode != 0:
@@ -10226,21 +10346,14 @@ async def bridge_desktop_scroll(
     ),
 )
 async def bridge_desktop_hover(x: int, y: int) -> str:
-    """Move mouse to coordinates via xdotool (no click)."""
+    """Move mouse to coordinates via human-like Bezier curve (no click)."""
     if _agent_id is None:
         return json.dumps({"error": "Not registered. Call bridge_register first."})
     if x < 0 or y < 0 or x > 10000 or y > 10000:
         return json.dumps({"error": f"Coordinates out of range: ({x}, {y})"})
 
     try:
-        proc = await asyncio.create_subprocess_exec(
-            "xdotool", "mousemove", str(x), str(y),
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
-        )
-        _, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
-        if proc.returncode != 0:
-            return json.dumps({"error": f"xdotool mousemove failed: {stderr.decode()[:200]}"})
+        await _desktop_human_mouse_move(x, y)
         return json.dumps({"ok": True, "x": x, "y": y})
     except asyncio.TimeoutError:
         return json.dumps({"error": "xdotool mousemove timed out after 10s"})
@@ -10359,7 +10472,7 @@ async def bridge_desktop_wait(window_name: str, timeout: int = 30) -> str:
     ),
 )
 async def bridge_desktop_double_click(x: int, y: int, button: int = 1) -> str:
-    """Double-click at screen coordinates via xdotool."""
+    """Double-click at screen coordinates via human-like Bezier move + xdotool."""
     if _agent_id is None:
         return json.dumps({"error": "Not registered. Call bridge_register first."})
     if button not in (1, 2, 3):
@@ -10368,11 +10481,11 @@ async def bridge_desktop_double_click(x: int, y: int, button: int = 1) -> str:
         return json.dumps({"error": f"Coordinates out of range: ({x}, {y})"})
 
     try:
+        await _desktop_human_mouse_move(x, y)
         proc = await asyncio.create_subprocess_exec(
-            "xdotool", "mousemove", str(x), str(y),
-            "click", "--repeat", "2", "--delay", "50", str(button),
+            "xdotool", "click", "--repeat", "2", "--delay", "50", str(button),
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
+            env=_DESKTOP_DISPLAY_ENV(),
         )
         _, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
         if proc.returncode != 0:
@@ -10404,37 +10517,36 @@ async def bridge_desktop_drag(
         if val < 0 or val > 10000:
             return json.dumps({"error": f"{name} out of range: {val}"})
 
+    env = _DESKTOP_DISPLAY_ENV()
     try:
-        # Move to start position
-        p1 = await asyncio.create_subprocess_exec(
-            "xdotool", "mousemove", str(start_x), str(start_y),
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
-        )
-        await asyncio.wait_for(p1.communicate(), timeout=5)
+        # Bezier move to start position
+        await _desktop_human_mouse_move(start_x, start_y)
 
         # Mouse down
         p2 = await asyncio.create_subprocess_exec(
             "xdotool", "mousedown", str(button),
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
+            env=env,
         )
         await asyncio.wait_for(p2.communicate(), timeout=5)
 
-        # Move to end position
-        await asyncio.sleep(0.05)  # Small pause for smooth drag
-        p3 = await asyncio.create_subprocess_exec(
-            "xdotool", "mousemove", str(end_x), str(end_y),
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
-        )
-        await asyncio.wait_for(p3.communicate(), timeout=10)
+        # Bezier move to end position (with button held)
+        await asyncio.sleep(0.05)
+        drag_points = _desktop_bezier_curve((start_x, start_y), (end_x, end_y))
+        for px, py in drag_points:
+            proc = await asyncio.create_subprocess_exec(
+                "xdotool", "mousemove", "--sync", str(px), str(py),
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                env=env,
+            )
+            await asyncio.wait_for(proc.communicate(), timeout=5)
+            await asyncio.sleep(random.uniform(0.005, 0.02))
 
         # Mouse up
         p4 = await asyncio.create_subprocess_exec(
             "xdotool", "mouseup", str(button),
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
+            env=env,
         )
         _, stderr = await asyncio.wait_for(p4.communicate(), timeout=5)
         if p4.returncode != 0:
@@ -10452,7 +10564,7 @@ async def bridge_desktop_drag(
             p_up = await asyncio.create_subprocess_exec(
                 "xdotool", "mouseup", str(button),
                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-                env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
+                env=env,
             )
             await asyncio.wait_for(p_up.communicate(), timeout=2)
         except Exception:
@@ -10464,7 +10576,7 @@ async def bridge_desktop_drag(
             p_up = await asyncio.create_subprocess_exec(
                 "xdotool", "mouseup", str(button),
                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-                env={**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")},
+                env=env,
             )
             await asyncio.wait_for(p_up.communicate(), timeout=2)
         except Exception:
