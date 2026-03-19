@@ -30,15 +30,18 @@ def _collect_agents(team_config: Mapping[str, Any]) -> list[dict[str, Any]]:
     return agents
 
 
-def _get_all_subordinates(agent_id: str, agents: list[dict[str, Any]]) -> set[str]:
-    """Recursively collect all subordinate IDs of an agent."""
+def _get_all_subordinates(agent_id: str, agents: list[dict[str, Any]], _visited: set[str] | None = None) -> set[str]:
+    """Recursively collect all subordinate IDs of an agent (cycle-safe)."""
+    if _visited is None:
+        _visited = set()
+    _visited.add(agent_id)
     subs: set[str] = set()
     direct = [agent["id"] for agent in agents if agent.get("reports_to") == agent_id]
     for child_id in direct:
-        if child_id in subs:
+        if child_id in _visited:
             continue
         subs.add(child_id)
-        subs.update(_get_all_subordinates(child_id, agents))
+        subs.update(_get_all_subordinates(child_id, agents, _visited))
     return subs
 
 
