@@ -18,10 +18,12 @@ Architecture:
 from __future__ import annotations
 
 import asyncio
+import atexit
 import json
 import logging
 import os
 import re
+import signal
 import shlex
 import shutil
 import sys
@@ -1585,6 +1587,17 @@ async def _auto_reregister() -> bool:
     if not _agent_id:
         return False
     async with _reregister_lock:
+        # BUG-6 FIX: After acquiring lock, verify re-registration is still needed.
+        # Another coroutine may have already refreshed the token while we waited.
+        try:
+            pre_check = await _bridge_post("/heartbeat", json=_heartbeat_payload())
+            if pre_check.status_code == 200:
+                hb = pre_check.json()
+                if hb.get("registered") is not False:
+                    log.info("Auto-re-register skipped: token already valid (refreshed by another coroutine)")
+                    return True
+        except Exception:
+            pass  # Heartbeat failed — proceed with re-registration
         try:
             register_payload: dict[str, Any] = {
                 "agent_id": _agent_id,
@@ -1643,6 +1656,37 @@ def _ensure_background_tasks() -> None:
 
     if _heartbeat_task is None or _heartbeat_task.done():
         _heartbeat_task = loop.create_task(_heartbeat_loop())
+
+
+# ---------------------------------------------------------------------------
+# BUG-7 FIX: Cleanup on process exit — prevent orphan background tasks
+# ---------------------------------------------------------------------------
+
+def _cleanup_background_tasks() -> None:
+    """Cancel background tasks and close HTTP client on exit."""
+    global _ws_task, _heartbeat_task, _http_client
+    for task in (_ws_task, _heartbeat_task):
+        if task is not None and not task.done():
+            task.cancel()
+    _ws_task = None
+    _heartbeat_task = None
+    if _http_client is not None:
+        try:
+            asyncio.get_event_loop().run_until_complete(_http_client.aclose())
+        except Exception:
+            pass
+        _http_client = None
+
+
+def _signal_exit(signum: int, _frame: Any) -> None:
+    """Handle SIGTERM/SIGINT by cleaning up and exiting."""
+    _cleanup_background_tasks()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, _signal_exit)
+signal.signal(signal.SIGINT, _signal_exit)
+atexit.register(_cleanup_background_tasks)
 
 
 async def _auto_register_from_cli_identity() -> bool:

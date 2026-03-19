@@ -7381,6 +7381,15 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     if token:
                         with AGENT_STATE_LOCK:
                             bound_agent = SESSION_TOKENS.get(token)
+                            # BUG-4 FIX: Also check grace-period tokens (old tokens valid for 30s after re-registration)
+                            if bound_agent is None:
+                                grace_entry = GRACE_TOKENS.get(token)
+                                if grace_entry is not None:
+                                    grace_agent, grace_expiry = grace_entry
+                                    if time.time() <= grace_expiry:
+                                        bound_agent = grace_agent
+                                    else:
+                                        GRACE_TOKENS.pop(token, None)
                         if bound_agent is None:
                             self._respond(403, {"error": "invalid session token"})
                             return
