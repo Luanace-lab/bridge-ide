@@ -80,8 +80,10 @@ def context_bridge_candidates(agent_home: str, agent_id: str) -> list[str]:
 
 def soul_candidates(agent_home: str, agent_id: str) -> list[str]:
     layout = resolve_agent_cli_layout(agent_home, agent_id)
+    canonical = str(Path.home() / ".bridge" / "agents" / agent_id / "soul.md")
     return _dedupe_paths(
         [
+            canonical,
             os.path.join(layout["workspace"], "SOUL.md"),
             os.path.join(layout["project_root"], "SOUL.md"),
             os.path.join(layout["home_dir"], "SOUL.md"),
@@ -261,8 +263,8 @@ def memory_template_text(agent_id: str, agent_role: str) -> str:
         f"# {agent_id} — Persistent Memory\n\n"
         "## Architektur-Wissen\n"
         "(Dateien, Strukturen, Abhaengigkeiten die du kennst)\n\n"
-        "## Owner-Entscheidungen\n"
-        "(Was der Owner will, was er ablehnt)\n\n"
+        "## Leo-Entscheidungen\n"
+        "(Was Leo will, was er ablehnt)\n\n"
         "## Patterns\n"
         "(Wie wir Dinge tun — wiederkehrende Muster)\n\n"
         "## Fehler + Fixes\n"

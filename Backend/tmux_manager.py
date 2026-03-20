@@ -1273,22 +1273,65 @@ def _load_cached_session_id(
     return _session_cache_entry_session_id(data.get(agent_id))
 
 
-def _claude_project_session_dirs(workspace: Path) -> list[Path]:
-    mangled = re.sub(r"[^a-zA-Z0-9-]", "-", str(workspace))
+def _claude_project_session_dirs(
+    workspace: Path,
+    *,
+    agent_id: str = "",
+) -> list[Path]:
+    """Find Claude Code project dirs that may contain session files.
+
+    Searches by mangled workspace path (absolute + raw) first, then falls back
+    to a glob search for any project dir containing the agent_id.  The broad
+    search is necessary because agents may have been started from different
+    CWDs historically (manual start vs. platform start, home_dir changes).
+    """
+    # CRITICAL: resolve() to absolute path before mangling.
+    # Claude Code always uses the absolute CWD for project directory names.
+    mangled_abs = _mangle_cwd(str(workspace.resolve()))
+    mangled_raw = _mangle_cwd(str(workspace))
+    exact_candidates = [mangled_abs]
+    if mangled_raw != mangled_abs:
+        exact_candidates.append(mangled_raw)
+
     project_dirs: list[Path] = []
-    for config_base in sorted(Path.home().glob(".claude*")):
-        if not config_base.is_dir():
-            continue
-        project_dir = config_base / "projects" / mangled
-        if project_dir.exists():
-            project_dirs.append(project_dir)
+    seen: set[str] = set()
+
+    # Phase 1: Exact match by mangled workspace (fast, deterministic)
+    for mangled in exact_candidates:
+        for config_base in sorted(Path.home().glob(".claude*")):
+            if not config_base.is_dir():
+                continue
+            project_dir = config_base / "projects" / mangled
+            key = str(project_dir.resolve()) if project_dir.exists() else str(project_dir)
+            if project_dir.exists() and key not in seen:
+                project_dirs.append(project_dir)
+                seen.add(key)
+
+    # Phase 2: Broad search by agent_id in project dir name (finds historical paths)
+    if agent_id:
+        mangled_id = _mangle_cwd(agent_id)
+        for config_base in sorted(Path.home().glob(".claude*")):
+            if not config_base.is_dir():
+                continue
+            projects_root = config_base / "projects"
+            if not projects_root.is_dir():
+                continue
+            for pattern in [f"*-{agent_id}", f"*-{mangled_id}", f"*--agent-sessions-{mangled_id}"]:
+                import glob as _glob
+                for match in _glob.glob(str(projects_root / pattern)):
+                    match_path = Path(match)
+                    key = str(match_path.resolve())
+                    if match_path.is_dir() and key not in seen:
+                        project_dirs.append(match_path)
+                        seen.add(key)
+
     return project_dirs
 
 
-def _validate_cached_claude_resume_id(session_id: str, workspace: Path) -> bool:
+def _validate_cached_claude_resume_id(session_id: str, workspace: Path, *, agent_id: str = "") -> bool:
     if not _valid_resume_id(session_id):
         return False
-    return any((project_dir / f"{session_id}.jsonl").exists() for project_dir in _claude_project_session_dirs(workspace))
+    return any((project_dir / f"{session_id}.jsonl").exists() for project_dir in _claude_project_session_dirs(workspace, agent_id=agent_id))
 
 
 def _validate_local_claude_resume_id(session_id: str, workspace: Path, config_dir: str | Path) -> str:
@@ -1296,15 +1339,23 @@ def _validate_local_claude_resume_id(session_id: str, workspace: Path, config_di
     if not _valid_resume_id(session_id):
         return ""
     base = Path(config_dir).expanduser()
-    mangled = re.sub(r"[^a-zA-Z0-9-]", "-", str(workspace))
-    if (base / "projects" / mangled / f"{session_id}.jsonl").exists():
-        return str(base)
+    # Try both absolute and raw mangling for backwards compatibility
+    mangled_abs = _mangle_cwd(str(workspace.resolve()))
+    mangled_raw = _mangle_cwd(str(workspace))
+    candidates = [mangled_abs]
+    if mangled_raw != mangled_abs:
+        candidates.append(mangled_raw)
+
+    for mangled in candidates:
+        if (base / "projects" / mangled / f"{session_id}.jsonl").exists():
+            return str(base)
     # Fallback: search all .claude* config dirs for the session
     for config_base in sorted(Path.home().glob(".claude*")):
         if not config_base.is_dir() or config_base == base:
             continue
-        if (config_base / "projects" / mangled / f"{session_id}.jsonl").exists():
-            return str(config_base)
+        for mangled in candidates:
+            if (config_base / "projects" / mangled / f"{session_id}.jsonl").exists():
+                return str(config_base)
     return ""
 
 
@@ -1616,7 +1667,7 @@ def _extract_resume_lineage(
             )
         else:
             valid_cached_sid = (
-                cached_sid if _validate_cached_claude_resume_id(cached_sid, workspace) else ""
+                cached_sid if _validate_cached_claude_resume_id(cached_sid, workspace, agent_id=agent_id) else ""
             )
             if cached_sid and not valid_cached_sid:
                 print(
@@ -1636,7 +1687,7 @@ def _extract_resume_lineage(
         return valid_cached_sid, "session_cache"
 
     if workspace.exists():
-        for project_dir in _claude_project_session_dirs(workspace):
+        for project_dir in _claude_project_session_dirs(workspace, agent_id=agent_id):
             jsonl_files = sorted(
                 project_dir.glob("*.jsonl"),
                 key=lambda p: p.stat().st_mtime,
@@ -2049,6 +2100,31 @@ def create_agent_session(
             _ensure_memory_symlink(workspace, _home, config_dir=config_dir)
         except Exception as exc:
             print(f"[memory-sot] WARNING: Failed for {agent_id}: {exc}", file=sys.stderr)
+
+    # Seed canonical agent store (~/.bridge/agents/{id}/)
+    try:
+        import canonical_store
+        canonical_store.init_canonical_dir(agent_id)
+        # Sync identity from team.json
+        _tc = None
+        try:
+            import json as _json
+            _tc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "team.json")
+            if os.path.isfile(_tc_path):
+                with open(_tc_path, encoding="utf-8") as _f:
+                    _tc = _json.load(_f)
+        except Exception:
+            pass
+        if _tc:
+            canonical_store.sync_identity_from_team(agent_id, _tc)
+        # Seed soul: copy best existing SOUL.md if canonical is empty
+        if not canonical_store.read_canonical_soul(agent_id):
+            from soul_engine import resolve_soul as _resolve_soul
+            _existing = _resolve_soul(agent_id, workspace)
+            if _existing:
+                canonical_store.write_canonical_soul(agent_id, _existing.to_markdown())
+    except Exception as exc:
+        print(f"[canonical-store] WARNING: Seeding failed for {agent_id}: {exc}", file=sys.stderr)
 
     # 1a  Resolve and persist soul (SOUL.md created only if missing)
     guardrail_prolog, soul_section = prepare_agent_identity(agent_id, workspace)
