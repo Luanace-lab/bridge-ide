@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import glob
 import os
+import re
 from pathlib import Path
 
 INSTRUCTION_FILES_BY_ENGINE: dict[str, str] = {
@@ -15,7 +16,15 @@ KNOWN_INSTRUCTION_FILES = tuple(dict.fromkeys(INSTRUCTION_FILES_BY_ENGINE.values
 
 
 def _mangle_cwd(cwd: str) -> str:
-    return cwd.replace("/", "-").replace(".", "-").replace("_", "-")
+    """Mangle path to match Claude Code internal project directory naming.
+
+    Claude Code replaces ALL non-alphanumeric characters (except ``-``) with
+    ``-``.  The previous implementation only replaced ``/``, ``.`` and ``_``
+    which produced wrong paths for directories containing non-ASCII characters
+    (e.g. umlauts: ``persönlich`` → ``pers-nlich`` in Claude Code but was kept
+    as-is by the old function).
+    """
+    return re.sub(r"[^a-zA-Z0-9-]", "-", str(cwd))
 
 
 def instruction_filename_for_engine(engine: str = "") -> str:
@@ -134,6 +143,39 @@ def detect_instruction_filename(agent_home: str, agent_id: str, engine: str = ""
     return preferred
 
 
+def resolve_memory_sot_dir(
+    agent_home: str,
+    agent_id: str,
+    config_dir: str = "",
+) -> str:
+    """Deterministic Single Source of Truth directory for agent memory.
+
+    Returns the canonical memory directory path.  The rule is simple:
+
+    * Agent has a dedicated home_dir (home != workspace)
+      → SoT = home_dir path  (this is where manual ``cd Home && claude`` writes)
+    * Agent's home IS the workspace (home == workspace)
+      → SoT = workspace path  (only path that exists)
+
+    All alternative memory directories should be symlinked to this SoT.
+    """
+    layout = resolve_agent_cli_layout(agent_home, agent_id)
+    home_dir = layout["home_dir"]
+    workspace = layout["workspace"]
+
+    config_base = Path(config_dir) if config_dir else Path.home() / ".claude"
+
+    # CRITICAL: resolve() to absolute paths before mangling.
+    # Claude Code always sees the absolute CWD — relative paths produce
+    # wrong mangled names that don't match what Claude Code creates on disk.
+    if Path(home_dir).resolve() == Path(workspace).resolve():
+        mangled = _mangle_cwd(str(Path(workspace).resolve()))
+    else:
+        mangled = _mangle_cwd(str(Path(home_dir).resolve()))
+
+    return str(config_base / "projects" / mangled / "memory")
+
+
 def memory_cwd_candidates(agent_home: str, agent_id: str) -> list[str]:
     layout = resolve_agent_cli_layout(agent_home, agent_id)
     candidates = [
@@ -177,10 +219,18 @@ def find_agent_memory_path(
     if not agent_home:
         return ""
 
+    # Priority 0: Canonical SoT path (deterministic, always the same for a given agent)
+    sot_dir = resolve_memory_sot_dir(agent_home, agent_id, config_dir)
+    sot_path = os.path.join(sot_dir, "MEMORY.md")
+    if os.path.isfile(sot_path):
+        return sot_path
+
+    # Priority 1: Workspace MEMORY.md (may be symlinked to SoT)
     workspace_memory = first_existing_path(memory_file_candidates(agent_home, agent_id))
     if workspace_memory:
         return workspace_memory
 
+    # Priority 2: Mangled CWD search across config bases
     for cwd in memory_cwd_candidates(agent_home, agent_id):
         mangled = _mangle_cwd(cwd)
         for base in memory_search_bases(agent_id, config_dir):
@@ -211,8 +261,8 @@ def memory_template_text(agent_id: str, agent_role: str) -> str:
         f"# {agent_id} — Persistent Memory\n\n"
         "## Architektur-Wissen\n"
         "(Dateien, Strukturen, Abhaengigkeiten die du kennst)\n\n"
-        "## Leo-Entscheidungen\n"
-        "(Was Leo will, was er ablehnt)\n\n"
+        "## Owner-Entscheidungen\n"
+        "(Was der Owner will, was er ablehnt)\n\n"
         "## Patterns\n"
         "(Wie wir Dinge tun — wiederkehrende Muster)\n\n"
         "## Fehler + Fixes\n"

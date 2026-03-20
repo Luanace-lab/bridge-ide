@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from mcp_catalog import build_client_mcp_config, requested_runtime_mcp_names, runtime_mcp_registry
-from persistence_utils import instruction_filename_for_engine, resolve_agent_cli_layout
+from persistence_utils import _mangle_cwd, instruction_filename_for_engine, resolve_agent_cli_layout
 from soul_engine import prepare_agent_identity
 from tmux_engine_policy import (
     TmuxEngineSpec as _TmuxEngineSpec,
@@ -1012,10 +1012,14 @@ def _ensure_persistent_symlinks(
     alt_projects.symlink_to(primary_projects)
 
 
-def _ensure_memory_symlink(workspace: Path, home_dir: Path) -> None:
+def _ensure_memory_symlink(
+    workspace: Path,
+    home_dir: Path,
+    config_dir: str = "",
+) -> None:
     """Ensure workspace's Claude memory dir symlinks to home_dir's memory dir.
 
-    Claude Code stores auto-memory under ~/.claude/projects/{mangled_cwd}/memory/.
+    Claude Code stores auto-memory under ``{config}/projects/{mangled_cwd}/memory/``.
     When home_dir != workspace (the common case for Bridge-managed agents), two
     separate memory directories exist.  This function makes the workspace memory
     a symlink to the home_dir memory, creating a single source of truth.
@@ -1026,17 +1030,20 @@ def _ensure_memory_symlink(workspace: Path, home_dir: Path) -> None:
     if workspace.resolve() == home_dir.resolve():
         return
 
-    mangled_home = re.sub(r"[^a-zA-Z0-9-]", "-", str(home_dir))
-    mangled_ws = re.sub(r"[^a-zA-Z0-9-]", "-", str(workspace))
+    # CRITICAL: resolve() to absolute paths before mangling.
+    # Claude Code always sees the absolute CWD — relative paths produce
+    # wrong mangled names that don't match what Claude Code creates on disk.
+    mangled_home = _mangle_cwd(str(home_dir.resolve()))
+    mangled_ws = _mangle_cwd(str(workspace.resolve()))
 
     if mangled_home == mangled_ws:
         return
 
-    primary_config = Path.home() / ".claude"
-    sot_project = primary_config / "projects" / mangled_home
+    config_base = Path(config_dir) if config_dir else Path.home() / ".claude"
+    sot_project = config_base / "projects" / mangled_home
     sot_memory = sot_project / "memory"
 
-    ws_project = primary_config / "projects" / mangled_ws
+    ws_project = config_base / "projects" / mangled_ws
     ws_memory = ws_project / "memory"
 
     # Ensure directories exist
@@ -1044,7 +1051,7 @@ def _ensure_memory_symlink(workspace: Path, home_dir: Path) -> None:
     sot_memory.mkdir(parents=True, exist_ok=True)
     ws_project.mkdir(parents=True, exist_ok=True)
 
-    # Case 1: Already correct symlink
+    # Case 1: Already a symlink
     if ws_memory.is_symlink():
         try:
             if ws_memory.resolve() == sot_memory.resolve():
@@ -1066,7 +1073,6 @@ def _ensure_memory_symlink(workspace: Path, home_dir: Path) -> None:
                 shutil.move(str(item), str(target))
                 merged += 1
             elif item.name == "MEMORY.md":
-                # MEMORY.md conflict: larger file wins (more accumulated knowledge)
                 if item.stat().st_size > target.stat().st_size:
                     shutil.copy2(str(item), str(target))
                     merged += 1
@@ -2036,13 +2042,13 @@ def create_agent_session(
     _ensure_persistent_symlinks(workspace, project_path, config_dir)
 
     # Ensure unified memory: workspace memory → home_dir memory (SoT)
-    if spec.engine == "claude":
-        _home = layout["home_dir"]
-        if _home.resolve() != workspace.resolve():
-            try:
-                _ensure_memory_symlink(workspace, _home)
-            except Exception as exc:
-                print(f"[memory-sot] WARNING: Failed for {agent_id}: {exc}", file=sys.stderr)
+    # Applies to ALL engines — memory consolidation is engine-agnostic.
+    _home = layout["home_dir"]
+    if _home.resolve() != workspace.resolve():
+        try:
+            _ensure_memory_symlink(workspace, _home, config_dir=config_dir)
+        except Exception as exc:
+            print(f"[memory-sot] WARNING: Failed for {agent_id}: {exc}", file=sys.stderr)
 
     # 1a  Resolve and persist soul (SOUL.md created only if missing)
     guardrail_prolog, soul_section = prepare_agent_identity(agent_id, workspace)
