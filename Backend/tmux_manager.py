@@ -1359,6 +1359,65 @@ def _validate_local_claude_resume_id(session_id: str, workspace: Path, config_di
     return ""
 
 
+def _ensure_session_file_at_workspace(
+    session_id: str,
+    workspace: Path,
+    config_dir: str = "",
+    *,
+    agent_id: str = "",
+) -> bool:
+    """Ensure Claude Code can find the session file from the workspace CWD.
+
+    Claude Code looks for ``{config}/projects/{mangled_cwd}/{session_id}.jsonl``.
+    If the agent's workspace changed since the session was created, the file
+    lives under a different mangled path.  This function finds the original
+    file and symlinks it into the expected location so ``--resume`` works.
+
+    Returns True if the session file is accessible from the workspace path.
+    """
+    if not _valid_resume_id(session_id):
+        return False
+
+    config_base = Path(config_dir).expanduser() if config_dir else Path.home() / ".claude"
+    mangled_ws = _mangle_cwd(str(workspace.resolve()))
+    target_dir = config_base / "projects" / mangled_ws
+    target_file = target_dir / f"{session_id}.jsonl"
+
+    # Already accessible — nothing to do
+    if target_file.exists():
+        return True
+
+    # Find the session file in any project dir (same logic as _claude_project_session_dirs)
+    source_file: Path | None = None
+    for project_dir in _claude_project_session_dirs(workspace, agent_id=agent_id):
+        candidate = project_dir / f"{session_id}.jsonl"
+        if candidate.exists():
+            source_file = candidate.resolve()
+            break
+
+    if source_file is None:
+        return False
+
+    # Create target directory and symlink the session file
+    target_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        target_file.symlink_to(source_file)
+        print(f"[resume-bridge] Linked session {session_id[:12]}... "
+              f"from {source_file.parent.name}/ → {target_dir.name}/")
+
+        # Also symlink subagents/ dir if it exists (contains sub-agent sessions)
+        source_subagents = source_file.parent / "subagents"
+        target_subagents = target_dir / "subagents"
+        if source_subagents.is_dir() and not target_subagents.exists():
+            target_subagents.symlink_to(source_subagents.resolve())
+
+        return True
+    except OSError as exc:
+        print(f"[resume-bridge] WARNING: Failed to link session for {agent_id}: {exc}",
+              file=sys.stderr)
+        return False
+
+
 def _extract_rollout_id(rollout_file: Path) -> str:
     match = re.search(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$", rollout_file.stem)
     return match.group(1) if match else ""
@@ -2062,6 +2121,19 @@ def create_agent_session(
         )
         resume_id = ""
         resume_source = ""
+
+    # Ensure Claude Code can find the session file at the current workspace CWD.
+    # If the workspace changed since the session was created (e.g. home_dir moved),
+    # the .jsonl lives under a different mangled path.  Bridge it via symlink.
+    if resume_id and spec.engine == "claude":
+        if not _ensure_session_file_at_workspace(
+            resume_id, workspace, config_dir=config_dir, agent_id=agent_id
+        ):
+            print(
+                f"[tmux_manager] WARNING: Could not bridge session file for {agent_id} "
+                f"resume={resume_id[:12]}... — Claude Code may start fresh",
+                file=sys.stderr,
+            )
 
     # Per-agent workspace directory.
     # Claude Code reads CLAUDE.md from CWD *and* parent directories,
