@@ -52,7 +52,7 @@ Hinweis:
   - `env PATH=/tmp/bridge_pkg_venv3/bin:$PATH bridge-ide stop`
 - Im aktuellen Live-Betrieb sind Basiskonfiguration und Runtime-Overlay gleichzeitig sichtbar:
   - `/board/projects` und `/team/projects` liefern das Runtime-Projekt `bridge`
-  - und parallel persistierte Basisprojekte wie `bridge-ide` und `bug-bounty`
+  - und parallel persistierte Basisprojekte wie `bridge-ide`
 - Damit ist die vereinfachte Aussage „nur Runtime-Overlay“ falsch; die UI-Lesepfade spiegeln aktuell mehrere Schichten zugleich.
 - In einem real ausgeführten Stop-Zyklus wurde `Backend/runtime_team.json` entfernt und danach durch den naechsten Startpfad neu aufgebaut.
 

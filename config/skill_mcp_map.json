@@ -70,10 +70,10 @@
     "auto_attach": true
   },
   "stealth-browser": {
-    "summary": "Bot-Detection-Bypass, Stealth-Automation",
+    "summary": "Protected-site browser automation",
     "preferred_mcps": ["playwright", "ghost"],
-    "required_capabilities": ["browser_automation", "stealth"],
-    "task_keywords": ["browser", "stealth", "bot", "detection", "bypass", "captcha"],
+    "required_capabilities": ["browser_automation", "compatibility"],
+    "task_keywords": ["browser", "automation", "captcha", "protected-site"],
     "auto_attach": true
   },
   "account-creator": {
@@ -87,7 +87,7 @@
     "summary": "Security-Scanning, Vulnerability Assessment",
     "preferred_mcps": ["aase", "bridge"],
     "required_capabilities": ["security_scanning", "web_scanning"],
-    "task_keywords": ["security", "scan", "vulnerability", "pentest", "exploit"],
+    "task_keywords": ["security", "scan", "vulnerability", "assessment"],
     "auto_attach": true
   },
   "deep-research": {

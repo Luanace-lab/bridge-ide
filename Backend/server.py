@@ -2846,7 +2846,7 @@ def _notify_teamlead_agent_crashed(agent_id: str, previous_status: str) -> None:
             aid = ag.get("id", "")
             if aid and ag.get("level", 99) <= 1 and aid != agent_id:
                 notified.add(aid)
-    # 3. Always notify user (Leo)
+    # 3. Always notify user (the owner)
     notified.add("user")
     for target in notified:
         try:
@@ -4185,7 +4185,7 @@ def _check_hierarchy_permission(creator: str, target: str) -> bool:
       - Level 1 (owner, manager): can create for ALL agents
       - Level 2: can create for self + Level 3 agents who report to them
       - Level 3: can only create for SELF
-      - 'user' (Leo) can always delegate to anyone
+      - 'user' (the owner) can always delegate to anyone
     """
     if creator == "user" or creator == target:
         return True
@@ -5044,7 +5044,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         # GET /task/{id}/history — audit trail for a task (Diff-friendly)
-        # ===== TASK TRACKER (Leo-Direktive) =====
+        # ===== TASK TRACKER (Owner-Direktive) =====
         # GET /task/tracker — Audit-View aller Tasks mit Lifecycle-Transparenz
         if path == "/task/tracker":
             agent_filter = (query.get("agent") or [None])[0]
@@ -6058,6 +6058,20 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     _GRACEFUL_SHUTDOWN["acked_agents"] = []
                     _GRACEFUL_SHUTDOWN["expected_agents"] = online_agents
                     _GRACEFUL_SHUTDOWN["finalized"] = False
+
+                # Canonical writeback for all online agents before shutdown
+                try:
+                    import writeback_engine
+                    for _aid in online_agents:
+                        try:
+                            _home = _get_agent_home_dir(_aid)
+                            if _home:
+                                _cd = _get_runtime_config_dir(_aid)
+                                writeback_engine.full_writeback(_aid, _home, _cd)
+                        except Exception:
+                            pass
+                except ImportError:
+                    pass
 
                 shutdown_msg = f"[SHUTDOWN] Graceful Shutdown in {timeout_secs}s von {agent_id}."
                 if reason:
@@ -7091,7 +7105,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
         # ===== V3 ESCALATION ENDPOINT (T11) =====
 
-        # POST /escalation/{task_id}/resolve — Susi resolves Stage 3 escalation
+        # POST /escalation/{task_id}/resolve — the owner resolves Stage 3 escalation
         esc_resolve_match = re.match(r"^/escalation/([^/]+)/resolve$", path)
         if esc_resolve_match:
             task_id = esc_resolve_match.group(1)
@@ -7296,9 +7310,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
             _non_agent = {"system", "user", "all", "all_managers", "leads"}
             if not clear_requested and original_sender and original_sender not in _non_agent:
                 if reaction == "thumbs_up":
-                    feedback = "Leo hat deine Nachricht positiv bewertet."
+                    feedback = "The owner hat deine Nachricht positiv bewertet."
                 else:
-                    feedback = "Leo hat Bedenken \u2014 Ansatz ueberdenken."
+                    feedback = "The owner hat Bedenken \u2014 Ansatz ueberdenken."
                 append_message("system", original_sender, feedback,
                                meta={"type": "reaction_feedback", "reaction": reaction,
                                      "original_msg_id": msg_id, "reactor": reactor})
@@ -7426,7 +7440,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             raw_team = data.get("team")
             msg_team = str(raw_team).strip() if raw_team else None
 
-            # ── M3: Evidenz-Enforcement DISABLED by Leo (2026-03-07) ──
+            # ── M3: Evidenz-Enforcement DISABLED by Owner (2026-03-07) ──
             # Keyword matching is cosmetic, not structural. Structural enforcement
             # lives in bridge_task_done (result_summary + evidence required).
             evidence_warning = None
@@ -7459,7 +7473,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             if "[SHUTDOWN_ACK]" in content and sender not in {"system", "user"}:
                 _handle_shutdown_ack(sender)
 
-            # M3 evidence-warning on /send: DISABLED by Leo (keyword matching is cosmetic)
+            # M3 evidence-warning on /send: DISABLED by Owner (keyword matching is cosmetic)
             # Structural enforcement remains on bridge_task_done (result_summary + evidence)
 
             # Track agent activity: recipient is now busy (processing), sender just finished
@@ -7693,6 +7707,22 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 except Exception as exc:
                     print(f"[register] Auto-index failed for {aid}: {exc}")
             threading.Thread(target=_auto_index_memory, args=(agent_id,), daemon=True).start()
+
+            # Canonical store writeback — extract deltas into ~/.bridge/agents/{id}/
+            def _canonical_writeback(aid: str) -> None:
+                try:
+                    import writeback_engine
+                    _home = _get_agent_home_dir(aid)
+                    if not _home:
+                        return
+                    _cd = _get_runtime_config_dir(aid)
+                    result = writeback_engine.full_writeback(aid, _home, _cd)
+                    new = result.get("memory_new_entries", 0)
+                    if new > 0:
+                        print(f"[register] Canonical writeback for {aid}: {new} new memory entries")
+                except Exception as exc:
+                    print(f"[register] Canonical writeback failed for {aid}: {exc}")
+            threading.Thread(target=_canonical_writeback, args=(agent_id,), daemon=True).start()
 
             # P1: Memory-Bootstrap — create MEMORY.md template if agent has none
             def _memory_bootstrap(aid: str, aid_role: str) -> None:
@@ -8742,9 +8772,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 self._respond(400, {"error": "fields 'request_id' and 'decision' (approved|denied) are required"})
                 return
 
-            # Only "user" may approve/deny — no agent may decide for Leo
+            # Only "user" may approve/deny — no agent may decide for the owner
             if decided_by != "user":
-                self._respond(403, {"error": "only 'user' (Leo) may approve or deny requests"})
+                self._respond(403, {"error": "only 'user' (the owner) may approve or deny requests"})
                 return
 
             # Expire check first
@@ -9037,7 +9067,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self._respond(200, response_data)
             return
 
-        # PATCH /agents/{id}/active — toggle agent active state (Susi: "Aktiv"/"Pausiert")
+        # PATCH /agents/{id}/active — toggle agent active state (Owner: "Aktiv"/"Pausiert")
         _agent_active_match = re.match(r"^/agents/([^/]+)/active$", path)
         if _agent_active_match:
             agent_id = _agent_active_match.group(1)

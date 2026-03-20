@@ -168,9 +168,10 @@ def scan_and_fix() -> int:
         workspace = _get_workspace(config) if config else ""
         if not workspace:
             # Fallback: try common paths
+            _project_root = os.environ.get("BRIDGE_PROJECT_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             for p in [
-                f"/home/user/bridge/{agent_id.capitalize()}/.agent_sessions/{agent_id}",
-                f"/home/user/bridge/MobileApp/.agent_sessions/{agent_id}",
+                os.path.join(_project_root, agent_id.capitalize(), ".agent_sessions", agent_id),
+                os.path.join(_project_root, "MobileApp", ".agent_sessions", agent_id),
             ]:
                 if os.path.isdir(p):
                     workspace = p

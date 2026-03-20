@@ -67,8 +67,8 @@ class TestBuddyUserScopeContract(unittest.TestCase):
         legacy_dir = Path(self._tmpdir.name) / "Buddy"
         (legacy_dir / "memory").mkdir(parents=True, exist_ok=True)
         legacy_payload = {
-            "user_id": "susi",
-            "display_name": "Susi",
+            "user_id": "testuser",
+            "display_name": "Testuser",
             "persona": "non-tech",
             "guidance_mode": "uebernehmen",
             "autonomy_preference": "hoch",
@@ -82,16 +82,16 @@ class TestBuddyUserScopeContract(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = srv._seed_buddy_user_scope("susi", buddy_home=str(legacy_dir))
+        result = srv._seed_buddy_user_scope("testuser", buddy_home=str(legacy_dir))
 
         self.assertTrue(result["ok"])
-        self.assertEqual(result["scope_path"], "Users/susi/USER")
+        self.assertEqual(result["scope_path"], "Users/testuser/USER")
         self.assertTrue(result["migrated_legacy"])
 
-        note = ke.read_note("Users/susi/USER")
+        note = ke.read_note("Users/testuser/USER")
         self.assertTrue(note["exists"])
-        self.assertEqual(note["frontmatter"]["user"], "susi")
-        self.assertEqual(note["frontmatter"]["display_name"], "Susi")
+        self.assertEqual(note["frontmatter"]["user"], "testuser")
+        self.assertEqual(note["frontmatter"]["display_name"], "Testuser")
         self.assertEqual(note["frontmatter"]["persona"], "non-tech")
         self.assertIn("Guidance mode: uebernehmen", note["body"])
         self.assertIn("Preferred channels: bridge, whatsapp", note["body"])
@@ -100,25 +100,25 @@ class TestBuddyUserScopeContract(unittest.TestCase):
     def test_seed_buddy_user_scope_preserves_existing_canonical_note(self):
         ke = self._load_isolated_ke()
         ke.init_vault()
-        ke.init_user_vault("susi")
+        ke.init_user_vault("testuser")
         ke.write_note(
-            "Users/susi/USER",
+            "Users/testuser/USER",
             "Canonical relationship state.",
-            {"user": "susi", "persona": "hybrid", "display_name": "Susi"},
+            {"user": "testuser", "persona": "hybrid", "display_name": "Testuser"},
         )
 
         legacy_dir = Path(self._tmpdir.name) / "Buddy"
         (legacy_dir / "memory").mkdir(parents=True, exist_ok=True)
         (legacy_dir / "memory" / "user_model.json").write_text(
-            json.dumps({"user_id": "susi", "persona": "non-tech", "display_name": "Legacy"}),
+            json.dumps({"user_id": "testuser", "persona": "non-tech", "display_name": "Legacy"}),
             encoding="utf-8",
         )
 
-        result = srv._seed_buddy_user_scope("susi", buddy_home=str(legacy_dir))
+        result = srv._seed_buddy_user_scope("testuser", buddy_home=str(legacy_dir))
 
         self.assertTrue(result["ok"])
         self.assertFalse(result["migrated_legacy"])
-        note = ke.read_note("Users/susi/USER")
+        note = ke.read_note("Users/testuser/USER")
         self.assertIn("Canonical relationship state.", note["body"])
         self.assertEqual(note["frontmatter"]["persona"], "hybrid")
 

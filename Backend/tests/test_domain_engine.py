@@ -69,9 +69,9 @@ class TestWorkItem(unittest.TestCase):
         from domain_engine.work_item import create_work_item, transition_work_item, approve_work_item
         item = create_work_item("marketing", "social_post", "Test", self.ws)
         item = transition_work_item(item, "generated", self.ws)
-        item = approve_work_item(item, "leo", self.ws)
+        item = approve_work_item(item, "owner", self.ws)
         self.assertEqual(item["status"], "approved")
-        self.assertEqual(item["approval"]["reviewer"], "leo")
+        self.assertEqual(item["approval"]["reviewer"], "owner")
 
     def test_add_variant(self) -> None:
         from domain_engine.work_item import create_work_item, add_variant
@@ -252,7 +252,7 @@ class TestMarketingDomainPack(unittest.TestCase):
             self.assertEqual(len(item["variants"]), 1)
 
             # 5. Approve
-            item = approve_work_item(item, "leo", ws)
+            item = approve_work_item(item, "owner", ws)
             self.assertEqual(item["status"], "approved")
 
             # 6. Schedule → Publish → Observe

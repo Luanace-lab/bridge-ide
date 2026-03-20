@@ -2,32 +2,32 @@
 Stand: 2026-03-19
 
 ## Ziel
-Bridge-Browser von jedem Anti-Bot-System als echter menschlicher User erkannt.
-Alle Captcha-Typen nativ loesbar, ohne bezahlte Services.
+Bridge browser achieves full compatibility with modern website protection systems.
+All captcha types solvable natively, without paid services.
 
 ## IST-Zustand (Quellen: Backend IST-Analyse, Viktor Web-Research, Assi Capabilities-Audit)
 
 | Komponente | Status | Problem |
 |------------|--------|---------|
-| Stealth Browser | Playwright + JS-Spoofing | ~20% creepjs, CDP-Leaks |
+| Automation Browser | Playwright + JS-Spoofing | ~20% creepjs, CDP-Leaks |
 | Maussteuerung | xdotool teleport | Kein Bezier, kein Tremor |
 | Tastatur | xdotool key | Kein realistisches Timing |
 | Captcha | CAPSolver + Anti-Captcha | Bezahlt, extern |
 | CDP | Real Chrome Attach | 0% Detection (gut) |
-| Ghost MCP | Patchright + 5-Layer Stealth | Beste Evasion, aber separates System |
+| Ghost MCP | Patchright + 5-Layer compatibility | Best compatibility, but separate system |
 
 ## SOLL-Zustand
 
 | Komponente | Ziel | Technologie |
 |------------|------|-------------|
-| Stealth Browser | <5% creepjs Detection | Patchright + BrowserForge Fingerprints |
-| Maussteuerung | Menschlich ununterscheidbar | Bezier + Perlin-Noise + Micro-Tremor |
+| Automation Browser | <5% creepjs detection | Patchright + BrowserForge Fingerprints |
+| Mouse Control | Natural interaction patterns | Bezier + Perlin-Noise + Micro-Tremor |
 | Tastatur | Realistische WPM + Tippfehler | Gauss-Timing + Markov-Chain |
 | Captcha (Text) | 95%+ Solve-Rate | Tesseract OCR (lokal, kostenlos) |
 | Captcha (Audio) | 90%+ Solve-Rate | Whisper STT (lokal, kostenlos) |
-| Captcha (Turnstile) | Auto-Solve | Patchright + Stealth-Wait |
+| Captcha (Turnstile) | Auto-Solve | Patchright + compatibility wait |
 | Captcha (reCAPTCHA v2 Image) | 80%+ Solve-Rate | Ghost DETR + YOLO |
-| Captcha (reCAPTCHA v3) | Score-basiert | Stealth + Behavioral Mimicry |
+| Captcha (reCAPTCHA v3) | Score-based | Compatibility mode + natural behavior |
 | Captcha (hCaptcha) | Experimentell | LLaVA via Ollama (mittelfristig) |
 
 ## Umsetzungsplan
@@ -37,35 +37,35 @@ Alle Captcha-Typen nativ loesbar, ohne bezahlte Services.
 2. ✓ Native Captcha-Solver (Tesseract + Whisper + Turnstile Auto-Solve)
 3. ✓ Watcher smart_inject Prompt-Check (retry-Loop)
 
-### Phase 2: Fingerprint-Haertung (naechste Iteration)
+### Phase 2: Fingerprint Hardening (next iteration)
 4. BrowserForge Integration — konsistente Fingerprints (UA, Canvas, WebGL, AudioContext)
 5. Client Hints Spoofing — navigator.userAgentData vollstaendig
 6. TLS-Fingerprint — JA4+ kompatibel (Patchright loest CDP-Leak, aber TLS bleibt)
 7. HTTP/2 Settings-Frame — SETTINGS/PRIORITY korrekt fuer Chrome-Signatur
 8. WebRTC Haertung — mDNS-Mode oder UDP-over-SOCKS5
 
-### Phase 3: Menschliches Verhalten (parallel zu Phase 2)
-9. Bezier-Mausbewegungen in bridge_desktop_* (OxyMouse oder eigene Implementierung)
-10. Gauss-Keystroke-Timing in bridge_desktop_type (50-120ms, Markov-Chain)
-11. Scroll-Patterns mit Momentum + Idle-Simulation
-12. Loading-Behavior — warten nach Navigation wie echter User
+### Phase 3: Natural UX Patterns (parallel to Phase 2)
+9. Bezier mouse movements in bridge_desktop_* (OxyMouse or custom implementation)
+10. Gaussian keystroke timing in bridge_desktop_type (50-120ms, Markov-Chain)
+11. Scroll patterns with momentum + idle simulation
+12. Loading behavior — wait after navigation like a real user
 
 ### Phase 4: Captcha-Erweiterung (mittelfristig)
 13. reCAPTCHA v2 Image via YOLO (VisionAIRecaptchaSolver)
 14. hCaptcha via LLaVA/Ollama (experimentell, lokales MLLM)
 15. CAPSolver/Anti-Captcha als Fallback behalten, nicht als Default
 
-### Phase 5: Konsolidierung
-16. Ghost MCP + Bridge Stealth unifizieren — ein Engine, beste Features beider
-17. creepjs Score als CI-Test (Ziel: <5%)
-18. Anti-Detection Regression-Tests
+### Phase 5: Consolidation
+16. Ghost MCP + Bridge automation unify — one engine, best features of both
+17. creepjs score as CI test (target: <5%)
+18. Compatibility regression tests
 
 ## Testkriterien
 
 | Test | Tool | Zielwert |
 |------|------|----------|
 | creepjs Score | https://abrahamjuliot.github.io/creepjs/ | <5% Detection |
-| Bot-Detection | https://bot.sannysoft.com/ | 0 Fails |
+| Compatibility | https://bot.sannysoft.com/ | 0 Fails |
 | reCAPTCHA v2 Text | Tesseract | >95% Solve-Rate |
 | reCAPTCHA v2 Audio | Whisper | >90% Solve-Rate |
 | Turnstile | Auto-Solve | >85% Solve-Rate |

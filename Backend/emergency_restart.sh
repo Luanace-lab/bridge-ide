@@ -1,7 +1,7 @@
 #!/bin/bash
 # EMERGENCY RESTART — Alle kritischen Bridge-Prozesse neustarten
 # Verwendung: bash emergency_restart.sh
-# Von: Ordo (2026-03-01) — Leos Notfall-Knopf
+# Von: Ordo (2026-03-01) — the owner's Notfall-Knopf
 #
 # Startet: Bridge Server, Watcher, Forwarder, WhatsApp Watcher
 # Optional: --kill-zombies (toetet alte Playwright-Prozesse)

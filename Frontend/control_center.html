@@ -592,7 +592,7 @@
       overflow:hidden;
     }
 
-    /* ─── Project Sidebar (removed per Leo directive) ─── */
+    /* ─── Project Sidebar (removed per Owner directive) ─── */
     .projectSidebar{
       display:none;
     }
@@ -4528,7 +4528,7 @@
           <div class="abField">
             <label>Model-Sperre</label>
             <div class="abToggleRow">
-              <span>Model eingefroren (Leo-Lock)</span>
+              <span>Model eingefroren (Owner-Lock)</span>
               <button type="button" class="abToggle" id="abModelLocked"></button>
             </div>
           </div>
@@ -4763,7 +4763,7 @@
             <div class="awToggleRow">
               <div>
                 <div class="awToggleRow__label">Freigabe erforderlich</div>
-                <div class="awToggleRow__desc">Leo muss genehmigen bevor Action laeuft</div>
+                <div class="awToggleRow__desc">The owner muss genehmigen bevor Action laeuft</div>
               </div>
               <button class="awToggle" id="awOptApproval"></button>
             </div>
@@ -5064,7 +5064,7 @@
 
     function agentDisplayName(id){
       if(!id) return 'Unknown';
-      if(id === 'user') return 'Leo';
+      if(id === 'user') return 'Owner';
       if(id === 'teamlead' || id === 'lead') return 'Leader';
       const m = id.match(/^(?:claude_|agent_)([a-z])$/);
       if(m) return 'Agent ' + m[1].toUpperCase();
@@ -7838,7 +7838,7 @@
        ORGANIGRAMM ENGINE (V2 — Filter + Fit-to-Screen)
     ═══════════════════════════════════════════ */
     let HIERARCHY_DATA = {
-      owner: { id: 'user', name: 'Leo', role: 'Owner', level: 0 },
+      owner: { id: 'user', name: 'Owner', role: 'Owner', level: 0 },
       agents: []
     };
     let orgProjectsData = [];
@@ -8170,7 +8170,7 @@
       const nodes = container.querySelectorAll('.orgNode');
       nodes.forEach(node => {
         const agentId = node.getAttribute('data-agent');
-        if(agentId === 'user') return; /* Leo not draggable */
+        if(agentId === 'user') return; /* Owner not draggable */
 
         node.setAttribute('draggable', 'true');
 
@@ -8190,7 +8190,7 @@
         });
       });
 
-      /* All nodes are potential drop targets (including user/Leo) */
+      /* All nodes are potential drop targets (including user/Owner) */
       nodes.forEach(node => {
         const targetId = node.getAttribute('data-agent');
 
@@ -9649,7 +9649,7 @@
       const agents = HIERARCHY_DATA.agents || [];
       const options = '<option value="">— waehlen —</option>' +
         agents.map(a => '<option value="' + escapeHtml(a.id) + '">' + escapeHtml(a.name) + ' (' + escapeHtml(a.role) + ')</option>').join('');
-      const optionsWithUser = '<option value="user">Leo (Owner)</option>' + options.replace('<option value="">— waehlen —</option>','');
+      const optionsWithUser = '<option value="user">Owner</option>' + options.replace('<option value="">— waehlen —</option>','');
       ['awAssignedTo', 'awModeAgent'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.innerHTML = options;

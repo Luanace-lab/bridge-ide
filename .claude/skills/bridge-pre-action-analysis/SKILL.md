@@ -56,14 +56,14 @@ Welche Wege fuehren zum Ziel? Bewerte JEDEN nach dieser Priorisierung:
 1. **Nichts tun** — Ist es vielleicht schon erledigt? (Schritt 2b)
 2. **API** — Schnellster, zuverlaessigster Weg. Programmatisch, reproduzierbar.
 3. **CLI-Tool** — Wenn API nicht verfuegbar (z.B. gh, aws, gcloud)
-4. **Browser (CDP)** — Wenn Aktion Leos echten Browser/Session braucht (Login, OAuth, Verifizierung die Leo sehen/bestaetigen muss)
-5. **Browser (Stealth/Ghost)** — Wenn Stealth/Anti-Fingerprint noetig (Bot-Detection, Captcha-Seiten) oder eigene Aktion ohne Leos Session
+4. **Browser (CDP)** — When the action needs the user's browser/session (Login, OAuth, verification the user must see/confirm)
+5. **Browser (Automation)** — When compatibility mode is needed (protected sites, captcha pages) or independent action without the user's session
 6. **Browser (Playwright)** — NUR fuer automatisierte UI-Tests/Verifikation
-7. **Leo fragen** — LETZTER Ausweg, nur wenn 1-6 nicht moeglich
+7. **the owner fragen** — LETZTER Ausweg, nur wenn 1-6 nicht moeglich
 
 Fuer JEDE Option:
 - Ist der Zugang vorhanden? (Credentials, Tools)
-- Funktioniert es technisch? (API-Limits, Bot-Detection, Auth)
+- Funktioniert es technisch? (API-Limits, site protection, Auth)
 - Was sind die Risiken? (Datenverlust, Account-Sperre, Kosten)
 
 ## Schritt 4: ENTSCHEIDUNG TREFFEN + LOGGEN
@@ -85,7 +85,7 @@ Ohne diesen Log hast du PAAP nicht durchlaufen.
 ### Entscheidungsregeln:
 - Waehle IMMER die hoechstpriore Option die funktioniert
 - Dokumentiere WARUM die hoeherprioren Optionen nicht funktionieren
-- Bei high-risk (Kosten, irreversibel): Leo-Freigabe einholen
+- Bei high-risk (Kosten, irreversibel): Owner-Freigabe einholen
 - Bei Unsicherheit: bridge_send an zustaendigen Agent fragen
 
 ## Schritt 5: HANDELN
@@ -94,7 +94,7 @@ JETZT erst handeln. Mit dem gewaehlten Weg. Mit den identifizierten Tools.
 
 ### Waehrend der Ausfuehrung:
 - Bei unerwartetem Fehler: Zurueck zu Schritt 3, naechste Option
-- Bei Blocker: bridge_send an zustaendigen Agent oder Leo
+- Bei Blocker: bridge_send an zustaendigen Agent oder the owner
 - Nach Erfolg: Ergebnis dokumentieren
 - Neue Credentials? → In ~/.config/bridge/ speichern fuer naechstes Mal
 
@@ -113,7 +113,7 @@ JETZT erst handeln. Mit dem gewaehlten Weg. Mit den identifizierten Tools.
 **S3 Optionen:**
 1. Nichts tun → Account existiert BEREITS ✓
 2. API → Username-Aenderung via gh api: nicht moeglich
-3. CDP → Settings-Aenderung: moeglich, Leo sieht es
+3. CDP → Settings-Aenderung: moeglich, the owner sees it
 
 **S4 Entscheidung:** NICHTS TUN (Account existiert).
 Falls Aenderung noetig → CDP.

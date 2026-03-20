@@ -38,7 +38,7 @@
     "semantic_boost": 0.5
   },
   "security": {
-    "description": "Security/Pentest/Vulnerability assessment",
+    "description": "Security Assessment",
     "retrieval_weights": {
       "agent_local": 0.2,
       "shared_coordination": 0.2,

@@ -300,7 +300,7 @@ class TestClaudeStartupStabilizer(unittest.TestCase):
             [
                 "Quick safety check\n1. Yes, I trust this folder",
                 "WARNING: Claude Code running in Bypass Permissions mode\n2. Yes, I accept",
-                "Welcome back Leo!\n❯",
+                "Welcome back Owner!\n❯",
             ]
         )
         sent_keys: list[str] = []
@@ -318,7 +318,7 @@ class TestClaudeStartupStabilizer(unittest.TestCase):
         captures = iter(
             [
                 "WARNING: Claude Code running in Bypass Permissions mode\n2. Yes, I accept",
-                "Welcome back Leo!\n❯",
+                "Welcome back Owner!\n❯",
             ]
         )
         sent_keys: list[str] = []

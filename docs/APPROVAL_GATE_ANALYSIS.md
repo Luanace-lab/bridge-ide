@@ -19,26 +19,26 @@ CDP (Chrome DevTools Protocol) and Desktop tools (xdotool) give agents full brow
 ## Tools Requiring Approval Gate
 
 ### Tier 1: Critical (Browser Execute)
-- `bridge_stealth_evaluate` — arbitrary JS in stealth browser
-- `bridge_cdp_evaluate` — arbitrary JS in Leo's browser
+- `bridge_stealth_evaluate` — arbitrary JS in automation browser
+- `bridge_cdp_evaluate` — arbitrary JS in the owner's browser
 - `bridge_browser_eval` — arbitrary JS in unified session
-- `bridge_cdp_navigate` — navigate Leo's browser
+- `bridge_cdp_navigate` — navigate the owner's browser
 
 ### Tier 2: High (Desktop Control)
-- `bridge_desktop_click` — click on Leo's desktop
-- `bridge_desktop_type` — type on Leo's desktop
+- `bridge_desktop_click` — click on the owner's desktop
+- `bridge_desktop_type` — type on the owner's desktop
 - `bridge_desktop_key` — send keystrokes
 - `bridge_desktop_drag` — drag operations
 
 ### Tier 3: Medium (Data Access)
 - `bridge_credential_store` — read/write credentials (already gated by SEC-001)
-- `bridge_stealth_start` — open stealth browser
-- `bridge_cdp_connect` — connect to Leo's browser
+- `bridge_stealth_start` — open automation browser
+- `bridge_cdp_connect` — connect to the owner's browser
 
 ## Proposed 2-Tier Approval Model
 
 ### Tier 1: Human → Leader
-Leo (user) grants permission to leader agents (Level 1):
+the owner grants permission to leader agents (Level 1):
 - Scoped by: tool category, time limit, task binding
 - Mechanism: `POST /approval/standing` with `scope: "cdp"` or `scope: "desktop"`
 - Revocation: `DELETE /approval/standing/{id}`

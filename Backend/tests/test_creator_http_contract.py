@@ -199,7 +199,7 @@ class TestCreatorHttpContract(unittest.TestCase):
             title="Creator Launch",
             goal="ship",
             workspace_dir=self.tmpdir,
-            owner="leo",
+            owner="owner",
             target_platforms=["youtube", "instagram"],
         )
         creator_campaign.save_campaign(campaign)

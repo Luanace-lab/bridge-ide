@@ -73,7 +73,7 @@ Jeder Tag ist einer Code-Quelle zugeordnet oder als HISTORISCH/ENTFERNT markiert
 |-----|-------------|------|
 | `[APPROVAL GENEHMIGT]` | server.py:8444 | `f"[APPROVAL {status_text}] {desc} ..."` (status_text = "GENEHMIGT") |
 | `[APPROVAL ABGELEHNT]` | server.py:8444 | `f"[APPROVAL {status_text}] {desc} ..."` (status_text = "ABGELEHNT") |
-| `[APPROVAL EDITIERT]` | handlers/approvals.py:206 | `f"[APPROVAL EDITIERT] Request {request_id}: Payload wurde von Leo aktualisiert."` |
+| `[APPROVAL EDITIERT]` | handlers/approvals.py:206 | `f"[APPROVAL EDITIERT] Request {request_id}: Payload wurde vom Owner aktualisiert."` |
 | `[APPROVAL EXPIRED]` | handlers/approvals.py:355 | `f"[APPROVAL EXPIRED] Deine Anfrage wurde nicht rechtzeitig beantwortet."` |
 
 ## 5. MODE / CONFIG

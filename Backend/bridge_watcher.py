@@ -89,26 +89,17 @@ SKIP_RECIPIENTS = {"user", "system"}
 ALLOWED_ROUTES = {
     "user": {"ordo", "lucy", "viktor", "nova", "frontend", "stellexa",
              "codex", "backend", "techwriter", "qwen1", "qwen2", "qwen3",
-             "t_research", "t_quant", "t_data", "t_exec",
-             "alpha_lead", "alpha_recon", "alpha_exploit",
-             "bravo_lead", "bravo_recon", "bravo_exploit",
-             "charlie_lead", "charlie_recon", "charlie_exploit"},
+             "t_research", "t_quant", "t_data", "t_exec"},
     "ordo": {"user", "viktor", "codex", "backend", "techwriter", "nova", "lucy", "frontend", "stellexa",
              "qwen1", "qwen2", "qwen3",
              "t_research", "t_quant", "t_data", "t_exec"},
     "viktor": {"ordo", "codex", "backend", "techwriter", "nova", "qwen1", "qwen2", "qwen3", "user",
                "stellexa", "frontend",
-               "t_research", "t_quant", "t_data", "t_exec",
-               "alpha_lead", "alpha_recon", "alpha_exploit",
-               "bravo_lead", "bravo_recon", "bravo_exploit",
-               "charlie_lead", "charlie_recon", "charlie_exploit"},
+               "t_research", "t_quant", "t_data", "t_exec"},
     "codex": {"ordo", "viktor"},
     "backend": {"ordo", "viktor", "user", "codex", "qwen1", "qwen2", "qwen3"},
     "nova": {"ordo", "viktor", "lucy", "stellexa", "user", "frontend",
-             "t_research", "t_quant", "t_data", "t_exec",
-             "alpha_lead", "alpha_recon", "alpha_exploit",
-             "bravo_lead", "bravo_recon", "bravo_exploit",
-             "charlie_lead", "charlie_recon", "charlie_exploit"},
+             "t_research", "t_quant", "t_data", "t_exec"},
     "lucy": {"ordo", "user", "nova", "viktor"},
     "stellexa": {"ordo", "viktor", "nova"},
     "frontend": {"ordo", "viktor", "user", "nova"},
@@ -120,17 +111,6 @@ ALLOWED_ROUTES = {
     "t_quant": {"nova", "t_research", "t_data", "t_exec", "viktor", "ordo"},
     "t_data": {"nova", "t_research", "t_quant", "t_exec", "viktor", "ordo"},
     "t_exec": {"nova", "t_research", "t_quant", "t_data", "viktor", "ordo"},
-    # Bug-Bounty: Leads -> nova, viktor, user + eigenes Team
-    "alpha_lead": {"nova", "viktor", "user", "alpha_recon", "alpha_exploit"},
-    "bravo_lead": {"nova", "viktor", "user", "bravo_recon", "bravo_exploit"},
-    "charlie_lead": {"nova", "viktor", "user", "charlie_recon", "charlie_exploit"},
-    # Bug-Bounty: Recon/Exploit -> nur eigener Lead
-    "alpha_recon": {"alpha_lead"},
-    "alpha_exploit": {"alpha_lead"},
-    "bravo_recon": {"bravo_lead"},
-    "bravo_exploit": {"bravo_lead"},
-    "charlie_recon": {"charlie_lead"},
-    "charlie_exploit": {"charlie_lead"},
 }
 
 # Bridge-ID aliases -> tmux session agent_id
@@ -1198,7 +1178,7 @@ def _cooldown_for_message(sender: str, recipient: str) -> float:
 
 def _is_route_allowed(sender: str, recipient: str) -> bool:
     if sender == "user":
-        return True  # Leo-Override: Product Owner kann alle erreichen
+        return True  # Owner-Override: Product Owner kann alle erreichen
     if sender in {"system", "watcher"}:
         return True  # System messages always delivered (context warnings, task notifications, etc.)
     if recipient in ("all", "all_managers", "leads") or recipient.startswith("team:"):
@@ -2900,7 +2880,7 @@ async def watch(ws_url: str) -> None:
     asyncio.create_task(_resilient_task("codex_poll", _codex_poll_daemon, CODEX_POLL_INTERVAL))
     _flush(f"[watcher] Codex-Poll-Daemon gestartet ({CODEX_POLL_INTERVAL}s interval, resilient)")
 
-    # DISABLED by Leo 2026-03-18: Push-delivery reicht, Polling blockiert Agents
+    # DISABLED by Owner 2026-03-18: Push-delivery reicht, Polling blockiert Agents
     # asyncio.create_task(_resilient_task("claude_poll", _claude_poll_daemon, CLAUDE_POLL_INTERVAL))
     _flush("[watcher] Claude-Poll-Daemon DEAKTIVIERT (Push-only Modus)")
 

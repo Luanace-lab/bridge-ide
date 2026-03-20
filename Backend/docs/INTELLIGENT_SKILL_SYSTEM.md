@@ -29,7 +29,7 @@ Task → Pre-Flight Protocol → Capability Discovery → Execution Plan → Exe
 | COMMUNICATION | Nachrichten senden/empfangen | MEDIUM | bridge_send, email_*, slack_* |
 | DOCUMENT_CREATION | Docs erstellen/bearbeiten | LOW | knowledge_*, Write, Skills |
 | SCHEDULING | Termine, Cron-Jobs | MEDIUM | cron_*, gcal_*, todoist_* |
-| BROWSER_AUTOMATION | Web-Interaktion, Scraping | HIGH | stealth_*, cdp_*, desktop_* |
+| BROWSER_AUTOMATION | Web interaction, data collection | HIGH | automation_*, cdp_*, desktop_* |
 | DATA_ANALYSIS | Daten verarbeiten, Reports | LOW | data_*, knowledge_*, Read |
 | AGENT_COORDINATION | Team-Steuerung, Delegation | MEDIUM | bridge_send, task_*, team_* |
 | SYSTEM_ADMIN | Server, Config, Git | HIGH | Bash, git_*, deploy |
@@ -45,7 +45,7 @@ Details: docs/SKILL_MODEL_AND_MATCHING.md
 
 | Kategorie | Tools | Risiko | Kosten | Credentials |
 |-----------|-------|--------|--------|-------------|
-| browser.stealth | stealth_start/goto/click/fill | low | free | Nein |
+| browser.automation | stealth_start/goto/click/fill | low | free | Nein |
 | browser.cdp | cdp_connect/navigate/click | low | free | Nein |
 | captcha.native | captcha_solve_native (5 Typen) | low | free | Nein |
 | captcha.paid | captcha_solve | medium | $0.001/solve | API Key |
@@ -76,7 +76,7 @@ Details: .agent_sessions/backend/DELIVERABLE_B_D.md
 **Matching-Tabelle:**
 ```
 Task: "Email senden" → Skill: COMMUNICATION → MCPs: bridge_email_send, Gmail MCP → Check: SMTP Config? → Execute
-Task: "Website scrapen" → Skill: BROWSER_AUTOMATION → MCPs: stealth_start, cdp → Check: Camoufox? → Execute
+Task: "Website data collection" → Skill: BROWSER_AUTOMATION → MCPs: browser_open, cdp → Check: Camoufox? → Execute
 Task: "Report erstellen" → Skill: DOCUMENT_CREATION → MCPs: Write, anthropic-pptx → Check: lokal → Execute
 ```
 
@@ -153,7 +153,7 @@ Server lehnt task/claim ab wenn Agent kein bridge_capability_library_recommend/s
 2. Research → Agent nutzt WebSearch/Read, kein browser_* fuer einfache Fragen
 3. Calendar → Agent nutzt gcal_*, nicht browser_* fuer Termin
 4. Docs → Agent nutzt Write/PPTX-Skill, nicht curl/API
-5. Stealth → Agent waehlt Camoufox statt Patchright fuer externe Sites
+5. Automation → Agent chooses Camoufox over Patchright for external sites
 6. Data → Agent nutzt bridge_data_*, nicht manuelles Parsing
 7. Multi-Skill → Agent zerlegt komplexe Aufgabe in Skills
 8. Risk → Agent erkennt high-risk und fragt nach Freigabe

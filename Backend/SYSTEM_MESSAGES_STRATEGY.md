@@ -1,7 +1,7 @@
 # Strategie: System-Nachrichten Reduktion (v2)
 Stand: 2026-03-15 15:32 UTC
 Autor: Ordo
-Review: Leo (15:32 UTC) — Korrekturen eingearbeitet
+Review: Owner (15:32 UTC) — Korrekturen eingearbeitet
 
 ## Ausgangslage
 
@@ -18,7 +18,7 @@ Review: Leo (15:32 UTC) — Korrekturen eingearbeitet
 | ONLINE | 54 | 10% |
 | Rest | 53 | 10% |
 
-**Grundannahme (Leo-Korrektur):** Restarts sind KEIN Bug. Sie sind gewollter/zu haertender Normalbetrieb. Die Strategie muss auf restart-heavy Betrieb ausgelegt sein.
+**Grundannahme (Owner-Korrektur):** Restarts sind KEIN Bug. Sie sind gewollter/zu haertender Normalbetrieb. Die Strategie muss auf restart-heavy Betrieb ausgelegt sein.
 
 ## Ist-Zustand (aktuelle Konfiguration)
 
@@ -34,7 +34,7 @@ Review: Leo (15:32 UTC) — Korrekturen eingearbeitet
 
 ## Massnahme 1: HEARTBEAT_CHECK 300s → 900s
 
-**Status:** LEO FREIGEGEBEN
+**Status:** OWNER APPROVED
 
 **Was:** Intervall von 5 auf 15 Minuten erhoehen.
 **Datei:** daemons/heartbeat_prompt.py:6 — `_HEARTBEAT_PROMPT_INTERVAL = 900`
@@ -45,7 +45,7 @@ Review: Leo (15:32 UTC) — Korrekturen eingearbeitet
 
 ## Massnahme 2: CONTEXT RESTORE komprimieren
 
-**Status:** LEO PRINZIPIELL EINVERSTANDEN (Format-Details offen)
+**Status:** OWNER APPROVED IN PRINCIPLE (Format-Details offen)
 
 **Problem:** server.py `_should_send_context_restore()` bettet CONTEXT_BRIDGE.md + SOUL.md + MEMORY.md + CLI_JOURNAL komplett ein. ~8KB pro Nachricht × 73/Tag = ~580KB = ~145.000 Tokens.
 
@@ -70,7 +70,7 @@ Dann: bridge_register() + bridge_receive()
 
 ## Massnahme 3: Routenmatrix nach Schweregrad
 
-**Status:** NEU (Leo-Anforderung)
+**Status:** NEU (Owner-Anforderung)
 
 **Problem:** Derzeit werden WARN/RECOVERY/ONLINE an Manager UND betroffenen Agent gesendet. Kein differenziertes Routing nach Schweregrad.
 
@@ -117,7 +117,7 @@ Dann: bridge_register() + bridge_receive()
 |-----------|--------|---------------|--------|
 | Heartbeat 300→900s | FREIGEGEBEN | ~50.000 Tk | Keins |
 | CONTEXT RESTORE komprimieren | PRINZIPIELL OK | ~130.000 Tk | Gering |
-| Routenmatrix | NEU — Leo-Review erforderlich | ~60.000 Tk | Mittel |
+| Routenmatrix | NEU — Owner-Review erforderlich | ~60.000 Tk | Mittel |
 | **Gesamt** | | **~240.000 Tk** | |
 
 ## Was NICHT geaendert werden darf
@@ -135,6 +135,6 @@ Dann: bridge_register() + bridge_receive()
 |-----|----|----|
 | Restart-Annahme | "Bug/Loop — fixen" | "Gewollter Normalbetrieb — Strategie darauf ausrichten" |
 | WARN/RECOVERY Routing | "Nur an betroffenen Agent" | Routenmatrix nach Schweregrad × Empfaenger |
-| Live-Daten | 488 (teilweise geschaetzt) | 517 (exakte Zahlen von Leo) |
+| Live-Daten | 488 (teilweise geschaetzt) | 517 (exakte Zahlen vom Owner) |
 | ONLINE Routing | "Nur an relevante Peers" | Dashboard-only + optionale Peer-Notification |
 | Neues Element | — | Routing-Config als separierbare Tabelle |

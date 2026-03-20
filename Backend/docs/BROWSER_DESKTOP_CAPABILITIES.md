@@ -4,22 +4,22 @@ Stand: 2026-03-19
 
 ## Zusammenfassung
 
-- **13 CDP-Tools** (Chrome DevTools Protocol) — Zugriff auf Leos echten Browser
-- **10 Stealth-Browser-Tools** — Anti-Detection Playwright-Chromium mit Proxy/Tor-Support
-- **20 Unified-Browser-Tools** (bridge_browser_*) — Engine-agnostische Abstraktion ueber CDP und Stealth
+- **13 CDP-Tools** (Chrome DevTools Protocol) — Access to the user's real browser
+- **10 Automation-Browser-Tools** — Compatibility-enhanced Playwright-Chromium with Proxy/Tor support
+- **20 Unified-Browser-Tools** (bridge_browser_*) — Engine-agnostic abstraction over CDP and automation browsers
 - **2 Meta-Browser-Tools** (research/action) — Playwright MCP als Read-Only-Backend
 - **17 Desktop-Tools** — Echte Desktop-Steuerung via xdotool/gnome-screenshot
 - **2 Vision-Tools** — Claude Vision API fuer Screenshot-Analyse und autonome Steuerung
 - **1 Captcha-Tool** — CAPSolver + Anti-Captcha (Dual-Provider, Auto-Fallback)
 - **Playwright MCP** (extern) — Headless Chromium, via Plugin geladen
 
-**Engines gesamt: 4** (CDP, Stealth Playwright, Playwright MCP, Desktop/xdotool)
+**Engines total: 4** (CDP, Automation Playwright, Playwright MCP, Desktop/xdotool)
 
 ---
 
 ## 1. CDP (Chrome DevTools Protocol)
 
-Verbindung zu Leos laufendem Chrome oder Auto-Start eines headless Chrome.
+Verbindung zu the owner's laufendem Chrome oder Auto-Start eines headless Chrome.
 
 ### Verbindungsmechanismus
 
@@ -55,24 +55,24 @@ Verbindung zu Leos laufendem Chrome oder Auto-Start eines headless Chrome.
 
 - Tab-Index-Format `ctx:page` kann sich aendern wenn Tabs geoeffnet/geschlossen werden
 - Auto-gestarteter Chrome laeuft headless — kein visuelles Feedback
-- Kein Proxy-Support (dafuer Stealth Engine nutzen)
+- No proxy support (use automation engine instead)
 
 ---
 
-## 2. Stealth Browser
+## 2. Automation Browser
 
-Anti-Detection Browser basierend auf Playwright Chromium mit umfangreichen Stealth-Patches.
+Compatibility-enhanced browser based on Playwright Chromium with extensive compatibility patches.
 
 ### Engine
 
-- **Playwright Chromium** (bundled, NICHT System-Chrome — wegen CDP-Versionskonflikten)
-- Kein Patchright — Standard-Playwright mit manuellen Stealth-Injections
+- **Playwright Chromium** (bundled, NOT system Chrome — due to CDP version conflicts)
+- No Patchright — standard Playwright with manual compatibility injections
 
-### Anti-Bot-Detection Features
+### Compatibility Features
 
-- `--disable-blink-features=AutomationControlled` (entfernt `navigator.webdriver`)
-- CDP `Runtime.evaluate` fuer Stealth-Script-Injection (vor und nach Navigation)
-- `context.add_init_script()` fuer Stealth-Scripts (wirkt in Workers + iframes)
+- `--disable-blink-features=AutomationControlled` (removes `navigator.webdriver`)
+- CDP `Runtime.evaluate` for compatibility script injection (before and after navigation)
+- `context.add_init_script()` for compatibility scripts (works in Workers + iframes)
 - **Proxy/Tor OPSEC Hardening:**
   - WebRTC IP-Leak Prevention (`--force-webrtc-ip-handling-policy=disable_non_proxied_udp`)
   - WebRTC Permission Block (`context.grant_permissions([])`)
@@ -90,7 +90,7 @@ Anti-Detection Browser basierend auf Playwright Chromium mit umfangreichen Steal
   - Custom Route-Interceptor fuer Worker-Requests
 - **Locale/Language Hardening:** `Accept-Language: en-US`, `locale: en-US`
 - **Viewport bei Proxy:** 1920x1040 (vermeidet headless-typische 1280x720)
-- **Bot-Protection Detection:** Erkennt Cloudflare, Akamai, DataDome Challenge-Pages automatisch
+- **Protection Detection:** Automatically detects Cloudflare, Akamai, DataDome challenge pages
 
 ### Session Management
 
@@ -103,7 +103,7 @@ Anti-Detection Browser basierend auf Playwright Chromium mit umfangreichen Steal
 
 | Tool | Parameter | Beschreibung | Status |
 |------|-----------|-------------|--------|
-| `bridge_stealth_start` | `proxy: str, user_agent: str, headless: bool = True, profile: str` | Startet Stealth-Session. Gibt session_id zurueck. | Vollstaendig implementiert |
+| `bridge_stealth_start` | `proxy: str, user_agent: str, headless: bool = True, profile: str` | Start automation session. Returns session_id. | Fully implemented |
 | `bridge_stealth_goto` | `session_id: str, url: str, timeout: int = 30000` | Navigiert zu URL. Double-Injection (commit + load). Erkennt Bot-Challenges. | Vollstaendig implementiert |
 | `bridge_stealth_content` | `session_id: str` | HTML-Inhalt der Seite (max 50KB). Mit Freshness-Warning. | Vollstaendig implementiert |
 | `bridge_stealth_screenshot` | `session_id: str, full_page: bool = True` | Screenshot als PNG in `/tmp/`. | Vollstaendig implementiert |
@@ -123,13 +123,13 @@ Anti-Detection Browser basierend auf Playwright Chromium mit umfangreichen Steal
 
 ## 3. Unified Browser API (bridge_browser_*)
 
-Engine-agnostische Abstraktion ueber Stealth und CDP. Waehlt Engine bei `bridge_browser_open` und routet alle Folge-Operationen automatisch.
+Engine-agnostic abstraction over automation browser and CDP. Selects engine at `bridge_browser_open` und routet alle Folge-Operationen automatisch.
 
 ### Tools
 
 | Tool | Parameter | Beschreibung | Status |
 |------|-----------|-------------|--------|
-| `bridge_browser_open` | `url, engine="auto", headless, proxy, user_agent, profile` | Oeffnet Session. Engine: stealth/cdp/auto. Auto: stealth bevorzugt, CDP Fallback. | Vollstaendig implementiert |
+| `bridge_browser_open` | `url, engine="auto", headless, proxy, user_agent, profile` | Opens session. Engine: automation/cdp/auto. Auto: automation preferred, CDP fallback. | Fully implemented |
 | `bridge_browser_navigate` | `session_id: str, url: str` | Navigiert innerhalb einer Session. | Vollstaendig implementiert |
 | `bridge_browser_observe` | `session_id: str, max_nodes: int = 50` | Erzeugt Accessibility-Tree mit stabilen Refs fuer click_ref/fill_ref. | Vollstaendig implementiert |
 | `bridge_browser_find_refs` | `session_id: str, query: str, max_results: int = 10` | Sucht Elemente per Text/Attribut, gibt scored Candidates mit Refs zurueck. | Vollstaendig implementiert |
@@ -145,13 +145,13 @@ Engine-agnostische Abstraktion ueber Stealth und CDP. Waehlt Engine bei `bridge_
 | `bridge_browser_click_ref_verify` | `session_id: str, ref: str, ...verify_conditions...` | Klick + automatische Verifikation in einem Schritt. | Vollstaendig implementiert |
 | `bridge_browser_fill_ref_verify` | `session_id: str, ref: str, value: str, ...verify_conditions...` | Fill + automatische Verifikation in einem Schritt. | Vollstaendig implementiert |
 | `bridge_browser_fingerprint_snapshot` | `session_id: str` | Browser-Fingerprint (funktioniert mit beiden Engines). | Vollstaendig implementiert |
-| `bridge_browser_close` | `session_id: str` | Session schliessen (schliesst Stealth-Session oder CDP-Tab). | Vollstaendig implementiert |
+| `bridge_browser_close` | `session_id: str` | Close session (closes automation session or CDP tab). | Fully implemented |
 | `bridge_browser_sessions` | — | Listet alle aktiven Unified-Sessions. | Vollstaendig implementiert |
 
 ### Architektur
 
 - Jede `bridge_browser_*` Funktion liest die Engine aus `_unified_sessions[session_id]`
-- Delegiert intern an `bridge_stealth_*` oder `bridge_cdp_*`
+- Delegates internally to `bridge_stealth_*` or `bridge_cdp_*`
 - Alle Ergebnisse durchlaufen `_structured_action_json()` fuer konsistentes Output-Format
 - Execution Journal erfasst jeden Schritt (run_id, step_id, artifacts)
 
@@ -212,7 +212,7 @@ Separater MCP-Server, als Plugin geladen (nicht in bridge_mcp.py implementiert).
 | Tool | Parameter | Beschreibung | Backend | Status |
 |------|-----------|-------------|---------|--------|
 | `bridge_browser_research` | `url: str, question: str` | Read-Only: Navigiert zu URL, macht Snapshot + Screenshot, gibt strukturierte Daten zurueck. Keine Approval noetig. Enthaelt Freshness-Warning bei alten Seiten. | Playwright MCP | Vollstaendig implementiert |
-| `bridge_browser_action` | `url: str, action_description: str, risk_level: str = "medium"` | Erstellt Approval-Request fuer konsequenzreiche Browser-Aktionen. Macht Preview-Screenshot. Leo muss genehmigen (oder Standing Approval). | Playwright MCP + Approval API | Vollstaendig implementiert |
+| `bridge_browser_action` | `url: str, action_description: str, risk_level: str = "medium"` | Erstellt Approval-Request fuer konsequenzreiche Browser-Aktionen. Macht Preview-Screenshot. The owner muss genehmigen (oder Standing Approval). | Playwright MCP + Approval API | Vollstaendig implementiert |
 
 ### Ablauf bridge_browser_research
 
@@ -239,8 +239,8 @@ Echte Desktop-Steuerung auf dem lokalen Linux-System.
 - **gnome-screenshot** — Desktop-Screenshots (Fullscreen)
 - **import** (ImageMagick) — Fenster-spezifische Screenshots
 - **xclip** — Clipboard-Zugriff
-- **Bezier-Kurven** — Menschenaehnliche Mausbewegungen (kubische Bezier mit Gaussian Micro-Tremor)
-- **Gaussian Timing** — Menschenaehnliche Tastaturverzoegerungen (75ms +/- 20ms, 5% Denkpausen)
+- **Bezier-Kurven** — Natural mouse movement patterns (kubische Bezier mit Gaussian Micro-Tremor)
+- **Gaussian Timing** — Natural keyboard timing patterns (75ms +/- 20ms, 5% Denkpausen)
 
 ### Tools
 
@@ -250,7 +250,7 @@ Echte Desktop-Steuerung auf dem lokalen Linux-System.
 | `bridge_desktop_screenshot_stream` | `interval_ms=500, duration_s=10, max_frames=30, window_name` | Serie von Screenshots in regelmaessigen Intervallen (min 200ms, max 60s, max 120 Frames). | gnome-screenshot, import, xdotool | Vollstaendig implementiert |
 | `bridge_desktop_click` | `x: int, y: int, button: int = 1` | Klick an Bildschirmkoordinaten. Bezier-Mausbewegung zum Ziel. | xdotool | Vollstaendig implementiert |
 | `bridge_desktop_double_click` | `x: int, y: int, button: int = 1` | Doppelklick mit Bezier-Bewegung. | xdotool | Vollstaendig implementiert |
-| `bridge_desktop_type` | `text: str, delay_ms: int = 12` | Text tippen mit menschenaehnlichem Timing. Max 5000 Zeichen. | xdotool | Vollstaendig implementiert |
+| `bridge_desktop_type` | `text: str, delay_ms: int = 12` | Text tippen mit natural timing patterns. Max 5000 Zeichen. | xdotool | Vollstaendig implementiert |
 | `bridge_desktop_key` | `combo: str` | Tastenkombination senden (z.B. `ctrl+s`, `alt+F4`). Input-Validierung gegen Injection. | xdotool | Vollstaendig implementiert |
 | `bridge_desktop_scroll` | `direction="down", clicks=3, x=-1, y=-1` | Scrollen (up/down), optional an Position. 1-20 Schritte. | xdotool | Vollstaendig implementiert |
 | `bridge_desktop_hover` | `x: int, y: int` | Maus bewegen OHNE klicken (Bezier-Kurve). Fuer Hover-Menus/Tooltips. | xdotool | Vollstaendig implementiert |
@@ -271,7 +271,7 @@ Echte Desktop-Steuerung auf dem lokalen Linux-System.
 
 ### Besonderheiten
 
-- Alle Klick/Drag/Hover-Tools nutzen Bezier-Kurven fuer menschenaehnliche Mausbewegungen
+- Alle Klick/Drag/Hover-Tools nutzen Bezier-Kurven fuer natural mouse movement patterns
 - Typing hat Gaussian-verteilte Pausen und 5% Wahrscheinlichkeit fuer "Denkpausen" (200-600ms)
 - DISPLAY-Variable wird automatisch auf `:0` gesetzt falls nicht vorhanden
 
@@ -284,7 +284,7 @@ Echte Desktop-Steuerung auf dem lokalen Linux-System.
 | Tool | Parameter | Beschreibung | Abhaengigkeit | Status |
 |------|-----------|-------------|--------------|--------|
 | `bridge_vision_analyze` | `screenshot_path: str, prompt: str, model: str = ""` | Analysiert Screenshot via Claude Vision API. Gibt UI-Elemente, Text und Aktionsvorschlaege zurueck. Max 20MB. Formate: PNG, JPG, GIF, WebP. | ANTHROPIC_API_KEY, httpx | Vollstaendig implementiert |
-| `bridge_vision_act` | `session_id: str, goal: str, max_steps: int = 10` | Autonome Vision-Action-Loop: Screenshot → Claude Vision → Aktion → Verify → Repeat. Aktionen: click, fill, goto, evaluate, wait, done. Max 25 Steps. | ANTHROPIC_API_KEY, httpx, aktive Stealth-Session | Vollstaendig implementiert |
+| `bridge_vision_act` | `session_id: str, goal: str, max_steps: int = 10` | Autonome Vision-Action-Loop: Screenshot → Claude Vision → Aktion → Verify → Repeat. Aktionen: click, fill, goto, evaluate, wait, done. Max 25 Steps. | ANTHROPIC_API_KEY, httpx, active automation session | Vollstaendig implementiert |
 
 ### Vision Analyze
 
@@ -296,7 +296,7 @@ Echte Desktop-Steuerung auf dem lokalen Linux-System.
 
 ### Vision Act
 
-- Erfordert aktive **Stealth-Session** (nicht CDP)
+- Requires active **automation session** (not CDP)
 - Loop: Screenshot → Base64 → Claude Vision mit History → Action Decision → Ausfuehren
 - Action-Types: `click`, `fill`, `goto`, `evaluate`, `wait`, `done`
 - History: Letzte 5 Schritte werden als Kontext mitgegeben
@@ -342,9 +342,9 @@ Echte Desktop-Steuerung auf dem lokalen Linux-System.
 │     bridge_browser_open/navigate/click/...      │
 │         (engine-agnostisch)                      │
 ├────────────────┬────────────────────────────────┤
-│   Stealth      │         CDP                     │
+│  Automation    │         CDP                     │
 │ (Playwright)   │  (Chrome DevTools)              │
-│ Anti-Detection │  Leo's Browser oder             │
+│ Compatibility  │  User's Browser or              │
 │ Proxy/Tor      │  Auto-Start Headless            │
 ├────────────────┴────────────────────────────────┤
 │         Playwright MCP (extern)                  │
@@ -368,7 +368,7 @@ Echte Desktop-Steuerung auf dem lokalen Linux-System.
 | Kategorie | Anzahl | Quelle |
 |-----------|--------|--------|
 | CDP (bridge_cdp_*) | 12 | bridge_mcp.py |
-| Stealth (bridge_stealth_*) | 10 | bridge_mcp.py |
+| Automation (bridge_stealth_*) | 10 | bridge_mcp.py |
 | Unified Browser (bridge_browser_*) | 20 | bridge_mcp.py |
 | Meta-Browser (research/action) | 2 | bridge_mcp.py |
 | Desktop (bridge_desktop_*) | 17 | bridge_mcp.py |

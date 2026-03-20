@@ -1,7 +1,7 @@
 {
   "template_id": "tpl_weekly_report",
   "name": "Wochenreport",
-  "description": "Erstellt jeden Freitag einen Sprint-Report: Erledigte Tasks, offene Blocker, Agent-Performance. Leo liebt Reports.",
+  "description": "Erstellt jeden Freitag einen Sprint-Report: Erledigte Tasks, offene Blocker, Agent-Performance. The owner likes Reports.",
   "category": "reports",
   "difficulty": "mittel",
   "icon": "calendar",

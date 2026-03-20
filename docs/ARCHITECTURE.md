@@ -162,7 +162,7 @@ The HTTP server is a single-file Python `http.server.BaseHTTPRequestHandler` sub
   - **Capabilities:** `bridge_capability_library_list`, `bridge_capability_library_search`, `bridge_capability_library_get`, `bridge_capability_library_recommend`
   - **Memory:** `bridge_memory_search`, `bridge_memory_index`, `bridge_memory_delete`
   - **Credentials:** `bridge_credential_store`, `bridge_credential_get`, `bridge_credential_list`, `bridge_credential_delete`
-  - **Browser/Desktop/Stealth:** Full browser automation, desktop control, stealth browsing
+  - **Browser/Desktop:** Full browser automation, desktop control, protected-site access
   - **Communication channels:** Slack, WhatsApp, Telegram, Email, Phone
   - **Git:** `bridge_git_commit`, `bridge_git_push`, `bridge_git_branch_create`, `bridge_git_conflict_check`, `bridge_git_lock`, `bridge_git_unlock`, `bridge_git_hook_install`
   - **Scope/Approvals:** `bridge_scope_check`, `bridge_scope_lock`, `bridge_scope_unlock`, `bridge_approval_request`, `bridge_approval_check`, `bridge_approval_wait`
@@ -599,7 +599,7 @@ homes/{role}/
 - 0: Owner (user)
 - 1: Platform operators (buddy, architect) — can access sensitive endpoints
 - 2: Specialists (frontend, backend, platform, team leads)
-- 3: Workers (recon, exploit, analysts)
+- 3: Workers (recon, specialists, analysts)
 
 ### Agent Lifecycle
 

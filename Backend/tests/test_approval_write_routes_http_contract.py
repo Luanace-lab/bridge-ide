@@ -88,11 +88,11 @@ class TestApprovalWriteRoutesHttpContract(unittest.TestCase):
         edit_status, edit_body = self._post(
             base_url,
             "/approval/appr_http_pending/edit",
-            {"decided_by": "user", "payload": {"username": "leo"}},
+            {"decided_by": "user", "payload": {"username": "owner"}},
         )
         self.assertEqual(edit_status, 200)
         self.assertEqual(edit_body["payload"]["url"], "https://example.com")
-        self.assertEqual(edit_body["payload"]["username"], "leo")
+        self.assertEqual(edit_body["payload"]["username"], "owner")
 
         create_status, create_body = self._post(
             base_url,

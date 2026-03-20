@@ -64,9 +64,9 @@ class TestBuddyUiFrontdoorContract(unittest.TestCase):
         srv.is_session_alive = lambda _agent_id: False
         srv._has_recent_buddy_frontdoor_ping = lambda _user_id, within_seconds=30.0: False
 
-        status = srv._get_buddy_frontdoor_status("susi")
+        status = srv._get_buddy_frontdoor_status("testuser")
 
-        self.assertEqual(status["user_id"], "susi")
+        self.assertEqual(status["user_id"], "testuser")
         self.assertFalse(status["known_user"])
         self.assertFalse(status["buddy_running"])
         self.assertFalse(status["pending_frontdoor"])
@@ -75,13 +75,13 @@ class TestBuddyUiFrontdoorContract(unittest.TestCase):
     def test_frontdoor_status_suppresses_auto_start_for_known_user(self):
         ke = self._load_isolated_ke()
         ke.init_vault()
-        ke.init_user_vault("susi")
-        ke.write_note("Users/susi/USER", "Existing user.", {"user": "susi", "display_name": "Susi"})
+        ke.init_user_vault("testuser")
+        ke.write_note("Users/testuser/USER", "Existing user.", {"user": "testuser", "display_name": "Testuser"})
 
         srv.is_session_alive = lambda _agent_id: True
         srv._has_recent_buddy_frontdoor_ping = lambda _user_id, within_seconds=30.0: False
 
-        status = srv._get_buddy_frontdoor_status("susi")
+        status = srv._get_buddy_frontdoor_status("testuser")
 
         self.assertTrue(status["known_user"])
         self.assertTrue(status["buddy_running"])

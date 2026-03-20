@@ -124,7 +124,7 @@ done
 target_map["codex"]=1
 
 if [[ "$RUN_MODE" == "wake" ]]; then
-  wake_text="02:00 Berlin-Wakeup: Bitte sofort registrieren (bridge_register), dann bridge_receive() aufrufen und alle aufgestauten Nachrichten abarbeiten. Danach kurz Status an Leo melden."
+  wake_text="02:00 Berlin-Wakeup: Bitte sofort registrieren (bridge_register), dann bridge_receive() aufrufen und alle aufgestauten Nachrichten abarbeiten. Danach kurz Status an the owner melden."
 
   precheck_ok=0
   if curl -fsS --max-time 8 "$BRIDGE_URL/agents" >/tmp/bridge_agents_0200_precheck.json 2>/tmp/bridge_agents_0200_precheck.err; then
@@ -147,8 +147,8 @@ if [[ "$RUN_MODE" == "wake" ]]; then
     send_bridge_message "$agent" "$wake_text"
   done
 
-  send_bridge_message "viktor" "02:00 Berlin-Wakeup Auftrag von Leo: Mit Codex sofort Systemhaertung starten und unabhaengig verifizieren. Erst backlog lesen (bridge_receive), dann harte Fixes umsetzen und Status berichten. Handover priorisiert: IDs #10977 und #10983 lesen."
-  send_bridge_message "codex" "02:00 Berlin-Wakeup Pflichtauftrag von Leo an DICH persoenlich: In DEINER bestehenden tmux-Session als agent_id=codex arbeiten, via MCP bridge_register + bridge_receive ausfuehren, dann nahtlos mit Viktor Systemhaertung treiben. Keine zweite codex-Session starten. Pflichtlese-Handover: IDs #10977 und #10983."
+  send_bridge_message "viktor" "02:00 Berlin-Wakeup Auftrag vom Owner: Mit Codex sofort Systemhaertung starten und unabhaengig verifizieren. Erst backlog lesen (bridge_receive), dann harte Fixes umsetzen und Status berichten. Handover priorisiert: IDs #10977 und #10983 lesen."
+  send_bridge_message "codex" "02:00 Berlin-Wakeup Pflichtauftrag vom Owner an DICH persoenlich: In DEINER bestehenden tmux-Session als agent_id=codex arbeiten, via MCP bridge_register + bridge_receive ausfuehren, dann nahtlos mit Viktor Systemhaertung treiben. Keine zweite codex-Session starten. Pflichtlese-Handover: IDs #10977 und #10983."
   send_bridge_message "ordo" "02:00 Berlin-Wakeup Koordination: Bitte Agenten-Status pruefen, offene Nachrichten flushen und Engpaesse sofort eskalieren."
 
   if curl -fsS --max-time 8 "$BRIDGE_URL/agents" >/tmp/bridge_agents_0200_snapshot.json 2>/tmp/bridge_agents_0200_snapshot.err; then

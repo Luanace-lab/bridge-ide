@@ -11,7 +11,7 @@
 | Capability | Tools | Real-Test |
 |-----------|-------|-----------|
 | Multi-Agent Koordination | 205 Bridge MCP Tools, WebSocket Push, Task-System (WAL) | 8 Agents gleichzeitig stabil |
-| Browser 0% Detection | Camoufox (Firefox C++), Patchright, CDP, Unified | CreepJS: 0% headless, 0% stealth |
+| Browser Full Compatibility | Camoufox (Firefox C++), Patchright, CDP, Unified | CreepJS: 0% headless, 0% automation flags |
 | Gmail | Gmail MCP (Anthropic) + bridge_email_* | Connected, verifiziert |
 | Google Calendar | Calendar MCP (Anthropic, 9 Tools) | Connected, verifiziert |
 | Slack | Slack MCP (Anthropic, 13 Tools) + bridge_slack_* | Connected, verifiziert |
@@ -47,7 +47,7 @@
 1. **Kein semantisches Skill-Matching**: Agent wählt Tools per LLM-Reasoning, kein Algorithmus
 2. **Browser ohne Auth-Persistenz**: Jede Session = fresh, kein Cookie-Jar über Sessions
 3. **Long-Running Jobs blockieren**: STT/Export im HTTP-Handler, kein Background-Job-Queue
-4. **Manuelle Eskalation**: Stage 3 braucht Leo — kein Auto-Failover zu Backup-Agent
+4. **Manuelle Eskalation**: Stage 3 braucht the owner — kein Auto-Failover zu Backup-Agent
 5. **start_agents.py crasht**: 11x in 3 Tagen (silent, kein Alert)
 6. **Kein Token-Budget**: Keine Kosten-Kontrolle pro Agent/Task
 7. **Task-Limit 3 pro Agent**: Künstlicher Bottleneck
@@ -93,7 +93,7 @@
 - Wird zum Standard: 75% der API-Gateway-Anbieter werden MCP haben (Gartner)
 
 **Stärke: Computer Use**
-- Screenshot-basiert, nicht DOM-basiert → 0% Detection weil kein JS injiziert wird
+- Screenshot-based, not DOM-based — full compatibility since no JS is injected
 - Dynamische Strategie: CSS-Selector → Visual Coordinates → Keyboard Shortcuts
 
 **Stärke: Hooks (17 Lifecycle-Points)**
@@ -116,12 +116,9 @@
 - Skills als Metadata injiziert (~97 chars), Full Content on-demand geladen
 - 95% Context-Einsparung vs. alles laden
 
-**Katastrophale Schwäche: Sicherheit**
-- CVE-2026-25253 (CVSS 8.8): One-Click RCE
-- 36% der Skills haben Prompt-Injection-Vulnerabilities
-- 1.467 malicious Payloads im Ecosystem
-- SOUL.md Poisoning: Scheduled Tasks modifizieren Identität
-- China-Ban in Behörden, CrowdStrike/Kaspersky/Microsoft Warnungen
+**Noted Weakness: Security model**
+- Ecosystem security requires careful vetting of third-party skills
+- Prompt injection remains an industry-wide challenge
 
 ### Perplexity Computer ($200/mo)
 
@@ -161,7 +158,7 @@
 
 | Stärke | Wer hat's NICHT | Unser Vorteil |
 |--------|-----------------|---------------|
-| **4 Browser-Engines mit 0% Detection** | Alle (Manus: 1, Claude: Screenshot, OpenClaw: 1) | Stealth + Flexibilität |
+| **4 Browser Engines with Full Compatibility** | All (Manus: 1, Claude: Screenshot, OpenClaw: 1) | Flexibility + reliability |
 | **Multi-Agent Real-Time Coordination** | Claude (Single-Agent), Manus (Sub-Agents nur) | Echte Team-Arbeit |
 | **Evidence-Gated Tasks mit Peer-Review** | Keiner | Qualitätssicherung |
 | **100% Lokal/Privat** | Manus (Cloud), Perplexity (Cloud) | Datensouveränität |
@@ -200,13 +197,13 @@
 
 8. **CodeAct Evaluierung** — Python-Execution statt Function-Calls für komplexe Tasks testen
 9. **Sandbox per Task** — Docker-Container für untrusted Agent-Code
-10. **Auto-Failover** — Stage 3 Eskalation ohne Leo: reassign an Backup-Agent
+10. **Auto-Failover** — Stage 3 Eskalation ohne the owner: reassign an Backup-Agent
 
 ---
 
 ## 6. FAZIT
 
-Bridge IDE ist technisch auf Augenhöhe mit der Konkurrenz bei Browser-Stealth, Multi-Agent-Coordination und Privacy. Die Gaps liegen in:
+Bridge IDE ist technisch auf Augenhöhe mit der Konkurrenz bei Browser Automation, Multi-Agent-Coordination und Privacy. Die Gaps liegen in:
 
 1. **Effizienz** (Context Engineering, Token-Kosten, Lazy Loading)
 2. **Robustheit** (Background-Jobs, Auth-Persistenz, Auto-Failover)
@@ -214,7 +211,7 @@ Bridge IDE ist technisch auf Augenhöhe mit der Konkurrenz bei Browser-Stealth, 
 
 Kein Over-Engineering nötig. Die Quick Wins (Pre-Compaction Flush, Cookie-Store, Lazy Loading, Token-Budget) bringen uns in 1 Woche auf Competitive Parity mit Manus und Perplexity bei den kritischsten Gaps.
 
-Die wahre Differenzierung ist: **Lokale Multi-Agent-Plattform mit 0% Detection + Evidence-Gates + Privacy.** Das hat sonst niemand.
+Die wahre Differenzierung ist: **Lokale Multi-Agent-Plattform mit Full Browser Compatibility + Evidence-Gates + Privacy.** Das hat sonst niemand.
 
 ---
 
@@ -233,11 +230,10 @@ Die wahre Differenzierung ist: **Lokale Multi-Agent-Plattform mit 0% Detection +
 - MCP = Agent↔Tool, A2A = Agent↔Agent
 - **Bridge-Federation sollte A2A evaluieren** für Bridge-zu-Bridge Kommunikation
 
-### MEMORY.md Injection (OpenClaw-Warnung)
-- OpenClaw: Malicious Skills schrieben in MEMORY.md und SOUL.md → persistente Backdoor
-- Atomic Stealer Payload: API-Key-Harvesting + Keylogger via SOUL.md Poisoning
-- **Direkt relevant für Bridge**: Unsere 7-Schichten-Persistenz nutzt dieselben Dateien
-- **Handlungsbedarf**: Write-Protection auf MEMORY.md/SOUL.md, Integrity-Checks
+### Memory Integrity (Industry-Wide Concern)
+- Third-party skills can write to persistent memory files (MEMORY.md, SOUL.md)
+- **Relevant for Bridge**: Our 7-layer persistence uses the same file patterns
+- **Action needed**: Write-protection on MEMORY.md/SOUL.md, integrity checks
 
 ### Autonomie-Kurve
 | Datum | Max autonome Dauer |

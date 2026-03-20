@@ -173,7 +173,7 @@ def handle_post(handler: Any, path: str) -> bool:
 
         decided_by = str(data.get("decided_by", "user")).strip()
         if decided_by != "user":
-            handler._respond(403, {"error": "only 'user' (Leo) may edit approval payloads"})
+            handler._respond(403, {"error": "only 'user' (the owner) may edit approval payloads"})
             return True
 
         _approval_expire_check()
@@ -203,7 +203,7 @@ def handle_post(handler: Any, path: str) -> bool:
         _append_message_cb(
             "system",
             agent_id,
-            f"[APPROVAL EDITIERT] Request {request_id}: Payload wurde von Leo aktualisiert.",
+            f"[APPROVAL EDITIERT] Request {request_id}: Payload wurde vom Owner aktualisiert.",
             meta={"type": "approval_edited", "request_id": request_id},
         )
         _ws_broadcast_cb(

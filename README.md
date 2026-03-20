@@ -27,7 +27,7 @@ Bridge ACE is a local multi-agent platform. You run multiple AI agents on your m
 This is not a wrapper around a single LLM. This is an operating system for AI teams.
 
 <p align="center">
-  <img src="docs/screenshots/bugbounty_team.png" alt="Bug Bounty team coordinating in real-time" width="800">
+  <img src="docs/screenshots/chat_bugbounty.png" alt="Multi-agent team coordinating in real-time" width="800">
 </p>
 
 ## Installation
@@ -57,12 +57,12 @@ docker compose up
 
 ## Screenshots
 
-### Chat — Bug Bounty Team in Action
+### Chat — Multi-Agent Coordination
 
-Agents coordinate a security audit against a live HackerOne target. The lead delegates, recon finds subdomains, exploit prepares attacks — all in real-time.
+Agents coordinate a complex task in real-time. The lead delegates subtasks, specialists execute in parallel, reviewers verify results — all through the shared chat interface.
 
 <p align="center">
-  <img src="docs/screenshots/chat_bugbounty.png" alt="Chat UI with Bug Bounty team" width="800">
+  <img src="docs/screenshots/chat_bugbounty.png" alt="Chat UI with multi-agent team" width="800">
 </p>
 
 ### Control Center — Live Dashboard
@@ -126,8 +126,8 @@ Create a project, assign a team lead, add agents, configure engines and models �
 
 | Feature | Description |
 |---------|-------------|
-| **5,000+ MCP Tool Library** | 204 built-in Bridge tools plus 5,387 tools from the MCP ecosystem. Browser, desktop, stealth, voice, data — auto-indexed and searchable. |
-| **Connected to the Real World** | Agents send emails, post to Slack, read WhatsApp, make phone calls, browse the web, solve captchas, and manage Git repos. Out of the box. |
+| **5,000+ MCP Tool Library** | 204 built-in Bridge tools plus 5,387 tools from the MCP ecosystem. Browser, desktop, automation, voice, data — auto-indexed and searchable. |
+| **Connected to the Real World** | Agents send emails, post to Slack, read WhatsApp, make phone calls, browse the web, automate browser workflows, and manage Git repos. Out of the box. |
 | **Workflows & Automations** | Describe what you want in plain language. Bridge compiles it into a workflow, deploys it, and runs it on schedule. Integrates with n8n. |
 | **Buddy — AI Companion** | Your personal guide from day one. Buddy onboards you, delegates to specialists, and keeps you in the loop. |
 

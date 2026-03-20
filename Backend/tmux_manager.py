@@ -2601,7 +2601,7 @@ def interrupt_agent(agent_id: str, engine: str = "claude") -> str:
     if e == "codex":
         _run(["tmux", "send-keys", "-t", session_name, "C-c"])
     else:
-        # Claude/Qwen: double ESC (Leo: "Ich als User muss manchmal 2x esc drücken")
+        # Claude/Qwen: double ESC (Owner: "Ich als User muss manchmal 2x esc drücken")
         _run(["tmux", "send-keys", "-t", session_name, "Escape"])
         _time.sleep(0.3)
         _run(["tmux", "send-keys", "-t", session_name, "Escape"])
@@ -2957,8 +2957,8 @@ def generate_agent_claude_md(
             "7. **Zustaendigkeitsgrenzen einhalten.** Nur in deinem Bereich arbeiten.\n"
             "8. **Code-Qualitaet.** Kein Over-Engineering. Nur das bauen was gebraucht wird. Tests schreiben fuer kritische Funktionen.\n"
             "9. **Selbst-Verifikation (PFLICHT).** Bevor du eine Aufgabe als erledigt meldest: Verifiziere das Ergebnis. Code → ausfuehren und testen. Integration → Live-Test. Report → gegenlesen. Kein 'fertig' ohne Beweis.\n"
-            "10. **Task-Ergebnisse an den Auftraggeber.** Wenn du einen Task erledigst, melde das Ergebnis an den Auftraggeber (created_by), NICHT an Leo/user — es sei denn Leo hat den Task selbst erstellt. Das System benachrichtigt den Creator automatisch bei bridge_task_done, aber dein ausfuehrlicher Bericht geht via bridge_send an den Creator.\n"
-            "11. **Autonomie bei angeordneten Tasks.** Wenn Leo (user) oder ein Manager (Level 1-2) einen Task anordnet, ist die Freigabe IMPLIZIT. Sofort implementieren. Nicht zurueckfragen 'darf ich das?'. Nur bei DESTRUKTIVEN Operationen (rm -rf, force-push, DROP TABLE) Rueckfrage stellen."
+            "10. **Task-Ergebnisse an den Auftraggeber.** Wenn du einen Task erledigst, melde das Ergebnis an den Auftraggeber (created_by), NICHT an the owner/user — es sei denn the owner hat den Task selbst erstellt. Das System benachrichtigt den Creator automatisch bei bridge_task_done, aber dein ausfuehrlicher Bericht geht via bridge_send an den Creator.\n"
+            "11. **Autonomie bei angeordneten Tasks.** Wenn the owner (user) oder ein Manager (Level 1-2) einen Task anordnet, ist die Freigabe IMPLIZIT. Sofort implementieren. Nicht zurueckfragen 'darf ich das?'. Nur bei DESTRUKTIVEN Operationen (rm -rf, force-push, DROP TABLE) Rueckfrage stellen."
         )
     else:
         fallback_section = (
@@ -2984,8 +2984,8 @@ def generate_agent_claude_md(
             "7. **Zustaendigkeitsgrenzen einhalten.** Nur in deinem Bereich arbeiten.\n"
             "8. **Code-Qualitaet.** Kein Over-Engineering. Nur das bauen was gebraucht wird. Tests schreiben fuer kritische Funktionen.\n"
             "9. **Selbst-Verifikation (PFLICHT).** Bevor du eine Aufgabe als erledigt meldest: Verifiziere das Ergebnis. Code → ausfuehren und testen. Integration → Live-Test. Report → gegenlesen. Kein 'fertig' ohne Beweis.\n"
-            "10. **Task-Ergebnisse an den Auftraggeber.** Wenn du einen Task erledigst, melde das Ergebnis an den Auftraggeber (created_by), NICHT an Leo/user — es sei denn Leo hat den Task selbst erstellt. Das System benachrichtigt den Creator automatisch bei bridge_task_done, aber dein ausfuehrlicher Bericht geht via bridge_send an den Creator.\n"
-            "11. **Autonomie bei angeordneten Tasks.** Wenn Leo (user) oder ein Manager (Level 1-2) einen Task anordnet, ist die Freigabe IMPLIZIT. Sofort implementieren. Nicht zurueckfragen 'darf ich das?'. Nur bei DESTRUKTIVEN Operationen (rm -rf, force-push, DROP TABLE) Rueckfrage stellen."
+            "10. **Task-Ergebnisse an den Auftraggeber.** Wenn du einen Task erledigst, melde das Ergebnis an den Auftraggeber (created_by), NICHT an the owner/user — es sei denn the owner hat den Task selbst erstellt. Das System benachrichtigt den Creator automatisch bei bridge_task_done, aber dein ausfuehrlicher Bericht geht via bridge_send an den Creator.\n"
+            "11. **Autonomie bei angeordneten Tasks.** Wenn the owner (user) oder ein Manager (Level 1-2) einen Task anordnet, ist die Freigabe IMPLIZIT. Sofort implementieren. Nicht zurueckfragen 'darf ich das?'. Nur bei DESTRUKTIVEN Operationen (rm -rf, force-push, DROP TABLE) Rueckfrage stellen."
         )
 
     # S1+S6: Memory-Pflicht section
@@ -2995,7 +2995,7 @@ def generate_agent_claude_md(
         "MEMORY.md wird bei jedem Start und nach jedem /compact automatisch geladen.\n\n"
         "### Was du speichern MUSST:\n"
         "- Architektur-Wissen (Dateien, Strukturen, Abhaengigkeiten)\n"
-        "- Leo-Entscheidungen (was er will, was er ablehnt)\n"
+        "- Owner-Entscheidungen (was er will, was er ablehnt)\n"
         "- Wiederkehrende Patterns (wie wir Dinge tun)\n"
         "- Fehler + Fixes (was schiefging und warum)\n\n"
         "### Was du NICHT speichern darfst:\n"
@@ -3043,7 +3043,7 @@ def generate_agent_claude_md(
         f"{_buddy_knowledge_duty}"
     )
 
-    # Codex-specific Bridge Identity Block (Leo-Direktive: Codex muss wissen dass es Teil der Bridge ist)
+    # Codex-specific Bridge Identity Block (Owner-Direktive: Codex muss wissen dass es Teil der Bridge ist)
     bridge_identity_block = ""
     if is_codex:
         bridge_identity_block = (
@@ -3052,7 +3052,7 @@ def generate_agent_claude_md(
             "namens **Bridge IDE**. Mehrere KI-Agents arbeiten zusammen — und du bist einer davon.\n\n"
             "### Was das bedeutet:\n"
             "- **Dein einziger Kommunikationskanal ist die Bridge.** Es gibt KEINEN anderen Weg.\n"
-            "- Was du in dein Terminal schreibst, sieht NIEMAND. Nicht Leo, nicht die anderen Agents. Niemand.\n"
+            "- Was du in dein Terminal schreibst, sieht NIEMAND. Nicht the owner, nicht die anderen Agents. Niemand.\n"
             "- Kommunikation existiert NUR durch `bridge_send()`. Ohne bridge_send bist du stumm.\n"
             "- Nachrichten erhaeltst du NUR durch `bridge_receive()`. Ohne bridge_receive bist du taub.\n\n"
             "### Proaktivitaet (PFLICHT):\n"

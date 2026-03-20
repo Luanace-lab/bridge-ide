@@ -20,7 +20,7 @@ Warum die BRIDGE statt PagerDuty ($32k+/Jahr), incident.io ($27k/Jahr bei 50 Use
 3. **Keine Plattformgebuehr** — LLM-API-Kosten pro Incident. Ein typischer Incident kostet $1-5 statt $27k/Jahr Lizenz.
 4. **5 Kommunikationskanaele** — Email, Slack, Telegram, WhatsApp, Telefon. PagerDuty hat 3 (Email/Slack/SMS). incident.io hat 2 (Slack/Email).
 5. **Bereits funktionale Infrastruktur** — Health-Monitor, Cron-Engine, Task-System, Whiteboard mit Alert-Severity, Agent-Health mit Auto-Restart, n8n-Workflow-Integration. Die Bausteine existieren — es fehlt die Komposition.
-6. **Security-Diagnostik inklusive** — AASE MCP Tools fuer Security-Incident-Analyse. Kein anderes Incident-Management-Tool hat eingebaute Pentest-Faehigkeiten.
+6. **Security-Diagnostik inklusive** — AASE MCP Tools fuer Security-Incident-Analyse. Kein anderes Incident-Management-Tool hat eingebaute Security-Assessment-Faehigkeiten.
 7. **Incident Memory** — Knowledge Engine speichert Incident-Resolutions persistent. Agents lernen aus vergangenen Incidents ("Wissensabruf vor Handlung").
 
 ### 1.2 Zielgruppen

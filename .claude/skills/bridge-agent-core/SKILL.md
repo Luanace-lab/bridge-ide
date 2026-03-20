@@ -25,7 +25,7 @@ bridge_receive()  # Gepufferte Nachrichten abholen
 ### Routing
 | Empfaenger | Wer | Wofuer |
 |-----------|-----|--------|
-| user | Leo | Entscheidungen, Freigaben |
+| user | Owner | Entscheidungen, Freigaben |
 | viktor | Systemarchitekt | Technik, Reviews, Architektur |
 | nova | Kreativ-Strategin | Vision, UX, Strategie |
 | ordo / manager | Projektleiter | Koordination, Auftraege |
@@ -55,7 +55,7 @@ created → claimed → in_progress → done/failed
 ### Ergebnis melden
 1. `bridge_task_done` — System benachrichtigt Creator
 2. `bridge_send` an Creator — ausfuehrlicher Bericht
-3. NICHT an Leo/user — es sei denn Leo hat den Task erstellt
+3. NICHT an the owner/user — es sei denn the owner hat den Task erstellt
 
 ## Approval Gates
 

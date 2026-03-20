@@ -2599,7 +2599,7 @@ async def bridge_task_checkin(
 @mcp.tool(
     name="bridge_escalation_resolve",
     description=(
-        "Resolve a Stage 3 escalation (Susi-Entscheidung). "
+        "Resolve a Stage 3 escalation (Owner-Entscheidung). "
         "Actions: extend (give more time), reassign (assign to another agent), cancel (abort task). "
         "Only applicable when escalation has reached Stage 3."
     ),
@@ -3072,7 +3072,7 @@ async def _playwright_mcp_session(
     name="bridge_email_send",
     description=(
         "Send an email through the Bridge email system. "
-        "Creates an approval request — the email is only sent after Leo approves. "
+        "Creates an approval request — the email is only sent after the owner approves. "
         "Returns immediately with the approval request_id. "
         "Use bridge_approval_wait(request_id) to wait for the decision, "
         "then call bridge_email_execute(request_id) to send after approval."
@@ -3126,7 +3126,7 @@ async def bridge_email_send(
         return json.dumps({
             "status": "pending_approval",
             "request_id": data.get("request_id"),
-            "message": f"Email an {to} wartet auf Leos Genehmigung. "
+            "message": f"Email an {to} wartet auf the owner's Genehmigung. "
                        f"Nutze bridge_approval_wait('{data.get('request_id')}') zum Warten, "
                        f"dann bridge_email_execute('{data.get('request_id')}') zum Senden.",
         })
@@ -3238,7 +3238,7 @@ async def bridge_email_read(
 
 
 # ---------------------------------------------------------------------------
-# Slack Integration (Stubs — aktiviert wenn Leo Slack-Token liefert)
+# Slack Integration (Stubs — aktiviert wenn the owner Slack-Token liefert)
 # ---------------------------------------------------------------------------
 
 _SLACK_TOKEN: str | None = os.environ.get("SLACK_BOT_TOKEN")
@@ -3318,7 +3318,7 @@ async def _slack_call(method: str, params: dict[str, Any]) -> dict[str, Any]:
     name="bridge_slack_send",
     description=(
         "Send a message to a Slack channel through the Bridge. "
-        "Creates an approval request — Leo must approve before the message is sent. "
+        "Creates an approval request — the owner must approve before the message is sent. "
         "After approval, call bridge_slack_execute(request_id) to send."
     ),
 )
@@ -3363,7 +3363,7 @@ async def bridge_slack_send(channel: str, message: str) -> str:
         return json.dumps({
             "status": "pending_approval",
             "request_id": data.get("request_id"),
-            "message": f"Slack-Nachricht an #{channel} wartet auf Leos Genehmigung. "
+            "message": f"Slack-Nachricht an #{channel} wartet auf the owner's Genehmigung. "
                        f"Nach Genehmigung: bridge_slack_execute('{data.get('request_id')}')",
         })
     except Exception as exc:
@@ -3950,7 +3950,7 @@ async def bridge_telegram_read(chat: str = "", limit: int = 20) -> str:
 
 
 # ---------------------------------------------------------------------------
-# WhatsApp Integration (Stubs — aktiviert wenn Leo QR-Code scannt)
+# WhatsApp Integration (Stubs — aktiviert wenn the owner QR-Code scannt)
 # ---------------------------------------------------------------------------
 
 # WhatsApp nutzt lharries/whatsapp-mcp (Go Bridge + Python MCP Server)
@@ -3958,7 +3958,7 @@ async def bridge_telegram_read(chat: str = "", limit: int = 20) -> str:
 # Messages in SQLite: store/messages.db
 _WHATSAPP_BRIDGE_URL: str = os.environ.get("WHATSAPP_BRIDGE_URL", "http://localhost:8080")
 _WHATSAPP_TOKEN_PATH: str = os.path.expanduser("~/.config/bridge/whatsapp_bridge_token")
-# Privacy: Only read/send messages from/to whitelisted JIDs (Leo's explicit permission)
+# Privacy: Only read/send messages from/to whitelisted JIDs (the owner's explicit permission)
 # Priority: ENV variable > config file > empty (no access)
 _WHATSAPP_DEFAULT_DB_CANDIDATES: tuple[str, ...] = (
     "~/.config/bridge/whatsapp-bridge/store/messages.db",
@@ -4072,7 +4072,7 @@ _WHATSAPP_SEND_WHITELIST: list[str] = _load_whatsapp_send_whitelist()
 def _load_whatsapp_approval_whitelist() -> list[str]:
     """Load WhatsApp approval whitelist — JIDs that skip the approval gate.
     Messages to these JIDs are sent directly (still enforcing send_whitelist).
-    Leo-Direktive: 'Nachrichten an meine Nummer brauchen keine Approval.'"""
+    Owner-Direktive: 'Nachrichten an meine Nummer brauchen keine Approval.'"""
     env_val = os.environ.get("WHATSAPP_APPROVAL_WHITELIST", "").strip()
     if env_val:
         return [jid.strip() for jid in env_val.split(",") if jid.strip()]
@@ -4216,7 +4216,7 @@ def _whatsapp_read(params: dict[str, Any]) -> dict[str, Any]:
     if not _WHATSAPP_READ_WHITELIST:
         return {
             "error": "WhatsApp-Leseschutz aktiv. Keine JIDs freigegeben. "
-            "Leo muss WHATSAPP_READ_WHITELIST setzen (z.B. Gruppen-JID).",
+            "the owner muss WHATSAPP_READ_WHITELIST setzen (z.B. Gruppen-JID).",
             "source": "whatsapp",
         }
 
@@ -4285,7 +4285,7 @@ def _whatsapp_read(params: dict[str, Any]) -> dict[str, Any]:
     description=(
         "Send a WhatsApp message (text and/or image) through the Bridge. "
         "For images, pass media_path (absolute path to file on disk). "
-        "Creates an approval request — Leo must approve before the message is sent. "
+        "Creates an approval request — the owner must approve before the message is sent. "
         "After approval, call bridge_whatsapp_execute(request_id) to send."
     ),
 )
@@ -4301,13 +4301,13 @@ async def bridge_whatsapp_send(to: str, message: str = "", media_path: str = "")
     if media_path and not os.path.isfile(media_path):
         return json.dumps({"error": f"media_path not found: {media_path}"})
 
-    # Resolve friendly name → JID (e.g. "Leo" → "120363...@g.us")
+    # Resolve friendly name → JID (e.g. "Owner" → "120363...@g.us")
     resolved_to = _resolve_whatsapp_recipient(to)
     display_name = to  # Keep original name for display
 
     formatted_message = _whatsapp_with_sender_prefix(message, _agent_id) if message else ""
 
-    # Approval-Whitelist: Skip approval gate for whitelisted JIDs (Leo-Direktive)
+    # Approval-Whitelist: Skip approval gate for whitelisted JIDs (Owner-Direktive)
     if resolved_to in _WHATSAPP_APPROVAL_WHITELIST:
         # Still enforce send_whitelist (security layer)
         if not _WHATSAPP_SEND_WHITELIST or resolved_to not in _WHATSAPP_SEND_WHITELIST:
@@ -4373,7 +4373,7 @@ async def bridge_whatsapp_send(to: str, message: str = "", media_path: str = "")
         return json.dumps({
             "status": "pending_approval",
             "request_id": data.get("request_id"),
-            "message": f"WhatsApp an {to} wartet auf Leos Genehmigung. "
+            "message": f"WhatsApp an {to} wartet auf the owner's Genehmigung. "
                        f"Nach Genehmigung: bridge_whatsapp_execute('{data.get('request_id')}')",
         })
     except Exception as exc:
@@ -5240,7 +5240,7 @@ async def bridge_browser_action(
                 "source": "browser",
                 "screenshot_path": screenshot_path,
                 "message": (
-                    f"Browser action awaits Leo's approval. "
+                    f"Browser action awaits the owner's approval. "
                     f"Use bridge_approval_wait('{request_id}') and execute raw browser_* tool after approval."
                 ),
             },
@@ -6604,7 +6604,7 @@ async def bridge_tor_obfs4_enable() -> str:
         return json.dumps({"status": "error", "error": f"Tor restart failed: {exc}"})
 
 
-# ===== CDP BROWSER CONNECT (Leo's Real Browser) =====
+# ===== CDP BROWSER CONNECT (the Owner's Real Browser) =====
 
 # Singleton: one CDP connection shared across all tools in this MCP process
 _cdp_browser: Any = None  # Playwright Browser (connected via CDP)
@@ -6614,7 +6614,7 @@ _cdp_chrome_proc: Any = None   # Auto-started Chrome subprocess
 
 
 async def _cdp_ensure_connected(port: int = 9222) -> Any:
-    """Ensure CDP connection to Leo's browser. Auto-starts Chrome if needed."""
+    """Ensure CDP connection to the owner's browser. Auto-starts Chrome if needed."""
     global _cdp_browser, _cdp_pw, _cdp_default_page, _cdp_chrome_proc
     if _cdp_browser is not None:
         try:
@@ -6697,7 +6697,7 @@ async def _cdp_list_tabs_via_http(port: int = 9222) -> list:
     ),
 )
 async def bridge_cdp_connect(port: int = 9222) -> str:
-    """Connect to Leo's real browser via CDP."""
+    """Connect to the owner's real browser via CDP."""
     if _agent_id is None:
         return json.dumps({"status": "error", "error": "not registered"})
     try:
@@ -6717,7 +6717,7 @@ async def bridge_cdp_connect(port: int = 9222) -> str:
 
 @mcp.tool(
     name="bridge_cdp_tabs",
-    description="List all open tabs in Leo's browser with URLs and titles.",
+    description="List all open tabs in the owner's browser with URLs and titles.",
 )
 async def bridge_cdp_tabs() -> str:
     """List all open browser tabs."""
@@ -6748,10 +6748,10 @@ async def bridge_cdp_tabs() -> str:
 
 @mcp.tool(
     name="bridge_cdp_navigate",
-    description="Navigate a tab in Leo's browser to a URL. Specify tab index (from bridge_cdp_tabs) or uses active tab.",
+    description="Navigate a tab in the owner's browser to a URL. Specify tab index (from bridge_cdp_tabs) or uses active tab.",
 )
 async def bridge_cdp_navigate(url: str, tab_index: str = "0:0") -> str:
-    """Navigate to URL in Leo's browser."""
+    """Navigate to URL in the owner's browser."""
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -6769,10 +6769,10 @@ async def bridge_cdp_navigate(url: str, tab_index: str = "0:0") -> str:
 
 @mcp.tool(
     name="bridge_cdp_screenshot",
-    description="Take a screenshot of a tab in Leo's browser. Returns file path to saved screenshot.",
+    description="Take a screenshot of a tab in the owner's browser. Returns file path to saved screenshot.",
 )
 async def bridge_cdp_screenshot(tab_index: str = "0:0", full_page: bool = False) -> str:
-    """Screenshot a tab in Leo's browser."""
+    """Screenshot a tab in the owner's browser."""
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -6787,10 +6787,10 @@ async def bridge_cdp_screenshot(tab_index: str = "0:0", full_page: bool = False)
 
 @mcp.tool(
     name="bridge_cdp_click",
-    description="Click an element by CSS selector in Leo's browser.",
+    description="Click an element by CSS selector in the owner's browser.",
 )
 async def bridge_cdp_click(selector: str, tab_index: str = "0:0") -> str:
-    """Click element in Leo's browser."""
+    """Click element in the owner's browser."""
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -6804,10 +6804,10 @@ async def bridge_cdp_click(selector: str, tab_index: str = "0:0") -> str:
 
 @mcp.tool(
     name="bridge_cdp_fill",
-    description="Fill an input field by CSS selector in Leo's browser.",
+    description="Fill an input field by CSS selector in the owner's browser.",
 )
 async def bridge_cdp_fill(selector: str, value: str, tab_index: str = "0:0") -> str:
-    """Fill input field in Leo's browser."""
+    """Fill input field in the owner's browser."""
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -6821,10 +6821,10 @@ async def bridge_cdp_fill(selector: str, value: str, tab_index: str = "0:0") -> 
 
 @mcp.tool(
     name="bridge_cdp_evaluate",
-    description="Execute JavaScript on a page in Leo's browser. Returns result.",
+    description="Execute JavaScript on a page in the owner's browser. Returns result.",
 )
 async def bridge_cdp_evaluate(expression: str, tab_index: str = "0:0") -> str:
-    """Execute JS in Leo's browser."""
+    """Execute JS in the owner's browser."""
     log.info("[AUDIT] bridge_cdp_evaluate by=%s tab=%s expr=%s", _agent_id, tab_index, expression[:200])
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
@@ -6839,10 +6839,10 @@ async def bridge_cdp_evaluate(expression: str, tab_index: str = "0:0") -> str:
 
 @mcp.tool(
     name="bridge_cdp_content",
-    description="Get the HTML content of a page in Leo's browser.",
+    description="Get the HTML content of a page in the owner's browser.",
 )
 async def bridge_cdp_content(tab_index: str = "0:0") -> str:
-    """Get page HTML content from Leo's browser."""
+    """Get page HTML content from the owner's browser."""
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -6865,7 +6865,7 @@ async def bridge_cdp_content(tab_index: str = "0:0") -> str:
 
 @mcp.tool(
     name="bridge_cdp_disconnect",
-    description="Disconnect from Leo's browser. Does NOT close the browser.",
+    description="Disconnect from the owner's browser. Does NOT close the browser.",
 )
 async def bridge_cdp_disconnect() -> str:
     """Disconnect CDP connection. Browser stays open."""
@@ -6889,10 +6889,10 @@ async def bridge_cdp_disconnect() -> str:
 
 @mcp.tool(
     name="bridge_cdp_new_tab",
-    description="Open a new tab in Leo's browser and navigate to a URL. Returns the new tab index.",
+    description="Open a new tab in the owner's browser and navigate to a URL. Returns the new tab index.",
 )
 async def bridge_cdp_new_tab(url: str = "about:blank") -> str:
-    """Open a new tab in Leo's browser."""
+    """Open a new tab in the owner's browser."""
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -6914,10 +6914,10 @@ async def bridge_cdp_new_tab(url: str = "about:blank") -> str:
 
 @mcp.tool(
     name="bridge_cdp_close_tab",
-    description="Close a specific tab in Leo's browser by index. Use bridge_cdp_tabs to find indices.",
+    description="Close a specific tab in the owner's browser by index. Use bridge_cdp_tabs to find indices.",
 )
 async def bridge_cdp_close_tab(tab_index: str) -> str:
-    """Close a tab in Leo's browser."""
+    """Close a tab in the owner's browser."""
     if _cdp_browser is None:
         return json.dumps({"status": "error", "error": "not connected"})
     try:
@@ -6933,7 +6933,7 @@ async def bridge_cdp_close_tab(tab_index: str) -> str:
 @mcp.tool(
     name="bridge_cdp_file_upload",
     description=(
-        "Upload a file via a file input element in Leo's browser (CDP). "
+        "Upload a file via a file input element in the owner's browser (CDP). "
         "Selector should target an <input type='file'> element."
     ),
 )
@@ -7138,7 +7138,7 @@ async def _open_unified_cdp_engine(url: str) -> tuple[str, dict[str, Any], str]:
     name="bridge_browser_open",
     description=(
         "Open a unified browser session. Choose engine: "
-        "'stealth' (anti-detection Playwright), 'cdp' (Chrome DevTools, Leo's browser), "
+        "'stealth' (compatibility-enhanced Playwright), 'cdp' (Chrome DevTools, the user's browser), "
         "or 'auto' (stealth if available, falls back to cdp). "
         "Returns a session_id for use with other bridge_browser_* tools. "
         "All subsequent operations use the same session_id regardless of engine."
@@ -8412,7 +8412,7 @@ async def bridge_browser_fill_ref_verify(
     name="bridge_browser_fingerprint_snapshot",
     description=(
         "Capture a browser-level fingerprint snapshot from a unified browser session. "
-        "Useful for anti-detection lab validation and regression tracking."
+        "Useful for compatibility lab validation and regression tracking."
     ),
 )
 async def bridge_browser_fingerprint_snapshot(session_id: str) -> str:
@@ -9275,7 +9275,7 @@ async def _await_phone_call_approval(
     name="bridge_phone_call",
     description=(
         "Start an outgoing phone call via the Voice Gateway. "
-        "Requires Leo's approval before the call is placed. "
+        "Requires the owner's approval before the call is placed. "
         "Returns the approval request_id — use bridge_approval_wait to wait for approval, "
         "then the call starts automatically."
     ),
@@ -9285,7 +9285,7 @@ async def bridge_phone_call(number: str) -> str:
     if _agent_id is None:
         return json.dumps({"error": "Not registered. Call bridge_register first."})
 
-    # Approval gate — phone calls require explicit Leo approval
+    # Approval gate — phone calls require explicit owner approval
     approval_body: dict[str, Any] = {
         "agent_id": _agent_id,
         "action": "phone_call",
@@ -13243,7 +13243,7 @@ async def bridge_whatsapp_voice(to: str, text: str, voice_id: str = "") -> str:
                 return json.dumps({
                     "status": "pending_approval",
                     "request_id": data.get("request_id"),
-                    "message": f"WhatsApp Voice an {display_name} wartet auf Leos Genehmigung.",
+                    "message": f"WhatsApp Voice an {display_name} wartet auf the owner's Genehmigung.",
                 })
         except Exception as exc:
             return json.dumps({"error": f"Approval request failed: {exc}"})

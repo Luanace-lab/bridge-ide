@@ -63,7 +63,7 @@ Autor: Ordo
 | CC/BRIDGE/Knowledge/Agents/codex/ | Codex GROW, SKILLS, SOUL, PROJECT_MEMORY (15 Projekte) |
 | CC/BRIDGE/Knowledge/Projects/ | 15+ Projekt-Dokumentationen |
 | CC/BRIDGE/Knowledge/Shared/ | Competitor Analysis (2 Dateien) |
-| CC/BRIDGE/Knowledge/Users/ | User-Profile (leo, susi, 4 Test-User) |
+| CC/BRIDGE/Knowledge/Users/ | User-Profile (owner, testuser, 4 Test-User) |
 
 ## 6. Viktor Slice-Dokumentation
 

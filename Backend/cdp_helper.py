@@ -18,7 +18,7 @@ from playwright.async_api import async_playwright, Browser, Page
 
 
 class CDPBrowser:
-    """Context manager for CDP connection to Leo's Chrome."""
+    """Context manager for CDP connection to the owner's Chrome."""
 
     def __init__(self, port: int = 9222):
         self.port = port

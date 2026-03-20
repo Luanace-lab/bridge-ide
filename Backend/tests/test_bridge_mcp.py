@@ -1189,7 +1189,7 @@ class TestBridgeMcpApprovalGuards(unittest.TestCase):
                 raw = asyncio.run(
                     mod.bridge_whatsapp_send(
                         "120363000000000000@g.us",
-                        "Hallo Leo",
+                        "Hallo Owner",
                         media_path=media_file.name,
                     )
                 )
@@ -1206,7 +1206,7 @@ class TestBridgeMcpApprovalGuards(unittest.TestCase):
         self.assertEqual(captured.get("action"), "send_message")
         self.assertEqual(captured["params"]["to"], "120363000000000000@g.us")
         self.assertIn("media_path", captured["params"])
-        self.assertTrue(captured["params"]["message"].startswith("🟦 [CODEX] Hallo Leo"))
+        self.assertTrue(captured["params"]["message"].startswith("🟦 [CODEX] Hallo Owner"))
 
 
 class TestBridgeMcpCatalogFallbacks(unittest.TestCase):

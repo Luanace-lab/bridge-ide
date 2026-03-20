@@ -65,11 +65,11 @@ class TestApprovalWriteRoutesContract(unittest.TestCase):
 
     def test_approval_edit_route_merges_payload(self) -> None:
         handler = _DummyHandler()
-        handler.json_body = {"decided_by": "user", "payload": {"username": "leo"}}
+        handler.json_body = {"decided_by": "user", "payload": {"username": "owner"}}
         self.assertTrue(approvals_mod.handle_post(handler, "/approval/appr_pending/edit"))
         self.assertEqual(handler.responses[0][0], 200)
         self.assertEqual(handler.responses[0][1]["payload"]["url"], "https://example.com")
-        self.assertEqual(handler.responses[0][1]["payload"]["username"], "leo")
+        self.assertEqual(handler.responses[0][1]["payload"]["username"], "owner")
         self.assertEqual(self.messages[0][0][1], "codex")
         self.assertEqual(self.broadcasts[0][0][0], "approval_edited")
 

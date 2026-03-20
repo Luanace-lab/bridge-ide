@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WhatsApp Watcher — routes ACE group messages from Leo to Bridge agents.
+"""WhatsApp Watcher — routes ACE group messages from the owner to Bridge agents.
 
 Behavior:
 - @agent targets specific agents (for example @viktor @nova)
@@ -395,7 +395,7 @@ def _bridge_send(to: str, content: str, meta: dict | None = None) -> bool:
         headers = {}
         if _BRIDGE_USER_TOKEN:
             headers["X-Bridge-Token"] = _BRIDGE_USER_TOKEN
-        payload: dict = {"from": "user", "to": to, "content": f"[WhatsApp/Leo] {content}"}
+        payload: dict = {"from": "user", "to": to, "content": f"[WhatsApp/Owner] {content}"}
         if meta:
             payload["meta"] = meta
         resp = httpx.post(
@@ -417,7 +417,7 @@ def _bridge_send(to: str, content: str, meta: dict | None = None) -> bool:
 # --- Polling ---
 
 def _poll_new_messages(state: dict) -> list[dict]:
-    """Query SQLite for new messages from Leo in ACE group."""
+    """Query SQLite for new messages from the owner in ACE group."""
     if not os.path.exists(_DB_PATH):
         print(f"[watcher] DB not found: {_DB_PATH}", file=sys.stderr)
         return []

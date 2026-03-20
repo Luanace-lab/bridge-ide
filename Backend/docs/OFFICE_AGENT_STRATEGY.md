@@ -28,7 +28,7 @@ Bridge ACE als UNSCHLAGBARER Office-Agent — besser als Claude Cowork, Manus AI
 ### Browser & Desktop (heute gehaertet)
 | Feature | Engine | Detection |
 |---------|--------|-----------|
-| Stealth Browser | Camoufox (C++ patches) | 0% CreepJS |
+| Automation Browser | Camoufox (C++ patches) | 0% CreepJS |
 | CDP | Echtes Chrome, headed | 0% Detection |
 | Desktop | xdotool + Bezier + Vision | Menschlich |
 | Captcha | 6 native Solver | Kostenlos |
@@ -40,7 +40,7 @@ Bridge ACE als UNSCHLAGBARER Office-Agent — besser als Claude Cowork, Manus AI
 | Google Workspace | JA (workspace-mcp) | JA (38 Connectors) | Teilweise | JA |
 | MS Teams/Outlook | Via Composio | JA (Copilot) | Nein | JA |
 | Notion | JA (MCP) | JA | Nein | JA |
-| Stealth Browser | JA (0%) | Nein | Nein | Nein |
+| Automation Browser | JA (0%) | Nein | Nein | Nein |
 | Multi-Agent | JA (Kern) | Nein | Nein | Nein |
 | Lokal/Privat | JA | Nein | Nein | Nein |
 | Preis | Kostenlos | $20/seat | $19-199/mo | $200/mo |
@@ -64,6 +64,6 @@ Bridge ACE als UNSCHLAGBARER Office-Agent — besser als Claude Cowork, Manus AI
 
 ### Phase 3: DIFFERENZIERUNG
 - Multi-Agent Office Workflows (z.B. Research-Agent liest Email → Analyst erstellt Report → Designer formatiert → Manager reviewed)
-- Stealth-Browser fuer Web-Scraping in Office-Kontext
+- Automation browser for web data collection in office context
 - Lokale Dateiverarbeitung ohne Cloud (PPTX/XLSX direkt bearbeiten)
 - Voice-Secretary (Telefonkonferenzen + Transkription)

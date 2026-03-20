@@ -171,10 +171,10 @@ class TestApprovalGateBasic(unittest.TestCase):
             description="Call Luigi's",
             preview="+49-89-12345",
         )
-        result = self.gate.approve(req.request_id, approver="leo")
+        result = self.gate.approve(req.request_id, approver="owner")
         self.assertIsNotNone(result)
         self.assertTrue(result.approved)
-        self.assertEqual(result.approver, "leo")
+        self.assertEqual(result.approver, "owner")
 
     def test_approve_changes_status(self):
         req = self.gate.request_approval(
@@ -190,7 +190,7 @@ class TestApprovalGateBasic(unittest.TestCase):
             action_type="purchase", agent_id="buyer",
             description="Buy coffee", preview="$5.00",
         )
-        result = self.gate.deny(req.request_id, approver="leo", reason="Too expensive")
+        result = self.gate.deny(req.request_id, approver="owner", reason="Too expensive")
         self.assertIsNotNone(result)
         self.assertFalse(result.approved)
         self.assertEqual(result.reason, "Too expensive")

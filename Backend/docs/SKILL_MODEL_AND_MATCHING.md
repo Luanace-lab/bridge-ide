@@ -50,8 +50,8 @@ Jeder Skill hat: Zweck, Inputs, Outputs, erlaubte MCPs, Risiko-Level.
 - **Outputs:** Screenshots, HTML, extrahierte Daten, Tokens
 - **Erlaubte MCPs:** bridge (stealth_*, cdp_*, browser_*, captcha_*), ghost, playwright
 - **Erlaubte Tools:** bridge_stealth_start, bridge_browser_open, bridge_cdp_connect
-- **Risiko:** HIGH — externe Interaktion, Bot-Detection, Account-Risiko
-- **Anti-Patterns:** Keine Aktionen ohne Pre-Flight-Analyse, kein Headless auf gehärteten Targets
+- **Risiko:** HIGH — external interaction, protection challenges, account risk
+- **Anti-Patterns:** No actions without pre-flight analysis, no headless on protected targets
 
 ### 6. DATA_ANALYSIS
 - **Zweck:** Daten laden, transformieren, abfragen, visualisieren
@@ -93,7 +93,7 @@ Jeder Skill hat: Zweck, Inputs, Outputs, erlaubte MCPs, Risiko-Level.
 
 2. SKILL MATCHING
    task_type → Skill-Typ(en) aus A.
-   Beispiel: "Schicke eine Email an Leo mit dem Report" → COMMUNICATION + DOCUMENT_CREATION
+   Beispiel: "Schicke eine Email an the owner mit dem Report" → COMMUNICATION + DOCUMENT_CREATION
 
 3. MCP SELECTION
    Skill-Typ → Erlaubte MCPs filtern
@@ -150,7 +150,7 @@ Jeder Eval testet: "Gegeben Task X, wählt das System den richtigen Skill, das r
 
 ```yaml
 # EVAL-001: Simple Email
-- task: "Schicke Leo eine Email mit dem Betreff 'Status Update'"
+- task: "Schicke the owner eine Email mit dem Betreff 'Status Update'"
   expected_skill: COMMUNICATION
   expected_mcp: gmail_mcp
   expected_tool: gmail_create_draft
@@ -177,12 +177,12 @@ Jeder Eval testet: "Gegeben Task X, wählt das System den richtigen Skill, das r
   expected_tool: Skill(anthropic-pptx)
   anti_pattern: bridge_browser_open("slides.google.com")  # FALSCH — lokal statt Cloud
 
-# EVAL-005: Stealth Required
-- task: "Melde dich bei HackerOne an und prüfe unsere Submissions"
+# EVAL-005: Protected Site Access
+- task: "Log in to the project portal and check our submissions"
   expected_skill: BROWSER_AUTOMATION
   expected_mcp: bridge_stealth
   expected_tool: bridge_stealth_start(engine="camoufox")
-  anti_pattern: bridge_cdp_navigate("hackerone.com")  # FALSCH — CDP ist headless, wird erkannt
+  anti_pattern: bridge_cdp_navigate("portal.example.com")  # WRONG — CDP is headless, gets blocked
 
 # EVAL-006: Data Analysis
 - task: "Analysiere die CSV mit den Sales-Daten"
@@ -192,7 +192,7 @@ Jeder Eval testet: "Gegeben Task X, wählt das System den richtigen Skill, das r
   anti_pattern: Read("sales.csv") + manuelles Parsing  # FALSCH — DuckDB ist effizienter
 
 # EVAL-007: Multi-Skill
-- task: "Recherchiere Konkurrenz und schicke Report an Leo per Email"
+- task: "Recherchiere Konkurrenz und schicke Report an the owner per Email"
   expected_skills: [RESEARCH, DOCUMENT_CREATION, COMMUNICATION]
   expected_sequence: WebSearch → Write(report.md) → gmail_create_draft
   anti_pattern: Alles in einem bridge_send  # FALSCH — Email, nicht Bridge-Message
@@ -217,7 +217,7 @@ Jeder Eval testet: "Gegeben Task X, wählt das System den richtigen Skill, das r
   expected_mcp: slack_mcp
   expected_tool: slack_read_channel
   anti_pattern_1: bridge_cdp_navigate("slack.com")  # Browser statt API
-  anti_pattern_2: bridge_stealth_goto("slack.com")  # Stealth für eigene App?!
+  anti_pattern_2: bridge_stealth_goto("slack.com")  # Automation browser for own API app?!
   anti_pattern_3: curl https://slack.com/api/...  # Raw HTTP statt MCP
 ```
 

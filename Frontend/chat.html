@@ -3236,7 +3236,7 @@
     .teamModal__btn--danger{ background:#ef4444; color:#fff; border-color:#ef4444; }
     .teamModal__btn--danger:hover{ background:#dc2626; }
 
-    /* ========== F1: Susi Team-Wizard Modal ========== */
+    /* ========== F1: Owner Team-Wizard Modal ========== */
     .twOverlay{
       position:fixed; inset:0; z-index:210;
       background:rgba(0,0,0,.35); backdrop-filter:blur(3px);
@@ -4178,7 +4178,7 @@
     <div class="teamsPanel__body" id="teamsPanelBody"></div>
   </div>
 
-  <!-- F1: Susi Team-Wizard Modal -->
+  <!-- F1: Owner Team-Wizard Modal -->
   <div class="twOverlay" id="twOverlay">
     <div class="twContainer">
       <div class="twHeader">
@@ -6635,7 +6635,7 @@
       const header = document.getElementById('boardHeaderLeft');
       const bar = document.getElementById('mgmtMemberBar');
       if(!header || !bar) return;
-      // Collect unique management members (exclude "user" — Leo is Owner, not an agent chip)
+      // Collect unique management members (exclude "user" — Owner is not an agent, not an agent chip)
       const seen = new Set();
       const members = [];
       mgmtTeams.forEach(t => t.members.forEach(m => { if(m !== 'user' && !seen.has(m)){ seen.add(m); members.push(m); } }));
@@ -6779,7 +6779,7 @@
         const safeProjectName = escapeHtml(projectName);
         html += '<span class="teamProjectGroup__header' + (collapsed ? '' : ' open') + '" data-project="' + safeProjectName + '">';
         html += '<svg class="teamProjectGroup__arrow" viewBox="0 0 12 12"><polyline points="4,2 8,6 4,10"/></svg>';
-        // Dots removed per Leo directive — no dots in sidebar/headers
+        // Dots removed per Owner directive — no dots in sidebar/headers
         html += '<span class="teamProjectGroup__name">' + safeProjectName + '</span>';
         html += '<span class="teamProjectGroup__count">' + totalOnline + '/' + totalMembers + '</span>';
         html += '</span>';
@@ -7086,7 +7086,7 @@
           });
         });
       });
-      // Update AGENT_LABELS with team.json display names (preserve "user" → "Leo")
+      // Update AGENT_LABELS with team.json display names (preserve "user" → "Owner")
       Object.keys(teamAgentMap).forEach(id => {
         if(id === 'user') return; // Never overwrite user display name
         AGENT_LABELS[id] = teamAgentMap[id].name;
@@ -8012,7 +8012,7 @@
         if(empty) empty.remove();
         if(inputRight) inputRight.style.display = '';
       } else {
-        // No team — hide close button, keep input visible (Leo wants input always)
+        // No team — hide close button, keep input visible (Owner wants input always)
         if(closeBtn) closeBtn.style.display = 'none';
         if(popoutBtn) popoutBtn.style.display = 'none';
         if(inputRight) inputRight.style.display = '';
@@ -10415,7 +10415,7 @@
     }
     teamModalOverlay.addEventListener('click', e => { if(e.target === teamModalOverlay) closeTeamModal(); });
 
-    // ========== F1: Susi Team-Wizard Modal ==========
+    // ========== F1: Owner Team-Wizard Modal ==========
     const twOverlay = document.getElementById('twOverlay');
     const twStepEls = [document.getElementById('twStep0'), document.getElementById('twStep1'), document.getElementById('twStep2')];
     const twStepDots = document.querySelectorAll('.twStepDot');

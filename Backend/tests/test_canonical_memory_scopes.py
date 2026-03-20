@@ -70,10 +70,10 @@ class TestCanonicalKnowledgeScopes:
     def test_init_user_vault_creates_user_profile(self, knowledge_env):
         knowledge_env.init_vault()
 
-        result = knowledge_env.init_user_vault("susi")
+        result = knowledge_env.init_user_vault("testuser")
 
         assert result["ok"]
-        user_dir = Path(knowledge_env._VAULT_DIR) / "Users" / "susi"
+        user_dir = Path(knowledge_env._VAULT_DIR) / "Users" / "testuser"
         assert (user_dir / "USER.md").exists()
         assert (user_dir / "DAILY").is_dir()
 
@@ -82,45 +82,45 @@ class TestScopedSemanticMemory:
     def test_scope_upsert_and_delete_document(self, semantic_env):
         first = semantic_env.index_scoped_text(
             "user",
-            "susi",
-            "Susi likes direct status summaries.",
+            "testuser",
+            "Testuser likes direct status summaries.",
             metadata={"source": "test"},
-            document_id="Users/susi/USER.md",
+            document_id="Users/testuser/USER.md",
         )
         assert first["ok"]
         assert first["chunks_added"] == 1
 
         original = semantic_env.search_scope(
             "user",
-            "susi",
+            "testuser",
             "status summaries",
             alpha=0.0,
         )
         assert original["results"]
-        assert original["results"][0]["document_id"] == "Users/susi/USER.md"
+        assert original["results"][0]["document_id"] == "Users/testuser/USER.md"
 
         second = semantic_env.index_scoped_text(
             "user",
-            "susi",
-            "Susi prefers concise German briefings.",
+            "testuser",
+            "Testuser prefers concise German briefings.",
             metadata={"source": "test"},
-            document_id="Users/susi/USER.md",
+            document_id="Users/testuser/USER.md",
         )
         assert second["ok"]
         assert second["total_chunks"] == 1
 
-        updated = semantic_env.search_scope("user", "susi", "German briefings", alpha=0.0)
+        updated = semantic_env.search_scope("user", "testuser", "German briefings", alpha=0.0)
         assert updated["results"]
         assert "concise German" in updated["results"][0]["text"]
 
-        old_term = semantic_env.search_scope("user", "susi", "status summaries", alpha=0.0)
+        old_term = semantic_env.search_scope("user", "testuser", "status summaries", alpha=0.0)
         assert not old_term["results"]
 
-        deleted = semantic_env.delete_document("user", "susi", "Users/susi/USER.md")
+        deleted = semantic_env.delete_document("user", "testuser", "Users/testuser/USER.md")
         assert deleted["ok"]
         assert deleted["deleted_chunks"] == 1
 
-        after_delete = semantic_env.search_scope("user", "susi", "German briefings", alpha=0.0)
+        after_delete = semantic_env.search_scope("user", "testuser", "German briefings", alpha=0.0)
         assert after_delete["results"] == []
 
     def test_legacy_agent_indexing_remains_compatible(self, semantic_env):
@@ -136,27 +136,27 @@ class TestScopedSemanticMemory:
 class TestKnowledgeToSemanticSync:
     def test_user_note_write_and_delete_syncs_to_semantic_memory(self, knowledge_env, semantic_env):
         knowledge_env.init_vault()
-        knowledge_env.init_user_vault("susi")
+        knowledge_env.init_user_vault("testuser")
 
         write_result = knowledge_env.write_note(
-            "Users/susi/USER",
-            "Susi likes concise replies and German summaries.",
+            "Users/testuser/USER",
+            "Testuser likes concise replies and German summaries.",
             {"language": "de"},
         )
         assert write_result["ok"]
 
-        indexed = semantic_env.search_scope("user", "susi", "German summaries", alpha=0.0)
+        indexed = semantic_env.search_scope("user", "testuser", "German summaries", alpha=0.0)
         assert indexed["results"]
-        assert indexed["results"][0]["metadata"]["note_path"] == "Users/susi/USER.md"
+        assert indexed["results"][0]["metadata"]["note_path"] == "Users/testuser/USER.md"
 
-        knowledge_env.search_replace("Users/susi/USER", "concise", "extremely concise")
-        updated = semantic_env.search_scope("user", "susi", "extremely concise", alpha=0.0)
+        knowledge_env.search_replace("Users/testuser/USER", "concise", "extremely concise")
+        updated = semantic_env.search_scope("user", "testuser", "extremely concise", alpha=0.0)
         assert updated["results"]
 
-        delete_result = knowledge_env.delete_note("Users/susi/USER")
+        delete_result = knowledge_env.delete_note("Users/testuser/USER")
         assert delete_result["ok"]
 
-        after_delete = semantic_env.search_scope("user", "susi", "extremely concise", alpha=0.0)
+        after_delete = semantic_env.search_scope("user", "testuser", "extremely concise", alpha=0.0)
         assert after_delete["results"] == []
 
 
@@ -195,11 +195,11 @@ class TestBridgeMcpScopePayloads:
             mod._get_http = lambda: http
             raw = asyncio.run(
                 mod.bridge_memory_index(
-                    text="Susi profile",
+                    text="Testuser profile",
                     source="knowledge",
                     scope_type="user",
-                    scope_id="susi",
-                    document_id="Users/susi/USER.md",
+                    scope_id="testuser",
+                    document_id="Users/testuser/USER.md",
                 )
             )
         finally:
@@ -208,8 +208,8 @@ class TestBridgeMcpScopePayloads:
 
         payload = http.calls[0]["json"]
         assert payload["scope_type"] == "user"
-        assert payload["scope_id"] == "susi"
-        assert payload["document_id"] == "Users/susi/USER.md"
+        assert payload["scope_id"] == "testuser"
+        assert payload["document_id"] == "Users/testuser/USER.md"
         assert "agent_id" not in payload
         assert json.loads(raw)["ok"] is True
 
@@ -241,9 +241,9 @@ class TestBridgeMcpScopePayloads:
             mod._get_http = lambda: http
             raw = asyncio.run(
                 mod.bridge_memory_delete(
-                    document_id="Users/susi/USER.md",
+                    document_id="Users/testuser/USER.md",
                     scope_type="user",
-                    scope_id="susi",
+                    scope_id="testuser",
                 )
             )
         finally:
@@ -251,8 +251,8 @@ class TestBridgeMcpScopePayloads:
             mod._get_http = old_get_http
 
         payload = http.calls[0]["json"]
-        assert payload["document_id"] == "Users/susi/USER.md"
+        assert payload["document_id"] == "Users/testuser/USER.md"
         assert payload["scope_type"] == "user"
-        assert payload["scope_id"] == "susi"
+        assert payload["scope_id"] == "testuser"
         assert "agent_id" not in payload
         assert json.loads(raw)["ok"] is True

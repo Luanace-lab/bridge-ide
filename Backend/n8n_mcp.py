@@ -352,7 +352,7 @@ def n8n_template_list() -> str:
         "Deploy a workflow template to n8n. "
         "Provide the template_id and variable values. "
         "Creates the workflow in n8n and optionally subscribes to Bridge events. "
-        "Example: n8n_template_deploy('tpl_task_email', {'email_to': 'susi@example.com'})"
+        "Example: n8n_template_deploy('tpl_task_email', {'email_to': 'owner@example.com'})"
     ),
 )
 def n8n_template_deploy(template_id: str, variables: dict[str, str] | None = None) -> str:

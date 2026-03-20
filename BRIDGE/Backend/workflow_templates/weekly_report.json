@@ -1,0 +1,115 @@
+{
+  "template_id": "tpl_weekly_report",
+  "name": "Wochenreport",
+  "description": "Erstellt jeden Freitag einen Sprint-Report: Erledigte Tasks, offene Blocker, Agent-Performance. Owner liebt Reports.",
+  "category": "reports",
+  "difficulty": "mittel",
+  "icon": "calendar",
+  "variables": [
+    {
+      "key": "day_of_week",
+      "label": "Wochentag (0=So, 5=Fr)",
+      "type": "number",
+      "default": 5,
+      "min": 0,
+      "max": 6
+    },
+    {
+      "key": "bridge_url",
+      "label": "Bridge Server URL",
+      "type": "url",
+      "default": "http://localhost:9111"
+    }
+  ],
+  "n8n_workflow": {
+    "name": "Bridge: Wochenreport",
+    "active": true,
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {"field": "cronExpression", "expression": "0 17 * * {{day_of_week}}"}
+            ]
+          }
+        },
+        "name": "Schedule",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [250, 300]
+      },
+      {
+        "parameters": {
+          "url": "{{bridge_url}}/task/queue",
+          "options": {}
+        },
+        "name": "Get All Tasks",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [470, 200]
+      },
+      {
+        "parameters": {
+          "url": "{{bridge_url}}/status",
+          "options": {}
+        },
+        "name": "Get Status",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [470, 400]
+      },
+      {
+        "parameters": {
+          "jsCode": "const tasks = $('Get All Tasks').first().json;\nconst status = $('Get Status').first().json;\n\nconst allTasks = tasks.tasks || [];\nconst now = new Date();\nconst weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);\n\nconst thisWeek = allTasks.filter(t => new Date(t.created_at) >= weekAgo);\nconst done = thisWeek.filter(t => t.state === 'done');\nconst failed = thisWeek.filter(t => t.state === 'failed');\nconst open = allTasks.filter(t => !['done','failed'].includes(t.state));\n\nconst platform = status.platform || {};\nconst online = Number(platform.online_count || 0);\nconst registered = Number(platform.registered_count || online);\n\nconst byAgent = {};\nfor (const t of done) {\n  const a = t.assigned_to || 'unassigned';\n  byAgent[a] = (byAgent[a] || 0) + 1;\n}\n\nconst agentLines = Object.entries(byAgent)\n  .sort((a,b) => b[1] - a[1])\n  .map(([a,c]) => `  ${a}: ${c} Tasks`)\n  .join('\\n');\n\nconst report = [\n  'WOCHENREPORT',\n  `${weekAgo.toISOString().split('T')[0]} bis ${now.toISOString().split('T')[0]}`,\n  `Agents: ${online}/${registered} online`,\n  `Tasks: ${done.length} erledigt, ${failed.length} fehlgeschlagen, ${open.length} offen`,\n  agentLines ? `Performance:\\n${agentLines}` : 'Keine erledigten Tasks',\n].join('\\n');\n\nreturn [{ json: { body: report } }];"
+        },
+        "name": "Build Report",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [690, 300]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "{{bridge_url}}/send",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {"name": "from", "value": "system"},
+              {"name": "to", "value": "user"},
+              {"name": "content", "value": "={{$json.body}}"}
+            ]
+          },
+          "options": {}
+        },
+        "name": "Bridge Notify",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [910, 300]
+      }
+    ],
+    "connections": {
+      "Schedule": {
+        "main": [
+          [
+            {"node": "Get All Tasks", "type": "main", "index": 0}
+          ]
+        ]
+      },
+      "Get All Tasks": {
+        "main": [[{"node": "Get Status", "type": "main", "index": 0}]]
+      },
+      "Get Status": {
+        "main": [[{"node": "Build Report", "type": "main", "index": 0}]]
+      },
+      "Build Report": {
+        "main": [[{"node": "Bridge Notify", "type": "main", "index": 0}]]
+      }
+    }
+  },
+  "setup_steps": [
+    "Wochentag und Uhrzeit in der n8n-/Server-Zeitzone pruefen (Standard: Freitag 17:00)",
+    "Template deployen (1-Klick im Workflow-Wizard)",
+    "Report erscheint im Bridge Chat"
+  ],
+  "bridge_subscription": null
+}

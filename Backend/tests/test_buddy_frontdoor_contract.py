@@ -53,7 +53,7 @@ class TestBuddyFrontdoorContract(unittest.TestCase):
         srv._auto_start_buddy_agent = fake_autostart
         srv.append_message = fake_append
 
-        result = srv._ensure_buddy_frontdoor("susi")
+        result = srv._ensure_buddy_frontdoor("testuser")
 
         self.assertEqual(result["status"], "started")
         self.assertTrue(result["alive_after"])
@@ -63,7 +63,7 @@ class TestBuddyFrontdoorContract(unittest.TestCase):
         self.assertEqual(state["append_calls"][0]["from"], "system")
         self.assertEqual(state["append_calls"][0]["to"], "buddy")
         self.assertEqual(state["append_calls"][0]["meta"]["type"], "buddy_frontdoor")
-        self.assertEqual(state["append_calls"][0]["meta"]["user_id"], "susi")
+        self.assertEqual(state["append_calls"][0]["meta"]["user_id"], "testuser")
 
     def test_frontdoor_dedupes_recent_ping_for_same_user(self):
         now = time.time()
@@ -73,7 +73,7 @@ class TestBuddyFrontdoorContract(unittest.TestCase):
             "to": "buddy",
             "content": "[BUDDY_FRONTDOOR] Existing ping",
             "timestamp": srv.utc_now_iso(),
-            "meta": {"type": "buddy_frontdoor", "user_id": "susi"},
+            "meta": {"type": "buddy_frontdoor", "user_id": "testuser"},
         }]
 
         def fake_is_alive(agent_id: str) -> bool:
@@ -86,7 +86,7 @@ class TestBuddyFrontdoorContract(unittest.TestCase):
         srv.is_session_alive = fake_is_alive
         srv.append_message = fail_append
 
-        result = srv._ensure_buddy_frontdoor("susi")
+        result = srv._ensure_buddy_frontdoor("testuser")
 
         self.assertEqual(result["status"], "already_running")
         self.assertTrue(result["alive_after"])

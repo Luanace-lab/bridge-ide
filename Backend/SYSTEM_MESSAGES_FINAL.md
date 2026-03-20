@@ -174,7 +174,7 @@ Buddy braucht NICHT:
 
 | Massnahme | Tokens/Tag gespart | Status |
 |-----------|-------------------|--------|
-| Heartbeat 300→900s | ~50.000 | LEO FREIGEGEBEN |
+| Heartbeat 300→900s | ~50.000 | OWNER APPROVED |
 | CONTEXT RESTORE komprimieren | ~120.000 | PRINZIPIELL OK |
 | Routing-Matrix (RECOVERY/ONLINE/WARN nicht an Manager) | ~60.000 | REVIEW OFFEN |
 | Buddy-Isolation (kein HB, kein ONLINE) | ~10.000 | REVIEW OFFEN |

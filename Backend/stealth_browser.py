@@ -1,7 +1,7 @@
 """
 stealth_browser.py — Patchright Stealth Browser Module v1
 
-Bot-detection bypass for Bridge IDE browser automation.
+Protected-site compatibility layer for Bridge IDE browser automation.
 Tested: bot.sannysoft.com 57/57 GREEN (V4 config).
 
 Usage (context manager — auto-cleanup):

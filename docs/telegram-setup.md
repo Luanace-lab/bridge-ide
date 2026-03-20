@@ -3,7 +3,7 @@
 ## Ziel
 
 Dieser Pfad richtet eine reproduzierbare Telegram-Integration ueber die Telegram Bot API ein.
-Er vermeidet user-spezifische Telefonnummern oder MTProto-Session-Hacks.
+Er vermeidet user-spezifische Telefonnummern oder MTProto-Session-Workarounds.
 
 ## Komponenten
 
