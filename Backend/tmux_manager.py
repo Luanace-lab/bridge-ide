@@ -2191,10 +2191,10 @@ def create_agent_session(
             canonical_store.sync_identity_from_team(agent_id, _tc)
         # Seed soul: copy best existing SOUL.md if canonical is empty
         if not canonical_store.read_canonical_soul(agent_id):
-            from soul_engine import resolve_soul as _resolve_soul
+            from soul_engine import resolve_soul as _resolve_soul, generate_soul_md as _gen_soul
             _existing = _resolve_soul(agent_id, workspace)
             if _existing:
-                canonical_store.write_canonical_soul(agent_id, _existing.to_markdown())
+                canonical_store.write_canonical_soul(agent_id, _gen_soul(_existing))
     except Exception as exc:
         print(f"[canonical-store] WARNING: Seeding failed for {agent_id}: {exc}", file=sys.stderr)
 
