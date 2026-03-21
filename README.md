@@ -27,7 +27,7 @@ Bridge ACE is a local multi-agent platform. You run multiple AI agents on your m
 This is not a wrapper around a single LLM. This is an operating system for AI teams.
 
 <p align="center">
-  <img src="docs/screenshots/chat_bugbounty.png" alt="Multi-agent team coordinating in real-time" width="800">
+  <img src="docs/screenshots/chat_coordination.png" alt="Multi-agent team coordinating in real-time" width="800">
 </p>
 
 ## Installation
@@ -62,7 +62,7 @@ docker compose up
 Agents coordinate a complex task in real-time. The lead delegates subtasks, specialists execute in parallel, reviewers verify results — all through the shared chat interface.
 
 <p align="center">
-  <img src="docs/screenshots/chat_bugbounty.png" alt="Chat UI with multi-agent team" width="800">
+  <img src="docs/screenshots/chat_coordination.png" alt="Chat UI with multi-agent team" width="800">
 </p>
 
 ### Control Center — Live Dashboard

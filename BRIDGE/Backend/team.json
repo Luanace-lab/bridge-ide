@@ -337,7 +337,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
@@ -398,7 +398,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false,
       "subscription_id": "sub1"
@@ -422,7 +422,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "engine": "claude",
       "home_dir": "/home/user/Desktop/CC/BRIDGE/.agent_sessions/backend",
@@ -476,7 +476,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "engine": "claude",
       "home_dir": "/home/user/Desktop/CC/BRIDGE/Frontend_persönlich",
@@ -582,7 +582,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "engine": "claude",
       "home_dir": "/home/user/Desktop/CC/Kai",
@@ -828,7 +828,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
@@ -875,7 +875,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
@@ -1067,7 +1067,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
@@ -1103,7 +1103,7 @@
         "sec_fingerprint",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
@@ -1139,7 +1139,7 @@
         "sec_webrtc",
         "sec_cookie",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
@@ -1175,7 +1175,7 @@
         "sec_webrtc",
         "sec_fingerprint",
         "sec_tor",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
@@ -1211,18 +1211,18 @@
         "sec_webrtc",
         "sec_fingerprint",
         "sec_cookie",
-        "sec_evasion"
+        "sec_browser_testing"
       ],
       "auto_start": false
     },
     {
-      "id": "sec_evasion",
-      "name": "Sec-Evasion",
+      "id": "sec_browser_testing",
+      "name": "Sec-BrowserTest",
       "role": "security",
       "level": 3,
       "reports_to": "atlas",
       "engine": "claude",
-      "home_dir": "/home/user/Desktop/CC/Security/sec_evasion",
+      "home_dir": "/home/user/Desktop/CC/Security/sec_browser_testing",
       "description": "Browser Compatibility Testing & Natural Behavior Simulation",
       "active": false,
       "config_dir": "/home/user/.claude-sub2",
@@ -1233,7 +1233,7 @@
         "security: Browser compatibility testing, natural interaction patterns"
       ],
       "scope": [
-        "Security/sec_evasion/"
+        "Security/sec_browser_testing/"
       ],
       "extra_routes": [
         "nova",

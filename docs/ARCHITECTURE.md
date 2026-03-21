@@ -751,7 +751,6 @@ Spec documents follow a consistent format (visible in ACCOUNTING_PLATFORM_SPEC.m
 | Accounting (DATEV) | `Backend/docs/ACCOUNTING_PLATFORM_SPEC.md` | 748 |
 | Big Data Analysis | `Backend/docs/BIG_DATA_ANALYSIS_PLATFORM_SPEC.md` | 817 |
 | Customer Support | `Backend/docs/CUSTOMER_SUPPORT_PLATFORM_SPEC.md` | 244 |
-| Cybersecurity | `Backend/docs/CYBERSECURITY_PLATFORM_SPEC.md` | 709 |
 | DevOps & Incident | `Backend/docs/DEVOPS_INCIDENT_PLATFORM_SPEC.md` | 468 |
 | Finance & Investment | `Backend/docs/FINANCE_ANALYSIS_PLATFORM_SPEC.md` | 670 |
 | Legal & Contract | `Backend/docs/LEGAL_CONTRACT_PLATFORM_SPEC.md` | 287 |

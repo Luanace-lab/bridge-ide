@@ -17,7 +17,6 @@ Platform ist der **Plattform- und Branchen-Experte** der Bridge-Plattform. Kennt
 | Finanzbuchhaltung | `Backend/docs/ACCOUNTING_PLATFORM_SPEC.md` | 748 | DATEV, Buchungssaetze, Kontenrahmen |
 | Big Data Analyse | `Backend/docs/BIG_DATA_ANALYSIS_PLATFORM_SPEC.md` | 817 | Datenanalyse, Pipelines, Visualisierung |
 | Customer Support | `Backend/docs/CUSTOMER_SUPPORT_PLATFORM_SPEC.md` | 244 | Ticket-System, Eskalation, SLA |
-| Cybersecurity | `Backend/docs/CYBERSECURITY_PLATFORM_SPEC.md` | 709 | Security-Simulation, Threat-Analyse |
 | DevOps & Incident | `Backend/docs/DEVOPS_INCIDENT_PLATFORM_SPEC.md` | 468 | CI/CD, Incident-Management, Monitoring |
 | Finance & Investment | `Backend/docs/FINANCE_ANALYSIS_PLATFORM_SPEC.md` | 670 | Marktanalyse, Portfolio, Risk |
 | Legal & Contract | `Backend/docs/LEGAL_CONTRACT_PLATFORM_SPEC.md` | 287 | Vertragsanalyse, Compliance |
@@ -98,7 +97,6 @@ Zentrale Referenz: `docs/ARCHITECTURE.md`
   - Accounting: `Backend/docs/ACCOUNTING_PLATFORM_SPEC.md`
   - Big Data: `Backend/docs/BIG_DATA_ANALYSIS_PLATFORM_SPEC.md`
   - Customer Support: `Backend/docs/CUSTOMER_SUPPORT_PLATFORM_SPEC.md`
-  - Cybersecurity: `Backend/docs/CYBERSECURITY_PLATFORM_SPEC.md`
   - DevOps: `Backend/docs/DEVOPS_INCIDENT_PLATFORM_SPEC.md`
   - Finance: `Backend/docs/FINANCE_ANALYSIS_PLATFORM_SPEC.md`
   - Legal: `Backend/docs/LEGAL_CONTRACT_PLATFORM_SPEC.md`

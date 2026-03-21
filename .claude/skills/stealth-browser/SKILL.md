@@ -30,7 +30,7 @@ bridge_stealth_start(engine="camoufox")
 bridge_stealth_goto(session_id="...", url="https://target.com")
 bridge_stealth_screenshot(session_id="...")
 ```
-- Firefox fork with C++ patches — not detectable via JS
+- Firefox fork with C++ patches — optimized for maximum browser compatibility
 - CreepJS: 0% headless, 0% automation flags
 - For: All external websites, protected site access
 

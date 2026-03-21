@@ -11,7 +11,7 @@ Jeder Claude-Agent hat ein persistentes Memory:
 - Zugriff: Datei direkt lesen (Read-Tool) oder `bridge_memory_search`
 
 Agents mit Memory-Verzeichnis (40):
-- alpha_lead, aria, assi, atlas, backend, bravo_lead, buddy, charlie_lead, claude, codex, finn, frontend, jura, kai, legal_compliance, legal_contract, legal_researcher, marketing_campaign, marketing_content, marketing_seo, mika, mira, mobile, nexus, nova, ordo, ordo.lock, scale_lab_alpha, scale_lab_beta, sec_all, sec_cookie, sec_dns, sec_evasion, sec_fingerprint, sec_tor, sec_webrtc, trading_analyst, trading_risk, trading_strategist, viktor
+- alpha_lead, aria, assi, atlas, backend, bravo_lead, buddy, charlie_lead, claude, codex, finn, frontend, jura, kai, legal_compliance, legal_contract, legal_researcher, marketing_campaign, marketing_content, marketing_seo, mika, mira, mobile, nexus, nova, ordo, ordo.lock, scale_lab_alpha, scale_lab_beta, sec_all, sec_cookie, sec_dns, sec_browser_testing, sec_fingerprint, sec_tor, sec_webrtc, trading_analyst, trading_risk, trading_strategist, viktor
 
 ## Knowledge Vault (Shared)
 - Pfad: `BRIDGE/Knowledge`
