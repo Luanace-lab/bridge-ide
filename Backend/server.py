@@ -2540,13 +2540,7 @@ def _read_pid_file(path: str) -> int | None:
         return None
 
 
-def _pid_alive(pid: int) -> bool:
-    """Check if process with given PID is running."""
-    try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
-        return False
+from common import is_pid_alive as _pid_alive  # consolidated from common.py
 
 
 def _pgrep(pattern: str) -> int | None:
@@ -2871,6 +2865,15 @@ def _seed_phantom_agent_registration(
     existing = _registered_agents_snapshot().get(agent_id, {})
     phantom_role = str(role or existing.get("role", "") or _get_runtime_agent_role(agent_id) or agent_id).strip()
     phantom_caps = capabilities if capabilities is not None else existing.get("capabilities", [])
+    # Skip phantom if agent is already real-registered (non-phantom)
+    if existing and not existing.get("phantom"):
+        # Agent is real-registered — only update heartbeat, don't touch token
+        with AGENT_STATE_LOCK:
+            if agent_id in REGISTERED_AGENTS:
+                REGISTERED_AGENTS[agent_id]["last_heartbeat"] = now_ts
+                REGISTERED_AGENTS[agent_id]["last_heartbeat_iso"] = now_iso
+                AGENT_LAST_SEEN[agent_id] = now_ts
+        return REGISTERED_AGENTS.get(agent_id, {})
     # Re-use existing token if valid — no rotation
     existing_token = AGENT_TOKENS.get(agent_id)
     if existing_token and existing_token in SESSION_TOKENS:
@@ -5620,6 +5623,106 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         if _handle_approvals_get(self, path, query):
+            return
+
+        # --- GET /teams/{id}/flow — Team workflow with live activity + edges ---
+        _flow_match = re.match(r"^/teams/([a-z0-9_-]+)/flow$", path)
+        if _flow_match:
+            _flow_team_id = _flow_match.group(1)
+            _flow_team_cfg = None
+            if TEAM_CONFIG:
+                for _ft in TEAM_CONFIG.get("teams", []):
+                    if _ft.get("id") == _flow_team_id:
+                        _flow_team_cfg = _ft
+                        break
+            if not _flow_team_cfg:
+                self._respond(404, {"error": f"team '{_flow_team_id}' not found"})
+                return
+
+            _flow_lead = str(_flow_team_cfg.get("lead", "")).strip()
+            _flow_members = list(_flow_team_cfg.get("members", []))
+            _flow_all = set(_flow_members)
+            if _flow_lead:
+                _flow_all.add(_flow_lead)
+            _flow_scope = _flow_team_cfg.get("scope", "")
+
+            # Agent name/role lookup from team.json agents[]
+            _flow_agent_map: dict[str, dict[str, str]] = {}
+            if TEAM_CONFIG:
+                for _fa in TEAM_CONFIG.get("agents", []):
+                    _fa_id = _fa.get("id", "")
+                    if _fa_id in _flow_all:
+                        _flow_agent_map[_fa_id] = {
+                            "name": _fa.get("name", _fa_id),
+                            "role": (_fa.get("role", "") or "").split(".")[0].strip(),
+                        }
+
+            _flow_nodes = []
+            with LOCK:
+                for _faid in sorted(_flow_all):
+                    _fstatus = agent_connection_status(_faid)
+                    _fact = dict(AGENT_ACTIVITIES.get(_faid, {}))
+                    _freg = REGISTERED_AGENTS.get(_faid, {})
+                    _fctx = _freg.get("context_pct")
+                    _finfo = _flow_agent_map.get(_faid, {})
+                    _flow_nodes.append({
+                        "id": _faid,
+                        "name": _finfo.get("name", _faid),
+                        "role": _finfo.get("role", ""),
+                        "is_lead": _faid == _flow_lead,
+                        "status": "online" if _fstatus in ("running", "waiting") else "offline",
+                        "activity": {
+                            "action": _fact.get("action", ""),
+                            "description": _fact.get("description", ""),
+                            "blocked": _fact.get("blocked", False),
+                        } if _fact else None,
+                        "context_pct": _fctx,
+                    })
+
+                # Build edges: hierarchy (lead→member) + live message overlay
+                _flow_edges: list[dict[str, Any]] = []
+                for _fmid in _flow_members:
+                    if _fmid != _flow_lead and _flow_lead:
+                        _flow_edges.append({
+                            "from": _flow_lead, "to": _fmid,
+                            "type": "hierarchy", "active": False,
+                        })
+
+                # Scan recent messages (last 5 min) for intra-team communication
+                _flow_cutoff = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+                _flow_seen: set[tuple[str, str]] = set()
+                for _fmsg in reversed(MESSAGES):
+                    _fts = _fmsg.get("timestamp", "")
+                    if _fts < _flow_cutoff:
+                        break
+                    _ffrom = str(_fmsg.get("from", "")).strip()
+                    _fto = str(_fmsg.get("to", "")).strip()
+                    if _ffrom in _flow_all and _fto in _flow_all and _ffrom != _fto:
+                        _fpair = (min(_ffrom, _fto), max(_ffrom, _fto))
+                        if _fpair not in _flow_seen:
+                            _flow_seen.add(_fpair)
+                            _found = False
+                            for _fe in _flow_edges:
+                                if set([_fe["from"], _fe["to"]]) == set(_fpair):
+                                    _fe["active"] = True
+                                    _fe["last_message_at"] = _fts
+                                    _found = True
+                                    break
+                            if not _found:
+                                _flow_edges.append({
+                                    "from": _ffrom, "to": _fto,
+                                    "type": "peer", "active": True,
+                                    "last_message_at": _fts,
+                                })
+
+            self._respond(200, {
+                "team_id": _flow_team_id,
+                "team_name": _flow_team_cfg.get("name", _flow_team_id),
+                "scope": _flow_scope,
+                "lead": _flow_lead,
+                "nodes": _flow_nodes,
+                "edges": _flow_edges,
+            })
             return
 
         if _handle_teams_get(self, path, query):
@@ -10077,7 +10180,7 @@ _init_server_startup(
     v3_cleanup_loop_fn=_v3_cleanup_loop,
     task_timeout_loop_fn=_task_timeout_loop,
     heartbeat_prompt_loop_fn=lambda: None,  # Disabled: redundant with WebSocket heartbeat + health daemon + tmux nudge
-    codex_hook_loop_fn=_codex_hook_loop,
+    codex_hook_loop_fn=lambda: None,  # Disabled: 0 Codex agents active
     distillation_daemon_loop_fn=_distillation_daemon_loop,
     idle_agent_task_pusher_fn=_idle_agent_task_pusher,
     idle_watchdog_auto_assign_fn=_idle_watchdog_auto_assign,

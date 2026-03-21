@@ -916,10 +916,12 @@ def _agent_initial_prompt(instruction_filename: str) -> str:
     return (
         f"Lies deine {instruction_filename}. Fuehre die Schritte STRICT SEQUENTIELL aus: "
         "1) bridge_register MCP Tool aufrufen. "
-        "2) bridge_receive() aufrufen. "
-        "3) bridge_task_queue(state='created', limit=50) aufrufen. "
-        "4) Capability-Bootstrap: bridge_capability_library_recommend(task='<deine Rolle>') aufrufen "
+        "2) MEMORY.md lesen (dein persistentes Gedaechtnis). "
+        "3) bridge_receive() aufrufen. "
+        "4) bridge_task_queue(state='created', limit=50) aufrufen. "
+        "5) Capability-Bootstrap: bridge_capability_library_recommend(task='<deine Rolle>') aufrufen "
         "um passende Tools zu finden. "
+        "6) bridge_send(to='user', content='Online und bereit.') senden. "
         "Dann arbeite autonom weiter."
     )
 

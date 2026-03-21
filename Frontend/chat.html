@@ -7062,6 +7062,9 @@
         // FE30: Render team tabs instead of flat agent bar
         renderTeamTabs();
 
+        // FE-FIX: Sync sidebar dots with management board dots
+        if(typeof renderSidebarTeams === 'function') renderSidebarTeams();
+
         // Update target dropdowns
         updateTargetDropdown(activeAgents, data.agents);
       } catch(e){

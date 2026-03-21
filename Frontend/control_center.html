@@ -2378,6 +2378,22 @@
       font-variant-numeric:tabular-nums;
     }
 
+    .orgNode__ctxBar{
+      margin-top:3px; height:3px; border-radius:2px; width:100%;
+      background:rgba(0,0,0,.06); overflow:hidden;
+    }
+    .orgNode__ctxFill{
+      height:100%; border-radius:2px; background:#22c55e; transition:width .3s;
+    }
+    .orgNode__ctxFill--warn{ background:#f59e0b; }
+    .orgNode__ctxFill--crit{ background:#ef4444; }
+    html:is([data-theme="dark"],[data-theme="black"]) .orgNode__ctxBar{ background:rgba(255,255,255,.06); }
+    .orgNode__actLine{
+      font-size:6px; color:#8aa4c8; font-style:italic; margin-top:2px;
+      max-width:95px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .orgNode__actIcon{ font-style:normal; margin-right:1px; }
+
     /* ─── Org D&D States ─── */
     .orgNode[draggable="true"]{ cursor:grab; }
     .orgNode[draggable="true"]:active{ cursor:grabbing; }
@@ -3451,6 +3467,105 @@
       .wfBuilderEdge{ grid-template-columns:1fr; }
     }
 
+    /* ─── Team Workflow View ─── */
+    .twFlow{ padding:12px; }
+    .twFlow__header{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .twFlow__title{ font-size:13px; font-weight:700; color:var(--sbDark); }
+    .twFlow__scope{
+      font-size:10px; color:#8f8f8f; font-style:italic; margin-bottom:12px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+    }
+    .twFlow__canvas{
+      position:relative; display:flex; flex-direction:column; align-items:center; gap:0;
+      min-height:180px; padding:12px 0; overflow:visible;
+    }
+    .twFlow__graph{ display:flex; flex-direction:column; align-items:center; width:100%; }
+    .twFlow__leadRow{ display:flex; justify-content:center; margin-bottom:0; position:relative; z-index:2; }
+    .twFlow__connectors{
+      position:relative; width:100%; height:32px; z-index:1;
+    }
+    .twFlow__connector{
+      position:absolute; top:0; width:1px; height:100%;
+      background:color-mix(in srgb, var(--sidebar) 25%, transparent);
+      opacity:.15; transition:opacity .3s;
+    }
+    .twFlow__connector--active{
+      width:2px; opacity:1;
+      background:color-mix(in srgb, var(--sidebar) 60%, transparent);
+    }
+    .twFlow__connector--peer{
+      border-left:1px dashed color-mix(in srgb, var(--sidebar) 30%, transparent);
+      background:none; opacity:.3;
+    }
+    .twFlow__connector--peer.twFlow__connector--active{
+      border-left:2px dashed color-mix(in srgb, var(--sidebar) 60%, transparent);
+      background:none; opacity:1;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__connector{
+      background:rgba(255,255,255,.08);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__connector--active{
+      background:rgba(255,255,255,.35);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__connector--peer{
+      border-left-color:rgba(255,255,255,.15); background:none;
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__connector--peer.twFlow__connector--active{
+      border-left-color:rgba(255,255,255,.4); background:none;
+    }
+    .twFlow__memberRow{
+      display:flex; justify-content:center; gap:16px; flex-wrap:wrap; position:relative; z-index:2;
+    }
+    .twFlow__node{
+      position:relative; min-width:100px; max-width:160px; padding:8px 10px;
+      border:1px solid color-mix(in srgb, var(--sidebar) 20%, transparent);
+      border-radius:10px; background:color-mix(in srgb, var(--sidebar) 8%, var(--bgFlat));
+      text-align:center; transition:border-color .2s, box-shadow .2s;
+    }
+    .twFlow__node:hover{
+      border-color:color-mix(in srgb, var(--sidebar) 40%, transparent);
+      box-shadow:0 2px 8px rgba(0,0,0,.1);
+    }
+    .twFlow__node--lead{
+      border-color:color-mix(in srgb, var(--sidebar) 40%, transparent);
+      background:color-mix(in srgb, var(--sidebar) 15%, var(--bgFlat));
+      box-shadow:0 1px 4px rgba(0,0,0,.08);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__node{
+      background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.06);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__node:hover{
+      border-color:rgba(255,255,255,.15);
+    }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__node--lead{
+      background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.12);
+    }
+    .twFlow__dot{
+      width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle;
+    }
+    .twFlow__dot--online{ background:#22c55e; }
+    .twFlow__dot--offline{ background:#ef4444; }
+    .twFlow__name{ font-size:11px; font-weight:600; color:var(--sbDark); }
+    .twFlow__role{ font-size:9px; color:#8f8f8f; margin-top:2px; display:block; }
+    .twFlow__actLine{
+      font-size:10px; color:#8aa4c8; margin-top:4px; font-style:italic;
+      max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;
+    }
+    .twFlow__actIcon{ font-style:normal; margin-right:2px; }
+    .twFlow__ctxBar{
+      margin-top:4px; height:3px; border-radius:2px; background:rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+    .twFlow__ctxFill{
+      height:100%; border-radius:2px; background:#22c55e; transition:width .3s;
+    }
+    .twFlow__ctxFill--warn{ background:#f59e0b; }
+    .twFlow__ctxFill--crit{ background:#ef4444; }
+    html:is([data-theme="dark"],[data-theme="black"]) .twFlow__ctxBar{ background:rgba(255,255,255,.06); }
+    .twFlow__empty{
+      text-align:center; font-size:11px; color:#8f8f8f; padding:24px; font-style:italic;
+    }
+
     /* ─── Automation Wizard Modal ─── */
     .awOverlay{
       display:none; position:fixed; inset:0; z-index:10000;
@@ -4082,6 +4197,25 @@
 
     <!-- Tab 4: Automatisierungen (n8n Workflows) -->
     <div class="ccTabPanel" id="tabWorkflows" data-panel="workflows" role="tabpanel">
+      <div class="sectionLabel" style="align-self:stretch;margin-bottom:8px">
+        <span class="sectionLabel__dot"></span>
+        Team Workflow
+      </div>
+      <section class="dashSection" aria-label="Team Workflow" style="margin-bottom:24px">
+        <div class="twFlow" id="twFlowSection">
+          <div class="twFlow__header">
+            <span class="twFlow__title">Workflow</span>
+            <div class="smDrop" id="twFlowDrop">
+              <button class="smDrop__trigger" id="twFlowTeamSelect">Team waehlen...</button>
+              <div class="smDrop__list" id="twFlowDropList"></div>
+            </div>
+          </div>
+          <div class="twFlow__canvas" id="twFlowCanvas">
+            <div class="twFlow__empty">Waehle ein Team um den Workflow zu sehen</div>
+          </div>
+        </div>
+      </section>
+
       <div class="wfHeader">
         <div class="sectionLabel" style="align-self:stretch">
           <span class="sectionLabel__dot"></span>
@@ -6388,6 +6522,7 @@
           renderProjectSidebar();
           renderMainContent();
           renderDashProjectBar();
+          if(typeof twFlowPopulateTeams === 'function') twFlowPopulateTeams();
         }
         return true;
       } catch(e){
@@ -6583,6 +6718,8 @@
         const metricAgentsEl = document.getElementById('metricAgents');
         if(topAgentsEl) topAgentsEl.textContent = liveAgentCount;
         if(metricAgentsEl) metricAgentsEl.textContent = liveAgentCount;
+        // Update workflow view with fresh agent status
+        if(typeof twFlowRender === 'function') twFlowRender();
       } catch(e){
         const topBarDots = document.querySelectorAll('.topBar .statusDot');
         if(topBarDots.length > 0){
@@ -6839,6 +6976,233 @@
         });
         setTimeout(() => { lbLoaded = false; loadLiveboard(); }, 5000);
       }
+    }
+
+    // ═══ TEAM WORKFLOW VIEW ═══
+    let twFlowTeams = []; // [{id, name, members_count}]
+    let twFlowData = null; // cached /teams/{id}/flow response
+    const twFlowSelect = document.getElementById('twFlowTeamSelect');
+    const twFlowDropList = document.getElementById('twFlowDropList');
+    const twFlowDrop = document.getElementById('twFlowDrop');
+    const twFlowCanvas = document.getElementById('twFlowCanvas');
+    let twFlowValue = ''; // team ID string
+
+    // smDrop toggle
+    if(twFlowSelect){
+      twFlowSelect.addEventListener('click', function(e){
+        e.stopPropagation();
+        document.querySelectorAll('.smDrop.open').forEach(d => { if(d !== twFlowDrop) d.classList.remove('open'); });
+        twFlowDrop.classList.toggle('open');
+      });
+    }
+    document.addEventListener('click', function(){ if(twFlowDrop) twFlowDrop.classList.remove('open'); });
+
+    async function twFlowPopulateTeams(){
+      if(!twFlowSelect || !twFlowDropList) return;
+      let teams = [];
+      try {
+        const resp = await fetch('/teams/');
+        if(resp.ok){
+          const data = await resp.json();
+          teams = (data.teams || [])
+            .filter(t => t.member_count > 0)
+            .map(t => ({ id: t.id, name: t.name, members_count: t.member_count }));
+        }
+      } catch(e){}
+      // Fallback to projectsData if /teams/ failed
+      if(teams.length === 0){
+        const seen = new Set();
+        ((projectsData || {}).projects || []).forEach(p => {
+          (p.teams || []).forEach(t => {
+            const tid = t.id || t.team || t.name;
+            if(seen.has(tid)) return;
+            seen.add(tid);
+            teams.push({ id: tid, name: t.name || t.team || tid, members_count: (t.members||[]).length });
+          });
+        });
+      }
+      twFlowTeams = teams;
+      const prev = twFlowValue;
+      let html = '<div class="smDrop__item' + (prev === '' ? ' active' : '') + '" data-value="">Team waehlen...</div>';
+      teams.forEach(t => {
+        html += '<div class="smDrop__item' + (prev === t.id ? ' active' : '') + '" data-value="' + tbEscHtml(t.id) + '">' + tbEscHtml(t.name) + ' (' + t.members_count + ')</div>';
+      });
+      twFlowDropList.innerHTML = html;
+      twFlowDropList.querySelectorAll('.smDrop__item').forEach(item => {
+        item.addEventListener('click', function(e){
+          e.stopPropagation();
+          twFlowDropList.querySelectorAll('.smDrop__item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          twFlowValue = item.dataset.value;
+          twFlowSelect.textContent = item.textContent;
+          twFlowDrop.classList.remove('open');
+          twFlowData = null; // force refetch
+          twFlowRender();
+        });
+      });
+      if(!prev && teams.length > 0){
+        const best = teams.find(t => t.id === 'trading-team') || teams.find(t => t.id === 'management') || teams.find(t => t.members_count > 1) || teams[0];
+        if(best){
+          twFlowValue = best.id;
+          twFlowSelect.textContent = best.name + ' (' + best.members_count + ')';
+          twFlowDropList.querySelectorAll('.smDrop__item').forEach(i => {
+            i.classList.toggle('active', i.dataset.value === twFlowValue);
+          });
+        }
+      }
+      twFlowRender();
+    }
+
+    const _twActIcons = { editing:'&#9998;', researching:'&#128269;', sending:'&#128172;', idle:'&#9203;', verifying:'&#9989;', analyzing:'&#128270;', waiting:'&#9203;', reading:'&#128214;' };
+
+    function _twNodeHtml(n){
+      const dotCls = 'twFlow__dot twFlow__dot--' + (n.status || 'offline');
+      const nodeCls = 'twFlow__node' + (n.is_lead ? ' twFlow__node--lead' : '');
+      let actHtml = '';
+      if(n.activity && n.activity.action){
+        const icon = _twActIcons[n.activity.action] || '';
+        const desc = n.activity.description ? ': ' + n.activity.description : '';
+        const txt = n.activity.action + desc;
+        actHtml = '<span class="twFlow__actLine">' + (icon ? '<span class="twFlow__actIcon">' + icon + '</span>' : '') + tbEscHtml(txt) + '</span>';
+        if(n.activity.blocked) actHtml += '<span class="twFlow__actLine" style="color:#ef4444">&#9888; blocked</span>';
+      }
+      let ctxHtml = '';
+      if(n.context_pct != null){
+        const pct = Math.round(n.context_pct);
+        const cls = pct >= 80 ? ' twFlow__ctxFill--crit' : pct >= 60 ? ' twFlow__ctxFill--warn' : '';
+        ctxHtml = '<div class="twFlow__ctxBar"><div class="twFlow__ctxFill' + cls + '" style="width:' + pct + '%"></div></div>';
+      }
+      return '<div class="' + nodeCls + '" data-node-id="' + tbEscHtml(n.id) + '">' +
+        '<span class="' + dotCls + '"></span>' +
+        '<span class="twFlow__name">' + tbEscHtml(n.name) + '</span>' +
+        '<span class="twFlow__role">' + tbEscHtml(n.role || '') + '</span>' +
+        actHtml + ctxHtml + '</div>';
+    }
+
+    async function twFlowRender(){
+      if(!twFlowCanvas) return;
+      if(!twFlowValue){
+        twFlowCanvas.innerHTML = '<div class="twFlow__empty">Waehle ein Team um den Workflow zu sehen</div>';
+        return;
+      }
+      // Only fetch if Automatisierungen tab is visible
+      const panel = document.getElementById('tabWorkflows');
+      if(panel && panel.style.display === 'none') return;
+
+      try {
+        const resp = await fetch('/teams/' + encodeURIComponent(twFlowValue) + '/flow');
+        if(!resp.ok){
+          twFlowCanvas.innerHTML = '<div class="twFlow__empty">Team nicht verfuegbar</div>';
+          return;
+        }
+        twFlowData = await resp.json();
+      } catch(e){
+        twFlowCanvas.innerHTML = '<div class="twFlow__empty">Fehler: ' + tbEscHtml(e.message) + '</div>';
+        return;
+      }
+
+      const d = twFlowData;
+      const nodes = d.nodes || [];
+      const edges = d.edges || [];
+      const leadId = d.lead || '';
+
+      if(nodes.length === 0){
+        twFlowCanvas.innerHTML = '<div class="twFlow__empty">Keine Agents in diesem Team</div>';
+        return;
+      }
+
+      // Scope line
+      let html = '';
+      if(d.scope) html += '<div class="twFlow__scope">' + tbEscHtml(d.scope) + '</div>';
+      html += '<div class="twFlow__graph">';
+
+      const lead = nodes.find(n => n.id === leadId);
+      const members = nodes.filter(n => n.id !== leadId);
+
+      if(lead){
+        // Lead row
+        html += '<div class="twFlow__leadRow">' + _twNodeHtml(lead) + '</div>';
+        if(members.length > 0){
+          html += '<div class="twFlow__connectors" id="twFlowConnectors"></div>';
+        }
+      }
+
+      if(members.length > 0){
+        html += '<div class="twFlow__memberRow">';
+        members.forEach(m => { html += _twNodeHtml(m); });
+        html += '</div>';
+      }
+
+      if(!lead && members.length === 0){
+        // All nodes, no lead
+        html += '<div class="twFlow__memberRow">';
+        nodes.forEach(n => { html += _twNodeHtml(n); });
+        html += '</div>';
+      }
+
+      html += '</div>';
+      twFlowCanvas.innerHTML = html;
+
+      // Draw connectors after DOM is rendered
+      if(lead && members.length > 0){
+        requestAnimationFrame(() => _twDrawConnectors(leadId, members, edges));
+      }
+    }
+
+    function _twDrawConnectors(leadId, members, edges){
+      const container = document.getElementById('twFlowConnectors');
+      if(!container) return;
+      const leadEl = twFlowCanvas.querySelector('[data-node-id="' + leadId + '"]');
+      if(!leadEl) return;
+      const canvasRect = container.getBoundingClientRect();
+      const leadRect = leadEl.getBoundingClientRect();
+      const leadCenterX = leadRect.left + leadRect.width / 2 - canvasRect.left;
+      let cHtml = '';
+
+      members.forEach(m => {
+        const mEl = twFlowCanvas.querySelector('[data-node-id="' + m.id + '"]');
+        if(!mEl) return;
+        const mRect = mEl.getBoundingClientRect();
+        const mCenterX = mRect.left + mRect.width / 2 - canvasRect.left;
+        // Find edge for this connection
+        const edge = edges.find(e =>
+          (e.from === leadId && e.to === m.id) || (e.to === leadId && e.from === m.id)
+        );
+        const isActive = edge && edge.active;
+        const isPeer = edge && edge.type === 'peer';
+        // Draw vertical line from lead center to member center
+        const left = Math.min(leadCenterX, mCenterX);
+        const width = Math.abs(leadCenterX - mCenterX);
+        if(width < 2){
+          // Straight vertical line
+          const cls = 'twFlow__connector' + (isPeer ? ' twFlow__connector--peer' : '') + (isActive ? ' twFlow__connector--active' : '');
+          cHtml += '<div class="' + cls + '" style="left:' + mCenterX + 'px"></div>';
+        } else {
+          // L-shaped: vertical from lead, horizontal, vertical to member
+          const cls = 'twFlow__connector' + (isPeer ? ' twFlow__connector--peer' : '') + (isActive ? ' twFlow__connector--active' : '');
+          // Vertical line from lead down to midpoint
+          cHtml += '<div class="' + cls + '" style="left:' + leadCenterX + 'px; height:50%"></div>';
+          // Horizontal line at midpoint
+          const hStyle = 'position:absolute; top:50%; left:' + (left) + 'px; width:' + (width) + 'px; height:' + (isActive ? '2' : '1') + 'px;' +
+            (isPeer ? 'border-top:1px dashed; background:none;' : 'background:inherit;') +
+            'opacity:inherit;';
+          cHtml += '<div class="' + cls + '" style="' + hStyle + '"></div>';
+          // Vertical line from midpoint down to member
+          cHtml += '<div class="' + cls + '" style="left:' + mCenterX + 'px; top:50%; height:50%"></div>';
+        }
+      });
+
+      // Peer edges (member-to-member)
+      edges.filter(e => e.type === 'peer').forEach(e => {
+        const fromEl = twFlowCanvas.querySelector('[data-node-id="' + e.from + '"]');
+        const toEl = twFlowCanvas.querySelector('[data-node-id="' + e.to + '"]');
+        if(!fromEl || !toEl) return;
+        // Skip if already drawn as hierarchy
+        if(e.from === leadId || e.to === leadId) return;
+        // Just show a dashed underline between the two (simplified)
+      });
+
+      container.innerHTML = cHtml;
     }
 
     function renderLbTeamPanel(){
@@ -8005,11 +8369,26 @@
       roleEl.title = agent.role || '';
       node.appendChild(roleEl);
 
+      // Activity line (icon + description)
+      if(agent.id !== 'user' && agent.activity){
+        const _orgActIcons = { editing:'\u270E', researching:'\uD83D\uDD0D', sending:'\uD83D\uDCAC', idle:'\u23F3', verifying:'\u2705', analyzing:'\uD83D\uDD0E', waiting:'\u23F3', reading:'\uD83D\uDCD6' };
+        const actLine = document.createElement('div');
+        actLine.className = 'orgNode__actLine';
+        const actText = String(agent.activity || '');
+        const actKey = actText.split(/[\s:,]/)[0].toLowerCase();
+        const icon = _orgActIcons[actKey] || '';
+        actLine.innerHTML = (icon ? '<span class="orgNode__actIcon">' + icon + '</span>' : '') + escapeHtml(actText);
+        actLine.title = actText;
+        node.appendChild(actLine);
+      }
+      // Context bar (visual, replaces text "Ctx: X%")
       if(ctxPct){
-        const ctxEl = document.createElement('div');
-        ctxEl.className = 'orgNode__context';
-        ctxEl.textContent = 'Ctx: ' + ctxPct;
-        node.appendChild(ctxEl);
+        const pctNum = parseInt(ctxPct, 10) || 0;
+        const ctxBar = document.createElement('div');
+        ctxBar.className = 'orgNode__ctxBar';
+        const cls = pctNum >= 80 ? ' orgNode__ctxFill--crit' : pctNum >= 60 ? ' orgNode__ctxFill--warn' : '';
+        ctxBar.innerHTML = '<div class="orgNode__ctxFill' + cls + '" style="width:' + pctNum + '%"></div>';
+        node.appendChild(ctxBar);
       }
 
       // Edit button (not for user)
@@ -8079,6 +8458,56 @@
       if(childTree) rootLi.appendChild(childTree);
 
       container.appendChild(rootLi);
+
+      // Team Focus Mode: draw flow edges when a team is selected
+      if(orgFilterValue !== 'all'){
+        requestAnimationFrame(() => orgDrawFlowEdges(orgFilterValue));
+      }
+    }
+
+    async function orgDrawFlowEdges(teamId){
+      // Remove previous SVG overlay
+      const old = document.getElementById('orgFlowSvg');
+      if(old) old.remove();
+      try {
+        const r = await fetch(API_BASE + '/teams/' + encodeURIComponent(teamId) + '/flow', { signal: AbortSignal.timeout(3000) });
+        if(!r.ok) return;
+        const data = await r.json();
+        const edges = data.edges || [];
+        if(edges.length === 0) return;
+        const container = document.getElementById('orgChartContainer');
+        if(!container) return;
+        const cRect = container.getBoundingClientRect();
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.id = 'orgFlowSvg';
+        svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+        svg.setAttribute('width', cRect.width);
+        svg.setAttribute('height', cRect.height);
+        edges.forEach(e => {
+          if(e.type === 'hierarchy') return; // tree already shows hierarchy via CSS ::before/::after
+          const fromEl = container.querySelector('[data-agent="' + e.from + '"]');
+          const toEl = container.querySelector('[data-agent="' + e.to + '"]');
+          if(!fromEl || !toEl) return;
+          const fR = fromEl.getBoundingClientRect();
+          const tR = toEl.getBoundingClientRect();
+          const x1 = fR.left + fR.width / 2 - cRect.left;
+          const y1 = fR.bottom - cRect.top;
+          const x2 = tR.left + tR.width / 2 - cRect.left;
+          const y2 = tR.top - cRect.top;
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke', e.active ? 'var(--sbDark)' : '#8f8f8f');
+          line.setAttribute('stroke-width', e.active ? '2' : '1');
+          line.setAttribute('stroke-dasharray', e.type === 'peer' ? '4,3' : 'none');
+          line.setAttribute('opacity', e.active ? '0.6' : '0.2');
+          svg.appendChild(line);
+        });
+        container.style.position = 'relative';
+        container.appendChild(svg);
+      } catch(e){ /* offline */ }
     }
 
     function orgFitToScreen(){

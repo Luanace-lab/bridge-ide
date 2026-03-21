@@ -21,6 +21,15 @@ BRIDGE_AGENT_SESSION_DIR = ".bridge"
 BRIDGE_AGENT_SESSION_FILE = "agent_session.json"
 
 
+def is_pid_alive(pid: int) -> bool:
+    """Check if process with given PID is running."""
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
 def mask_phone(number: str) -> str:
     """Mask phone number for privacy: +49171***1234 style."""
     if not number:
