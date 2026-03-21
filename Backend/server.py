@@ -2871,12 +2871,14 @@ def _seed_phantom_agent_registration(
     existing = _registered_agents_snapshot().get(agent_id, {})
     phantom_role = str(role or existing.get("role", "") or _get_runtime_agent_role(agent_id) or agent_id).strip()
     phantom_caps = capabilities if capabilities is not None else existing.get("capabilities", [])
-    old_token = AGENT_TOKENS.pop(agent_id, None)
-    if old_token:
-        SESSION_TOKENS.pop(old_token, None)
-    token = secrets.token_hex(32)
-    SESSION_TOKENS[token] = agent_id
-    AGENT_TOKENS[agent_id] = token
+    # Re-use existing token if valid — no rotation
+    existing_token = AGENT_TOKENS.get(agent_id)
+    if existing_token and existing_token in SESSION_TOKENS:
+        token = existing_token
+    else:
+        token = secrets.token_hex(32)
+        SESSION_TOKENS[token] = agent_id
+        AGENT_TOKENS[agent_id] = token
     reg: dict[str, Any] = {
         "role": phantom_role,
         "capabilities": phantom_caps,
@@ -7592,15 +7594,15 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
             now_iso = utc_now_iso()
             now_ts = time.time()
-            token = secrets.token_hex(32)
             with AGENT_STATE_LOCK:
-                # Hardening (H1): Move old token to grace period instead of instant invalidation
-                old_token = AGENT_TOKENS.pop(agent_id, None)
-                if old_token:
-                    SESSION_TOKENS.pop(old_token, None)
-                    GRACE_TOKENS[old_token] = (agent_id, now_ts + TOKEN_GRACE_SECONDS)
-                SESSION_TOKENS[token] = agent_id
-                AGENT_TOKENS[agent_id] = token
+                # Re-use existing token if valid — no rotation
+                existing_token = AGENT_TOKENS.get(agent_id)
+                if existing_token and existing_token in SESSION_TOKENS:
+                    token = existing_token
+                else:
+                    token = secrets.token_hex(32)
+                    SESSION_TOKENS[token] = agent_id
+                    AGENT_TOKENS[agent_id] = token
                 REGISTERED_AGENTS[agent_id] = {
                     "role": role,
                     "capabilities": capabilities,
